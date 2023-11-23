@@ -3,24 +3,18 @@ import { HydratedDocument } from "mongoose";
 import { UsersType } from "../role/user.role";
 
 @Schema()
-export class Users {
+export class Sessions {
     @Prop()
-    first_name: string
-
-    @Prop()
-    last_name:string
-
-    @Prop({unique: true})
-    email: string
-
-    @Prop()
-    password: string
+    user_id: string
 
     @Prop({type:String,enum:UsersType,default:UsersType.user})
     user_type: string
 
     @Prop()
-    custumer_id: string
+    access_token: string
+
+    @Prop()
+    fcm_token:string
 
     @Prop()
     created_at: string
@@ -32,5 +26,5 @@ export class Users {
     is_deleted: boolean
 }
 
-export type UsersDocument = HydratedDocument<Users>
-export const UsersModel = SchemaFactory.createForClass(Users)
+export type SessionsDocument = HydratedDocument<Sessions>
+export const SessionsModel = SchemaFactory.createForClass(Sessions)
