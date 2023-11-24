@@ -13,11 +13,23 @@ export class Users {
     @Prop({unique: true})
     email: string
 
+    @Prop({ type: String, default: null, trim: true })
+    country_code: string
+
+    @Prop({required:false})
+    phone: string
+
     @Prop()
     password: string
 
     @Prop({type:String,enum:UsersType,default:UsersType.user})
     user_type: string
+
+    @Prop()
+    otp: number
+
+    @Prop()
+    unique_id: string
 
     @Prop()
     custumer_id: string
@@ -30,6 +42,9 @@ export class Users {
 
     @Prop({default: false})
     is_deleted: boolean
+
+    @Prop({default: false})
+    is_email_verify: boolean
 }
 
 export type UsersDocument = HydratedDocument<Users>

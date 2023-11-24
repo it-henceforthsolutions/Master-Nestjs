@@ -8,6 +8,9 @@ export class SignUpDto {
     @ApiProperty()
     last_name: string
 
+    @ApiProperty()
+    phone: string
+
     @IsEmail()
     @ApiProperty()
     email: string
@@ -24,9 +27,38 @@ export class SignUpDto {
 }
 
 export class SignInDto {
+    
+    @IsEmail()
     @ApiProperty()
     email: string
 
     @ApiProperty()
     password: string
+}
+
+export class OtpDto{
+    @ApiProperty()
+    otp: number
+}
+
+export class ForgetPassDto{
+    @IsEmail()
+    @ApiProperty()
+    email: string
+}
+
+export class ResetPassDto{
+    @ApiProperty()
+    unique_id: string
+
+    @ApiProperty()
+    new_password: string
+}
+
+export class NewPassOtpDto{
+    @ApiProperty()
+    unique_id: string
+
+    @ApiProperty()
+    otp: number
 }
