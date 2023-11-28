@@ -1,10 +1,9 @@
 import { Body, Controller, Get, Post, Put, Req, UseGuards } from '@nestjs/common';
 import { AppService } from './app.service';
-import { ForgetPassDto, NewPassOtpDto, OtpDto, ResetPassDto, SignInDto, SignUpDto } from './users/dto/user.dto';
+import { ForgetPassDto, NewPassOtpDto, OtpDto, ResetPassDto, SignInDto, SignUpDto, SocialSignInDto } from './users/dto/user.dto';
 import { UsersService } from './users/users.service';
 import { ApiBearerAuth } from '@nestjs/swagger';
 import { AuthGuard } from './auth/auth.guards';
-import { UserGuard } from './auth/user.guard';
 
 @Controller()
 export class AppController {
@@ -21,6 +20,11 @@ export class AppController {
     @Post('signin')
     signIn(@Body() body: SignInDto) {
         return this.userService.signIn(body);
+    }
+
+    @Post('social-signin')
+    socialSignIn(@Body() body: SocialSignInDto) {
+        return this.userService.socialSignIn(body);
     }
 
     @UseGuards(AuthGuard)

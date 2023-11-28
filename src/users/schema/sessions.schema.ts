@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { HydratedDocument } from "mongoose";
-import { UsersType } from "../role/user.role";
+import { DeviceType, LoginType, UsersType } from "../role/user.role";
 
 @Schema()
 export class Sessions {
@@ -13,8 +13,14 @@ export class Sessions {
     @Prop()
     access_token: string
 
-    @Prop()
+    @Prop({required: false})
     fcm_token:string
+
+    @Prop({type:String,enum: DeviceType,default: DeviceType.web})
+    device_type: string
+
+    @Prop({type:String,enum: DeviceType})
+    login_type: string
 
     @Prop()
     created_at: string

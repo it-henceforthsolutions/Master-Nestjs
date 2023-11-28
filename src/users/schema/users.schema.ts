@@ -31,6 +31,9 @@ export class Users {
     @Prop()
     unique_id: string
 
+    @Prop({default:null})
+    social_id: string
+
     @Prop()
     custumer_id: string
 

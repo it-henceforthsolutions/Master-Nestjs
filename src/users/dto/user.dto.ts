@@ -1,5 +1,6 @@
 import { ApiProperty } from "@nestjs/swagger";
 import { IsEmail, IsStrongPassword } from "class-validator";
+import { DeviceType, LoginType } from "../role/user.role";
 
 export class SignUpDto {
     @ApiProperty()
@@ -34,6 +35,26 @@ export class SignInDto {
 
     @ApiProperty()
     password: string
+
+    @ApiProperty({ type: 'string', required: false })
+    fcm_token: string
+
+    @ApiProperty({ type: 'string', enum: DeviceType })
+    device_type: string
+}
+
+export class SocialSignInDto{
+    @ApiProperty({ type: 'string' })
+    social_token: string
+
+    @ApiProperty({ type: 'string', enum: LoginType, default:LoginType.google })
+    social_type: string
+
+    @ApiProperty({ type: 'string', required: false })
+    fcm_token: string
+
+    @ApiProperty({ type: 'string', enum: DeviceType })
+    device_type: string
 }
 
 export class OtpDto{

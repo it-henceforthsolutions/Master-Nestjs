@@ -2,7 +2,7 @@ import { BadRequestException, HttpException, HttpStatus, Injectable } from '@nes
 import { InjectModel } from '@nestjs/mongoose';
 import { Users } from './schema/users.schema';
 import { Model, Types } from 'mongoose';
-import { ForgetPassDto, NewPassOtpDto, OtpDto, ResetPassDto, SignInDto, SignUpDto } from './dto/user.dto';
+import { ForgetPassDto, NewPassOtpDto, OtpDto, ResetPassDto, SignInDto, SignUpDto, SocialSignInDto } from './dto/user.dto';
 import * as moment from 'moment';
 import * as bcrypt from 'bcrypt';
 import { InjectStripe } from 'nestjs-stripe';
@@ -12,6 +12,7 @@ import { JwtService } from '@nestjs/jwt';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { MailerService } from '@nestjs-modules/mailer';
 import * as randomString from "randomstring";
+import axios from 'axios';
 
 
 @Injectable()
@@ -61,12 +62,12 @@ export class UsersService {
         }
     }
 
-    async encriptPass(pass: string){
-        try{
+    async encriptPass(pass: string) {
+        try {
             const saltOrRounds = 10;
             const password = pass;
             return await bcrypt.hash(password, saltOrRounds);
-        }catch(error){
+        } catch (error) {
             throw error
         }
     }
@@ -102,13 +103,13 @@ export class UsersService {
         }
     }
 
-    async verifyOtp(body: NewPassOtpDto){
+    async verifyOtp(body: NewPassOtpDto) {
         try {
-            let user = await this.model.findOne({unique_id:body.unique_id})
-            if(user.otp != body.otp){
-                throw new HttpException('Invalid OTP',HttpStatus.BAD_REQUEST)
+            let user = await this.model.findOne({ unique_id: body.unique_id })
+            if (user.otp != body.otp) {
+                throw new HttpException('Invalid OTP', HttpStatus.BAD_REQUEST)
             }
-            throw new HttpException('OTP Verification Completed. Kindly Reset Your Password',HttpStatus.OK)
+            throw new HttpException('OTP Verification Completed. Kindly Reset Your Password', HttpStatus.OK)
         } catch (error) {
             throw error
         }
@@ -117,19 +118,85 @@ export class UsersService {
     async signIn(body: SignInDto) {
         try {
             let user = await this.model.findOne({ email: body.email })
+            if (!user) {
+                throw new HttpException('Invalid Email', HttpStatus.UNAUTHORIZED);
+            }
             const isMatch = await bcrypt.compare(body.password, user?.password);
             if (!isMatch) {
                 throw new HttpException('Wrong Password', HttpStatus.UNAUTHORIZED);
             }
             let payload = { id: user._id, email: user.email }
-            let access_token = await this.jwtService.signAsync(payload)
-
-            await this.sessionModel.create({
-                user_id: user?._id,
-                access_token: access_token,
-                user_type: user.user_type
-            })
+            let access_token = await this.generateToken(payload)
+            await this.createSession(user._id, access_token, body.fcm_token, user.user_type)
             return { user, access_token }
+        } catch (error) {
+            throw error
+        }
+    }
+
+    async socialSignIn(body: SocialSignInDto) {
+        try {
+            let response
+            let data
+            if (body.social_type == 'google') {
+                response = this.jwtService.decode(body.social_token)
+                data = {
+                    first_name: response?.given_name,
+                    last_name: response?.family_name,
+                    email: response?.email,
+                    image: response?.picture,
+                    social_id: response?.sub
+                }
+            } else if (body.social_type == 'facebook') {
+                response = await axios.get(`https://graph.facebook.com/v2.12/me?fields=name,first_name,last_name,email&access_token=${body.social_token}`);
+                response = response.data
+                data = {
+                    first_name: response?.first_name,
+                    last_name: response?.last_name,
+                    email: response?.email,
+                    image: response?.picture,
+                    social_id: response?.id
+                }
+            } else {
+                throw new HttpException('Invalid Request', HttpStatus.BAD_REQUEST)
+            }
+            let user = await this.model.findOne({ email: response?.email, is_deleted: false })
+            let payload: any
+            let newUser: any
+            let access_token: string
+            if (user == null) {
+                newUser = await this.model.create(data)
+                payload = { id: newUser?._id, email: response?.email }
+                access_token = await this.generateToken(payload)
+                await this.createSession(newUser?._id, access_token, body.fcm_token, newUser.user_type)
+                return { access_token, newUser }
+            }
+            payload = { id: user?._id, email: response?.email }
+            access_token = await this.generateToken(payload)
+            await this.createSession(user?._id, access_token, body.fcm_token, user.user_type)
+            return { access_token, user }
+        } catch (error) {
+            console.log(error);
+
+            throw error
+        }
+    }
+
+    async generateToken(payload) {
+        try {
+            return await this.jwtService.signAsync(payload)
+        } catch (error) {
+            throw error
+        }
+    }
+    async createSession(user_id, access_token, fcm_token, user_type) {
+        try {
+            return await this.sessionModel.create({
+                user_id: user_id,
+                access_token: access_token,
+                fcm_token: fcm_token,
+                user_type: user_type
+            })
         } catch (error) {
             throw error
         }
@@ -161,14 +228,14 @@ export class UsersService {
     async resetPassward(body: ResetPassDto) {
         try {
             let pass = await this.encriptPass(body.new_password)
-            console.log(pass,'pass');
-            
+            console.log(pass, 'pass');
+
             let data = await this.model.findOneAndUpdate(
                 { unique_id: body.unique_id },
                 { password: pass },
                 { new: true }
             )
-            console.log(data,body);
+            console.log(data, body);
             throw new HttpException('Password Reset Successfully', HttpStatus.OK)
         } catch (error) {
             throw error
