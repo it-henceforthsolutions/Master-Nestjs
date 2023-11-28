@@ -242,12 +242,16 @@ export class UsersService {
         }
     }
 
-    findAll() {
-        return `This action returns all users`;
-    }
-
-    findOne(id: number) {
-        return `This action returns a #${id} user`;
+    async logOut(id: string) {
+        try {
+            let endSession = await this.sessionModel.deleteMany({user_id:id})
+            if(!endSession){
+                throw new HttpException('No Session Exist',HttpStatus.OK)
+            }
+            throw new HttpException('LogOut Successfully!',HttpStatus.OK)
+        } catch (error) {
+            throw error
+        }
     }
 
     async update(id: string, body: UpdateUserDto) {
@@ -264,7 +268,4 @@ export class UsersService {
         }
     }
 
-    remove(id: number) {
-        return `This action removes a #${id} user`;
-    }
 }

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Put, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Post, Put, Req, Request, UseGuards } from '@nestjs/common';
 import { AppService } from './app.service';
 import { ForgetPassDto, NewPassOtpDto, OtpDto, ResetPassDto, SignInDto, SignUpDto, SocialSignInDto } from './users/dto/user.dto';
 import { UsersService } from './users/users.service';
@@ -47,6 +47,13 @@ export class AppController {
     @Put('reset-password')
     resetPassward(@Body() body: ResetPassDto){
         return this.userService.resetPassward(body)
+    }
+
+    @UseGuards(AuthGuard)
+    @ApiBearerAuth('authentication')
+    @Delete('/logout')
+    logOut(@Request() req){
+        return this.userService.logOut(req.user.id)
     }
 
 }
