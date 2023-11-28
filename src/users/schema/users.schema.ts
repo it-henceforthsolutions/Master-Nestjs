@@ -1,6 +1,7 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { HydratedDocument } from "mongoose";
 import { UsersType } from "../role/user.role";
+import { IsEmail } from "class-validator";
 
 @Schema()
 export class Users {
@@ -10,8 +11,16 @@ export class Users {
     @Prop()
     last_name:string
 
+    @IsEmail()
     @Prop({unique: true})
     email: string
+
+    @IsEmail()
+    @Prop({unique: true,default:null})
+    temp_mail: string
+
+    @Prop()
+    temp_phone:string
 
     @Prop({ type: String, default: null, trim: true })
     country_code: string
@@ -48,6 +57,9 @@ export class Users {
 
     @Prop({default: false})
     is_email_verify: boolean
+
+    @Prop({default: false})
+    is_phone_verify: boolean
 }
 
 export type UsersDocument = HydratedDocument<Users>

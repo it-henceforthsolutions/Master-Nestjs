@@ -9,7 +9,7 @@ import { InjectStripe } from 'nestjs-stripe';
 import Stripe from 'stripe';
 import { Sessions } from './schema/sessions.schema';
 import { JwtService } from '@nestjs/jwt';
-import { UpdateUserDto } from './dto/update-user.dto';
+import { UpdateEmailDto, UpdatePhoneDto, UpdateUserDto } from './dto/update-user.dto';
 import { MailerService } from '@nestjs-modules/mailer';
 import * as randomString from "randomstring";
 import axios from 'axios';
@@ -54,11 +54,11 @@ export class UsersService {
             await this.sessionModel.create({
                 user_id: user?._id,
                 access_token: access_token,
-                user_type: user.user_type
+                user_type: user?.user_type
             })
             return { access_token, user }
         } catch (error) {
-            return error
+            throw error
         }
     }
 
@@ -72,7 +72,7 @@ export class UsersService {
         }
     }
 
-    async verification(email: string, otp) {
+    async verification(email: string, otp:any) {
         try {
             return await this.mailerService
                 .sendMail({
@@ -182,14 +182,14 @@ export class UsersService {
         }
     }
 
-    async generateToken(payload) {
+    async generateToken(payload: any) {
         try {
             return await this.jwtService.signAsync(payload)
         } catch (error) {
             throw error
         }
     }
-    async createSession(user_id, access_token, fcm_token, user_type) {
+    async createSession(user_id:any, access_token: string, fcm_token:string, user_type:string) {
         try {
             return await this.sessionModel.create({
                 user_id: user_id,
@@ -256,7 +256,14 @@ export class UsersService {
 
     async update(id: string, body: UpdateUserDto) {
         try {
-            let data = { updated_at: moment().utc().valueOf(), ...body }
+            // let data = {
+            //     first_name: body.first_name,
+            //     last_name: body.last_name,
+            //     temp_phone: body.phone,
+            //     temp_mail: body.email,
+            //     updated_at: moment().utc().valueOf()
+            // }
+            let data = {updated_at: moment().utc().valueOf(),...body}
             let updatedUser = await this.model.findByIdAndUpdate(
                 { _id: new Types.ObjectId(id) },
                 data,
@@ -268,4 +275,14 @@ export class UsersService {
         }
     }
 
+    async updateEmail(id:string,body: UpdateEmailDto){
+        try {
+            
+        } catch (error) {
+            throw error
+        }
+    }
+    async updatePhone(id:string, body: UpdatePhoneDto){
+
+    }
 }

@@ -2,7 +2,7 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req } fro
 import { UsersService } from './users.service';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from 'src/auth/auth.guards';
-import { UpdateUserDto } from './dto/update-user.dto';
+import { UpdateEmailDto, UpdatePhoneDto, UpdateUserDto } from './dto/update-user.dto';
 
 @ApiTags('users')
 @Controller('users')
@@ -14,6 +14,20 @@ export class UsersController {
   @Patch('profile')
   update(@Body() body:UpdateUserDto,@Req() req) {
     return this.usersService.update(req.user.id,body);
+  }
+
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth('authentication')
+  @Patch('email')
+  updateEmail(@Body() body:UpdateEmailDto,@Req() req) {
+    return this.usersService.updateEmail(req.user.id,body);
+  }
+
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth('authentication')
+  @Patch('phone')
+  updatePhone(@Body() body:UpdatePhoneDto,@Req() req) {
+    return this.usersService.updatePhone(req.user.id,body);
   }
 
 }
