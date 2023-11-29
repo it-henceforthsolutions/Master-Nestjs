@@ -13,6 +13,7 @@ import { UpdateEmailDto, UpdatePhoneDto, UpdateUserDto } from './dto/update-user
 import { MailerService } from '@nestjs-modules/mailer';
 import * as randomString from "randomstring";
 import axios from 'axios';
+import { TwilioService } from 'nestjs-twilio';
 
 
 @Injectable()
@@ -22,13 +23,16 @@ export class UsersService {
         @InjectModel(Sessions.name) private sessionModel: Model<Sessions>,
         @InjectStripe() private stripe: Stripe,
         private jwtService: JwtService,
-        private mailerService: MailerService
-    ) { }
+        private mailerService: MailerService,
+        private twilio: TwilioService
+    ) {
+        const accountSid = process.env.TWILIO_SID
+        const auth = process.env.TWILIO_AUTH_TOKEN
+    }
     async signUp(body: SignUpDto) {
         try {
-            let existMail = await this.model.find({ email: body.email }, 'email')
-            console.log(existMail);
-            if (existMail == null) {
+            let existMail = await this.model.findOne({ email: body.email, }, 'email temp_mail')
+            if (existMail != null) {
                 throw new HttpException('This Email is Already Exist! Please Use another Email Address', HttpStatus.BAD_REQUEST);
             }
             let otp = Math.floor(1000 + Math.random() * 9000);
@@ -40,16 +44,16 @@ export class UsersService {
             let data = {
                 first_name: body.first_name,
                 last_name: body.last_name,
-                email: body.email,
-                phone: body.phone,
+                temp_mail: body.email,
+                temp_phone: body.phone,
                 password: hash,
                 custumer_id: customer.id,
                 otp: otp,
                 created_at: moment().utc().valueOf()
             }
             let user = await this.model.create(data)
-            await this.verification(user.email, otp)
-            let payload = { id: user._id, email: user.email }
+            await this.verification(user.temp_mail, otp)
+            let payload = { id: user._id, email: user.temp_mail }
             let access_token = await this.jwtService.signAsync(payload)
             await this.sessionModel.create({
                 user_id: user?._id,
@@ -58,6 +62,9 @@ export class UsersService {
             })
             return { access_token, user }
         } catch (error) {
+            if (error.code === 11000) {
+                throw new HttpException('This Email is Already Exist! Please Use another Email Address', HttpStatus.BAD_REQUEST);
+            }
             throw error
         }
     }
@@ -72,7 +79,7 @@ export class UsersService {
         }
     }
 
-    async verification(email: string, otp:any) {
+    async verification(email: string, otp: any) {
         try {
             return await this.mailerService
                 .sendMail({
@@ -92,9 +99,41 @@ export class UsersService {
             if (user.otp != body.otp) {
                 throw new HttpException('Invalid OTP', HttpStatus.BAD_REQUEST)
             }
+            let data = {
+                is_email_verify: true,
+                email: user?.temp_mail,
+                temp_mail: null,
+                otp: null
+            }
             await this.model.findByIdAndUpdate(
                 { _id: new Types.ObjectId(id) },
-                { is_email_verify: true },
+                data,
+                { new: true }
+            )
+            await this.model.deleteMany({temp_mail:user?.temp_mail})
+            throw new HttpException('OTP Verified', HttpStatus.OK)
+        } catch (error) {
+            throw error
+        }
+    }
+
+    async verifyPhone(body: OtpDto, id: string) {
+        try {
+            let user = await this.model.findById({ _id: new Types.ObjectId(id) })
+            if (user.otp != body.otp) {
+                throw new HttpException('Invalid OTP', HttpStatus.BAD_REQUEST)
+            }
+            let data = {
+                is_phone_verify: true,
+                country_code: user?.temp_country_code,
+                phone: user?.temp_phone,
+                temp_country_code:null,
+                temp_phone: null,
+                otp: null
+            }
+            await this.model.findByIdAndUpdate(
+                { _id: new Types.ObjectId(id) },
+                data,
                 { new: true }
             )
             throw new HttpException('OTP Verified', HttpStatus.OK)
@@ -118,6 +157,12 @@ export class UsersService {
     async signIn(body: SignInDto) {
         try {
             let user = await this.model.findOne({ email: body.email })
+            
+            let payload = { id: user?._id, email: user?.email }
+            if (!user) {
+                user = await this.model.findOne({ temp_mail: body.email })
+                payload = { id: user?._id, email: user?.temp_mail }
+            }
             if (!user) {
                 throw new HttpException('Invalid Email', HttpStatus.UNAUTHORIZED);
             }
@@ -125,7 +170,6 @@ export class UsersService {
             if (!isMatch) {
                 throw new HttpException('Wrong Password', HttpStatus.UNAUTHORIZED);
             }
-            let payload = { id: user._id, email: user.email }
             let access_token = await this.generateToken(payload)
             await this.createSession(user._id, access_token, body.fcm_token, user.user_type)
             return { user, access_token }
@@ -189,7 +233,7 @@ export class UsersService {
             throw error
         }
     }
-    async createSession(user_id:any, access_token: string, fcm_token:string, user_type:string) {
+    async createSession(user_id: any, access_token: string, fcm_token: string, user_type: string) {
         try {
             return await this.sessionModel.create({
                 user_id: user_id,
@@ -244,11 +288,11 @@ export class UsersService {
 
     async logOut(id: string) {
         try {
-            let endSession = await this.sessionModel.deleteMany({user_id:id})
-            if(!endSession){
-                throw new HttpException('No Session Exist',HttpStatus.OK)
+            let endSession = await this.sessionModel.deleteMany({ user_id: id })
+            if (!endSession) {
+                throw new HttpException('No Session Exist', HttpStatus.OK)
             }
-            throw new HttpException('LogOut Successfully!',HttpStatus.OK)
+            throw new HttpException('LogOut Successfully!', HttpStatus.OK)
         } catch (error) {
             throw error
         }
@@ -256,14 +300,7 @@ export class UsersService {
 
     async update(id: string, body: UpdateUserDto) {
         try {
-            // let data = {
-            //     first_name: body.first_name,
-            //     last_name: body.last_name,
-            //     temp_phone: body.phone,
-            //     temp_mail: body.email,
-            //     updated_at: moment().utc().valueOf()
-            // }
-            let data = {updated_at: moment().utc().valueOf(),...body}
+            let data = { updated_at: moment().utc().valueOf(), ...body }
             let updatedUser = await this.model.findByIdAndUpdate(
                 { _id: new Types.ObjectId(id) },
                 data,
@@ -275,14 +312,61 @@ export class UsersService {
         }
     }
 
-    async updateEmail(id:string,body: UpdateEmailDto){
+    async updateEmail(id: string, body: UpdateEmailDto) {
         try {
-            
+            let otp = Math.floor(1000 + Math.random() * 9000);
+            let data = {
+                temp_mail: body.email,
+                otp: otp,
+                is_email_verify: false,
+                updated_at: moment().utc().valueOf(),
+            }
+            let updatedMail = await this.model.findByIdAndUpdate(
+                { _id: new Types.ObjectId(id) },
+                data,
+                { new: true }
+            )
+            await this.verification(body.email, otp)
+            return updatedMail
         } catch (error) {
             throw error
         }
     }
-    async updatePhone(id:string, body: UpdatePhoneDto){
+    async updatePhone(id: string, body: UpdatePhoneDto) {
+        try {
+            let otp = Math.floor(1000 + Math.random() * 9000);
+            let data = {
+                temp_country_code: body.country_code,
+                temp_phone: body.phone,
+                otp: otp,
+                is_phone_verify: false,
+                updated_at: moment().utc().valueOf(),
+            }
+            let updatedPhone = await this.model.findByIdAndUpdate(
+                { _id: new Types.ObjectId(id) },
+                data,
+                { new: true }
+            )
+            let phoneNumber = `${body.country_code}${body.phone}`
+            let response = await this.sendOtpOnPhone(otp,phoneNumber)
+            if(response.status=="failed"){
+                throw new HttpException('OTP not sent',HttpStatus.EXPECTATION_FAILED)
+            }
+            return updatedPhone
+        } catch (error) {
+            throw error
+        }
+    }
 
+    async sendOtpOnPhone(otp: number, phoneNumber: string){
+        try {
+            return await this.twilio.client.messages.create({
+                body: `Do Not Share Your OTP ${otp}`,
+                from: process.env.TWILIO_NUMBER,
+                to: phoneNumber,
+            })
+        } catch (error) {
+            throw error
+        }
     }
 }

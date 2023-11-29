@@ -34,6 +34,13 @@ export class AppController {
         return this.userService.verifyEmail(body,req.user.id)
     }
 
+    @UseGuards(AuthGuard)
+    @ApiBearerAuth('authentication')
+    @Put('verify-phone')
+    verifyPhone(@Body() body: OtpDto,@Req() req){
+        return this.userService.verifyPhone(body,req.user.id)
+    }
+
     @Put('verify-otp')
     verifyOtp(@Body() body: NewPassOtpDto){
         return this.userService.verifyOtp(body)

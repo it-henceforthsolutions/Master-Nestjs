@@ -12,18 +12,21 @@ export class Users {
     last_name:string
 
     @IsEmail()
-    @Prop({unique: true})
+    @Prop({unique: true,default:null})
     email: string
 
     @IsEmail()
     @Prop({unique: true,default:null})
     temp_mail: string
 
-    @Prop()
+    @Prop({default:null})
     temp_phone:string
 
     @Prop({ type: String, default: null, trim: true })
     country_code: string
+
+    @Prop({ type: String, default: null, trim: true })
+    temp_country_code: string
 
     @Prop({required:false})
     phone: string
@@ -34,7 +37,7 @@ export class Users {
     @Prop({type:String,enum:UsersType,default:UsersType.user})
     user_type: string
 
-    @Prop()
+    @Prop({default:null})
     otp: number
 
     @Prop()
