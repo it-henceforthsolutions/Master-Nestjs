@@ -6,7 +6,6 @@ import { jwtConstants } from "./constant";
 import { Request } from "express";
 import { Types } from "mongoose";
 import { UsersService } from "src/users/users.service";
-import { ModelService } from "src/model/model.service";
 import * as dto from "./dto/token.dto"
 
 @Injectable()
@@ -52,7 +51,7 @@ export class AuthGuard implements CanActivate {
 export class SocketGuard implements CanActivate {
     constructor(
         private readonly userservices: UsersService,
-        private readonly model : ModelService,
+        // private readonly model : UsersService,
         private jwtservice: JwtService,
     ) { }
 
@@ -80,7 +79,7 @@ export class SocketGuard implements CanActivate {
                     if (data) {
                         let { _id } = payload;
                         let query = { _id: _id }
-                        let fetch_user:any = await this.model.users.findOne(query, projection, options)
+                        let fetch_user:any = await this.userservices.getUserData(query)
                         if (fetch_user) {
                             fetch_user.session_id = data._id
                             socket.user_data = fetch_user
@@ -104,13 +103,7 @@ export class SocketGuard implements CanActivate {
 
             let { scope } = payload;
             let query: any;
-            if (scope == "admin") {
-                let { _id: admin_id } = payload
-                query = {
-                    admin_id: new Types.ObjectId(admin_id),
-                    access_token: { $ne: null }
-                }
-            }
+          
             if (scope == "user") {
                 let { _id: user_id } = payload
                 query = {
@@ -122,7 +115,7 @@ export class SocketGuard implements CanActivate {
             let options = { lean: true }
             console.log("query", query);
 
-            let fcm_data = await this.model.sessions.findOne(query, projection, options)
+            let fcm_data = await this.userservices.getSessionData(query)
             console.log("fcm data", fcm_data);
 
             if (fcm_data) {
@@ -144,7 +137,8 @@ export class SocketGuard implements CanActivate {
 export class SocketDisConnect {
     constructor(
         private jwtservice: JwtService,
-        private model: ModelService
+        // private model: ModelService
+        private readonly userservices: UsersService,
     ) { }
 
     verify_token = async (token: any) => {
@@ -166,7 +160,7 @@ export class SocketDisConnect {
                     if (data) {
                         let { _id } = payload;
                         let query = { _id: _id }
-                        let fetch_user:any = await this.model.users.findOne(query, projection, options)
+                        let fetch_user:any = await this.userservices.getUserData(query)
                         if (fetch_user) {
                             fetch_user.session_id = data._id
                             return fetch_user
@@ -209,7 +203,7 @@ export class SocketDisConnect {
             let options = { lean: true }
             console.log("query", query);
 
-            let fcm_data = await this.model.sessions.findOne(query, projection , options)
+            let fcm_data = await this.userservices.getSessionData(query)
             console.log("fcm data", fcm_data);
 
             if (fcm_data) {

@@ -9,9 +9,9 @@ import { config } from 'dotenv'
 import { JwtModule } from '@nestjs/jwt';
 import { jwtConstants } from './auth/constant';
 import { MailerModule } from '@nestjs-modules/mailer';
-import { DatabaseModule } from './model/model.module';
-import { ChatModule } from './chat/chat.module';
-import { AgoraModule } from './agora/agora.module';
+// import { DatabaseModule } from './model/model.module';
+// import { ChatModule } from './chat/chat.module';
+// import { AgoraModule } from './agora/agora.module';
 
 config()
 @Module({
@@ -44,9 +44,9 @@ config()
       },
     }),
     UsersModule,
-    DatabaseModule,
-    ChatModule,
-    AgoraModule
+    // DatabaseModule,
+    // ChatModule,
+    // AgoraModule
   ],
   controllers: [AppController],
   providers: [AppService],
