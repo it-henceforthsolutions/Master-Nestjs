@@ -2,14 +2,14 @@ import { BadRequestException, HttpException, HttpStatus, Injectable } from '@nes
 import { InjectModel } from '@nestjs/mongoose';
 import { Users } from './schema/users.schema';
 import { Model, Types } from 'mongoose';
-import { ForgetPassDto, NewPassOtpDto, OtpDto, ResetPassDto, SignInDto, SignUpDto, SocialSignInDto } from './dto/user.dto';
+import { ForgetPassDto, NewPassOtpDto, OtpDto, SignInDto, SignUpDto, SocialSignInDto } from './dto/user.dto';
 import * as moment from 'moment';
 import * as bcrypt from 'bcrypt';
 import { InjectStripe } from 'nestjs-stripe';
 import Stripe from 'stripe';
 import { Sessions } from './schema/sessions.schema';
 import { JwtService } from '@nestjs/jwt';
-import { UpdateEmailDto, UpdatePhoneDto, UpdateUserDto } from './dto/update-user.dto';
+import { ChangePassDto, ResetPassDto, UpdateEmailDto, UpdatePhoneDto, UpdateUserDto } from './dto/update-user.dto';
 import { MailerService } from '@nestjs-modules/mailer';
 import * as randomString from "randomstring";
 import axios from 'axios';
@@ -110,7 +110,7 @@ export class UsersService {
                 data,
                 { new: true }
             )
-            await this.model.deleteMany({temp_mail:user?.temp_mail})
+            await this.model.deleteMany({ temp_mail: user?.temp_mail })
             throw new HttpException('OTP Verified', HttpStatus.OK)
         } catch (error) {
             throw error
@@ -127,7 +127,7 @@ export class UsersService {
                 is_phone_verify: true,
                 country_code: user?.temp_country_code,
                 phone: user?.temp_phone,
-                temp_country_code:null,
+                temp_country_code: null,
                 temp_phone: null,
                 otp: null
             }
@@ -157,7 +157,7 @@ export class UsersService {
     async signIn(body: SignInDto) {
         try {
             let user = await this.model.findOne({ email: body.email })
-            
+
             let payload = { id: user?._id, email: user?.email }
             if (!user) {
                 user = await this.model.findOne({ temp_mail: body.email })
@@ -286,6 +286,28 @@ export class UsersService {
         }
     }
 
+    async changePassward(body: ChangePassDto, id: string) {
+        try {
+            let user = await this.model.findById({ _id: new Types.ObjectId(id) })
+            const isMatch = await bcrypt.compare(body.old_password, user?.password);
+            if (!isMatch) {
+                throw new HttpException('Wrong Password', HttpStatus.BAD_REQUEST)
+            }
+            let updated = await this.model.findByIdAndUpdate(
+                {_id: new Types.ObjectId(id)},
+                {password: body.new_password},
+                {new: true}
+            )
+            if(!updated){
+            throw new HttpException('Something Went Wrong',HttpStatus.BAD_REQUEST)
+            }
+            throw new HttpException('Password Changed Successfully',HttpStatus.OK)
+
+        } catch (error) {
+            throw error
+        }
+    }
+
     async logOut(id: string) {
         try {
             let endSession = await this.sessionModel.deleteMany({ user_id: id })
@@ -343,9 +365,9 @@ export class UsersService {
                 updated_at: moment().utc().valueOf(),
             }
             let phoneNumber = `${body.country_code}${body.phone}`
-            let response = await this.sendOtpOnPhone(otp,phoneNumber)
-            if(response.status=="failed"){
-                throw new HttpException('OTP not sent',HttpStatus.EXPECTATION_FAILED)
+            let response = await this.sendOtpOnPhone(otp, phoneNumber)
+            if (response.status == "failed") {
+                throw new HttpException('OTP not sent', HttpStatus.EXPECTATION_FAILED)
             }
             let updatedPhone = await this.model.findByIdAndUpdate(
                 { _id: new Types.ObjectId(id) },
@@ -358,7 +380,7 @@ export class UsersService {
         }
     }
 
-    async sendOtpOnPhone(otp: number, phoneNumber: string){
+    async sendOtpOnPhone(otp: number, phoneNumber: string) {
         try {
             return await this.twilio.client.messages.create({
                 body: `Do Not Share Your OTP ${otp}`,

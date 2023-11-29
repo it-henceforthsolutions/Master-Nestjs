@@ -68,13 +68,6 @@ export class ForgetPassDto{
     email: string
 }
 
-export class ResetPassDto{
-    @ApiProperty()
-    unique_id: string
-
-    @ApiProperty()
-    new_password: string
-}
 
 export class NewPassOtpDto{
     @ApiProperty()
