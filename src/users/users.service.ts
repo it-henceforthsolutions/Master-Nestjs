@@ -35,17 +35,17 @@ export class UsersService {
             }
             let otp = Math.floor(1000 + Math.random() * 9000);
             let hash = await this.encriptPass(body.password)
-            let customer = await this.stripe.customers.create({
-                email: body.email,
-                name: body.first_name
-            })
+            // let customer = await this.stripe.customers.create({
+            //     email: body.email,
+            //     name: body.first_name
+            // })
             let data = {
                 first_name: body.first_name,
                 last_name: body.last_name,
                 email: body.email,
                 phone: body.phone,
                 password: hash,
-                custumer_id: customer.id,
+                custumer_id: '',
                 otp: otp,
                 created_at: moment().utc().valueOf()
             }
