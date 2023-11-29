@@ -342,16 +342,16 @@ export class UsersService {
                 is_phone_verify: false,
                 updated_at: moment().utc().valueOf(),
             }
-            let updatedPhone = await this.model.findByIdAndUpdate(
-                { _id: new Types.ObjectId(id) },
-                data,
-                { new: true }
-            )
             let phoneNumber = `${body.country_code}${body.phone}`
             let response = await this.sendOtpOnPhone(otp,phoneNumber)
             if(response.status=="failed"){
                 throw new HttpException('OTP not sent',HttpStatus.EXPECTATION_FAILED)
             }
+            let updatedPhone = await this.model.findByIdAndUpdate(
+                { _id: new Types.ObjectId(id) },
+                data,
+                { new: true }
+            )
             return updatedPhone
         } catch (error) {
             throw error

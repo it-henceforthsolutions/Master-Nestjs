@@ -16,7 +16,7 @@ export class Users {
     email: string
 
     @IsEmail()
-    @Prop({unique: true,default:null})
+    @Prop()
     temp_mail: string
 
     @Prop({default:null})
