@@ -202,7 +202,6 @@ export class SocketDisConnect {
             let projection = { _v: 0 }
             let options = { lean: true }
             console.log("query", query);
-
             let fcm_data = await this.userservices.getSessionData(query)
             console.log("fcm data", fcm_data);
 
