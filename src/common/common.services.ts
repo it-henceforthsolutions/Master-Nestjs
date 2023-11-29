@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import randomstring from "randomstring";
+import * as randomstring from "randomstring";
 import * as  nodemailer from "nodemailer";
  import * as  smtpTransport from "nodemailer-smtp-transport";
 import { config } from 'dotenv';
@@ -40,26 +40,6 @@ export class CommonServices {
             pass: nodemailer_password
         }
     }));
-
-    // otp_aws = async () => {
-    //     try {
-    //         const sns = this.awsService.getSnsInstance();
-    //         let phn = "+917710177797"
-    //         const params = {
-    //             Message: `Your iMatch OTP is ${1234}`,
-    //             PhoneNumber: phn,
-    //         };
-    //         sns.publish(params, (err, data) => {
-    //             if (err) {
-    //                 console.error('Error sending OTP:', err);
-    //             } else {
-    //                 console.log('OTP sent successfully:', data);
-    //             }
-    //         })
-    //     } catch (e) {
-    //         throw e
-    //     }
-    // }
 
 
     generateOtp = async () => {

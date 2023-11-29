@@ -11,6 +11,7 @@ import { jwtConstants } from './auth/constant';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { DatabaseModule } from './model/model.module';
 import { ChatModule } from './chat/chat.module';
+import { AgoraModule } from './agora/agora.module';
 
 config()
 @Module({
@@ -44,7 +45,8 @@ config()
     }),
     UsersModule,
     DatabaseModule,
-    ChatModule
+    ChatModule,
+    AgoraModule
   ],
   controllers: [AppController],
   providers: [AppService],
