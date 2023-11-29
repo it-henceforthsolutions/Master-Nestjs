@@ -13,20 +13,20 @@ import { UpdateEmailDto, UpdatePhoneDto, UpdateUserDto } from './dto/update-user
 import { MailerService } from '@nestjs-modules/mailer';
 import * as randomString from "randomstring";
 import axios from 'axios';
+import { ModelService } from 'src/model/model.service';
 
 
 @Injectable()
 export class UsersService {
     constructor(
-        @InjectModel(Users.name) private model: Model<Users>,
-        @InjectModel(Sessions.name) private sessionModel: Model<Sessions>,
         @InjectStripe() private stripe: Stripe,
         private jwtService: JwtService,
-        private mailerService: MailerService
+        private mailerService: MailerService,
+        private readonly model:ModelService,
     ) { }
     async signUp(body: SignUpDto) {
         try {
-            let existMail = await this.model.find({ email: body.email }, 'email')
+            let existMail = await this.model.users.find({ email: body.email }, 'email')
             console.log(existMail);
             if (existMail == null) {
                 throw new HttpException('This Email is Already Exist! Please Use another Email Address', HttpStatus.BAD_REQUEST);
@@ -47,11 +47,11 @@ export class UsersService {
                 otp: otp,
                 created_at: moment().utc().valueOf()
             }
-            let user = await this.model.create(data)
+            let user = await this.model.users.create(data)
             await this.verification(user.email, otp)
             let payload = { id: user._id, email: user.email }
             let access_token = await this.jwtService.signAsync(payload)
-            await this.sessionModel.create({
+            await this.model.sessions.create({
                 user_id: user?._id,
                 access_token: access_token,
                 user_type: user?.user_type
@@ -88,11 +88,11 @@ export class UsersService {
 
     async verifyEmail(body: OtpDto, id: string) {
         try {
-            let user = await this.model.findById({ _id: new Types.ObjectId(id) })
+            let user = await this.model.users.findById({ _id: new Types.ObjectId(id) })
             if (user.otp != body.otp) {
                 throw new HttpException('Invalid OTP', HttpStatus.BAD_REQUEST)
             }
-            await this.model.findByIdAndUpdate(
+            await this.model.users.findByIdAndUpdate(
                 { _id: new Types.ObjectId(id) },
                 { is_email_verify: true },
                 { new: true }
@@ -105,7 +105,7 @@ export class UsersService {
 
     async verifyOtp(body: NewPassOtpDto) {
         try {
-            let user = await this.model.findOne({ unique_id: body.unique_id })
+            let user = await this.model.users.findOne({ unique_id: body.unique_id })
             if (user.otp != body.otp) {
                 throw new HttpException('Invalid OTP', HttpStatus.BAD_REQUEST)
             }
@@ -117,7 +117,7 @@ export class UsersService {
 
     async signIn(body: SignInDto) {
         try {
-            let user = await this.model.findOne({ email: body.email })
+            let user = await this.model.users.findOne({ email: body.email })
             if (!user) {
                 throw new HttpException('Invalid Email', HttpStatus.UNAUTHORIZED);
             }
@@ -160,12 +160,12 @@ export class UsersService {
             } else {
                 throw new HttpException('Invalid Request', HttpStatus.BAD_REQUEST)
             }
-            let user = await this.model.findOne({ email: response?.email, is_deleted: false })
+            let user = await this.model.users.findOne({ email: response?.email, is_deleted: false })
             let payload: any
             let newUser: any
             let access_token: string
             if (user == null) {
-                newUser = await this.model.create(data)
+                newUser = await this.model.users.create(data)
                 payload = { id: newUser?._id, email: response?.email }
                 access_token = await this.generateToken(payload)
                 await this.createSession(newUser?._id, access_token, body.fcm_token, newUser.user_type)
@@ -191,7 +191,7 @@ export class UsersService {
     }
     async createSession(user_id:any, access_token: string, fcm_token:string, user_type:string) {
         try {
-            return await this.sessionModel.create({
+            return await this.model.sessions.create({
                 user_id: user_id,
                 access_token: access_token,
                 fcm_token: fcm_token,
@@ -204,7 +204,7 @@ export class UsersService {
 
     async forgetPassword(body: ForgetPassDto) {
         try {
-            let user = await this.model.findOne({ email: body.email })
+            let user = await this.model.users.findOne({ email: body.email })
             if (!user) {
                 throw new HttpException('This User is no Exist', HttpStatus.BAD_REQUEST)
             }
@@ -214,7 +214,7 @@ export class UsersService {
                 charset: 'alphanumeric'
             })
             await this.verification(user.email, otp)
-            await this.model.findOneAndUpdate(
+            await this.model.users.findOneAndUpdate(
                 { _id: user._id },
                 { otp: otp, unique_id: uniqueId },
                 { new: true }
@@ -230,7 +230,7 @@ export class UsersService {
             let pass = await this.encriptPass(body.new_password)
             console.log(pass, 'pass');
 
-            let data = await this.model.findOneAndUpdate(
+            let data = await this.model.users.findOneAndUpdate(
                 { unique_id: body.unique_id },
                 { password: pass },
                 { new: true }
@@ -244,7 +244,7 @@ export class UsersService {
 
     async logOut(id: string) {
         try {
-            let endSession = await this.sessionModel.deleteMany({user_id:id})
+            let endSession = await this.model.sessions.deleteMany({user_id:id})
             if(!endSession){
                 throw new HttpException('No Session Exist',HttpStatus.OK)
             }
@@ -264,7 +264,7 @@ export class UsersService {
             //     updated_at: moment().utc().valueOf()
             // }
             let data = {updated_at: moment().utc().valueOf(),...body}
-            let updatedUser = await this.model.findByIdAndUpdate(
+            let updatedUser = await this.model.users.findByIdAndUpdate(
                 { _id: new Types.ObjectId(id) },
                 data,
                 { new: true }

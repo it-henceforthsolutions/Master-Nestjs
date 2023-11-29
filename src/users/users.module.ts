@@ -6,12 +6,7 @@ import { Users, UsersModel } from './schema/users.schema';
 import { Sessions, SessionsModel } from './schema/sessions.schema';
 
 @Module({
-  imports:[
-    MongooseModule.forFeature([
-      {name: Users.name , schema: UsersModel},
-      {name: Sessions.name , schema: SessionsModel}
-    ])
-  ],
+  imports:[],
   controllers: [UsersController],
   providers: [UsersService],
   exports: [UsersService]

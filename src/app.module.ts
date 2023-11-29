@@ -4,13 +4,12 @@ import { AppService } from './app.service';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ConfigModule } from '@nestjs/config';
 import { UsersModule } from './users/users.module';
-import { UsersService } from './users/users.service';
 import * as stripe from 'nestjs-stripe'
 import { config } from 'dotenv'
 import { JwtModule } from '@nestjs/jwt';
 import { jwtConstants } from './auth/constant';
 import { MailerModule } from '@nestjs-modules/mailer';
-import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
+import { DatabaseModule } from './model/model.module';
 
 config()
 @Module({
@@ -43,6 +42,7 @@ config()
       },
     }),
     UsersModule,
+    DatabaseModule,
   ],
   controllers: [AppController],
   providers: [AppService],
