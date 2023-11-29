@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import randomstring from "randomstring";
-import nodemailer from "nodemailer";
- import smtpTransport from "nodemailer-smtp-transport";
+import * as  nodemailer from "nodemailer";
+ import * as  smtpTransport from "nodemailer-smtp-transport";
 import { config } from 'dotenv';
 import path from "path";
 import fs from 'fs';
@@ -17,7 +17,7 @@ import axios from "axios";
 // var https = require('follow-redirects').https;
 import * as Errors from "../handler/error.services";
 import { ModelService } from "src/model/model.service";
-const AWS = require('aws-sdk');
+// const AWS = require('aws-sdk');
 config();
 const nodemailer_email = process.env.NODEMAILER_MAIL;
 const nodemailer_password = process.env.NODEMAILER_PASSWORD;

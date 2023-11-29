@@ -12,6 +12,7 @@ async function bootstrap() {
     .setVersion('1.0')
     .addTag('Default')
     .addBearerAuth({ type: 'http', name: 'token', in: 'header' }, 'authentication')
+    .addServer("http://192.168.1.13:3000/", "localserver")
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);

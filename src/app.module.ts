@@ -10,6 +10,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { jwtConstants } from './auth/constant';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { DatabaseModule } from './model/model.module';
+import { ChatModule } from './chat/chat.module';
 
 config()
 @Module({
@@ -43,6 +44,7 @@ config()
     }),
     UsersModule,
     DatabaseModule,
+    ChatModule
   ],
   controllers: [AppController],
   providers: [AppService],
