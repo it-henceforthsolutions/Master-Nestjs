@@ -1,7 +1,7 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { SubscribeMessage, WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
 import { Types } from 'mongoose';
-import { ApiBasicAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
+import { ApiBasicAuth, ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 
 import * as dto from "./dto/index";
 import { ChatAggregation, MessageListing } from "./chat.aggregation";
@@ -20,7 +20,8 @@ export class ChatController {
 
 
     @UseGuards(AuthGuard)
-    @ApiBasicAuth('access_token')
+    @ApiBearerAuth('authentication')
+    // @ApiBasicAuth('access_token')
     @ApiOperation({ summary: 'User all Users Api' })
     @Get('/users')
     async users(@Req() req: dto.user_data, @Query() dto: dto.search_user) {
@@ -38,7 +39,8 @@ export class ChatController {
     }
 
     @UseGuards(AuthGuard)
-    @ApiBasicAuth('access_token')
+    // @ApiBasicAuth('access_token')
+    @ApiBearerAuth('authentication')
     @ApiOperation({ summary: 'User Chat Users Api' })
     @Get('/list')
     async chatUsers(@Req() req: dto.user_data, @Query() dto: dto.search_user) {
@@ -57,7 +59,8 @@ export class ChatController {
 
 
     @UseGuards(AuthGuard)
-    @ApiBasicAuth('access_token')
+    // @ApiBasicAuth('access_token')
+    @ApiBearerAuth('authentication')
     @ApiOperation({ summary: 'User messages listing Api' })
     @ApiParam({ name: 'id', type: String, description: "Enter here connection_id" })
     @Get('/message/:id')
@@ -75,7 +78,8 @@ export class ChatController {
     }
 
     @UseGuards(AuthGuard)
-    @ApiBasicAuth('access_token')
+    @ApiBearerAuth('authentication')
+    // @ApiBasicAuth('access_token')
     @ApiOperation({ summary: 'User group_members list Api' })
     @ApiParam({ name: 'id', type: String, description: "Enter here connection id" })
     @Get('/group_members/:id')
@@ -94,7 +98,8 @@ export class ChatController {
 
 
     @UseGuards(AuthGuard)
-    @ApiBasicAuth('access_token')
+    @ApiBearerAuth('authentication')
+    // @ApiBasicAuth('access_token')
     @ApiOperation({ summary: 'User Mute Notification Api' })
     @Patch('/mute/notification')
     async mute_notification(@Body() dto: dto.mute_notification, @Req() req: dto.user_data) {
@@ -111,7 +116,8 @@ export class ChatController {
     }
 
     @UseGuards(AuthGuard)
-    @ApiBasicAuth('access_token')
+    @ApiBearerAuth('authentication')
+    // @ApiBasicAuth('access_token')
     @ApiOperation({ summary: 'User clear all messages Api' })
     @ApiParam({ name: 'id', type: String, description: "Enter here connection_id" })
     @Delete('/message/:id')
@@ -129,7 +135,8 @@ export class ChatController {
     }
 
     @UseGuards(AuthGuard)
-    @ApiBasicAuth('access_token')
+    @ApiBearerAuth('authentication')
+    // @ApiBasicAuth('access_token')
     @ApiOperation({ summary: 'User Delete messages Api' })
     @Delete('/messages')
     async remove_messages(@Body() dto: dto.delete_message, @Req() req: dto.user_data) {
@@ -147,7 +154,8 @@ export class ChatController {
 
 
     @UseGuards(AuthGuard)
-    @ApiBasicAuth('access_token')
+    @ApiBearerAuth('authentication')
+    // @ApiBasicAuth('access_token')
     @ApiOperation({ summary: 'User Delete chat Api' })
     @ApiParam({ name: 'id', type: String, description: "Enter here connection_id" })
     @Delete('/chat/:id')

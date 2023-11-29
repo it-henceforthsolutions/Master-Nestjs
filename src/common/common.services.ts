@@ -160,26 +160,26 @@ export class CommonServices {
         }
     }
 
-    broadcast_mail = async (email: string, subject: string, message: string) => {
-        try {
+    // broadcast_mail = async (email: string, subject: string, message: string) => {
+    //     try {
 
-            // let title = `Hi ${email}`;
-            // let button_url = `${admin_endpoint}contact-us/1`;
-            // let button = `View on iMatch`;
+    //         // let title = `Hi ${email}`;
+    //         // let button_url = `${admin_endpoint}contact-us/1`;
+    //         // let button = `View on iMatch`;
 
-            let file_path = path.join(__dirname, '../../imatch_email_template/broadcast.html');
-            let html = await fs.readFileSync(file_path, { encoding: 'utf-8' })
-            html = html.replace('%TITLE%', subject)
-            html = html.replace('%MESSAGE%', message)
-            // html = html.replace('%BUTTON_URL%', button_url)
-            // html = html.replace('%BUTTON%', button)
-            await this.sendEmail(email, subject, html)
+    //         let file_path = path.join(__dirname, '../../imatch_email_template/broadcast.html');
+    //         let html = await fs.readFileSync(file_path, { encoding: 'utf-8' })
+    //         html = html.replace('%TITLE%', subject)
+    //         html = html.replace('%MESSAGE%', message)
+    //         // html = html.replace('%BUTTON_URL%', button_url)
+    //         // html = html.replace('%BUTTON%', button)
+    //         await this.sendEmail(email, subject, html)
 
-        }
-        catch (err) {
-            throw err;
-        }
-    }
+    //     }
+    //     catch (err) {
+    //         throw err;
+    //     }
+    // }
 
     send_email = async (data: any) => {
         try {
