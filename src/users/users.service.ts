@@ -84,7 +84,7 @@ export class UsersService {
             return await this.mailerService
                 .sendMail({
                     to: `${email}`,
-                    from: `mohini.henceforth@gmail.com`,
+                    from: `master.henceforth@gmail.com`,
                     subject: 'Verify User',
                     text: ` OTP :${otp}`
                 });
