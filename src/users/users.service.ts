@@ -294,7 +294,7 @@ export class UsersService {
         }
     }
 
-    async update(id: string, body: UpdateUserDto) {
+    async update(id: string, body : any) {
         try {
             let data = { updated_at: moment().utc().valueOf(), ...body }
             let updatedUser = await this.users.findByIdAndUpdate(

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { CreateAdminDto } from './dto/create-admin.dto';
 import { UpdateAdminDto } from './dto/update-admin.dto';
@@ -31,9 +31,9 @@ export class AdminController {
   @ApiBearerAuth('authentication')
   @UseGuards(AuthGuard, RolesGuard)
   @Roles(UsersType.admin)
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateAdminDto: UpdateAdminDto) {
-    return this.adminService.update(+id, updateAdminDto);
+  @Patch('profile')
+  update(@Request() req,@Body() updateAdminDto: UpdateAdminDto) {
+    return this.adminService.update(req.user.id,updateAdminDto);
   }
 
   @Delete(':id')
