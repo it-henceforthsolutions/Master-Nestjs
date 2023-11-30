@@ -41,6 +41,9 @@ config()
       },
     }),
     UsersModule,
+    // DatabaseModule,
+    // ChatModule,
+    // AgoraModule
   ],
   controllers: [AppController],
   providers: [AppService],

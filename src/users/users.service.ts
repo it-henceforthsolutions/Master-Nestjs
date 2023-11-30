@@ -19,8 +19,8 @@ import { TwilioService } from 'nestjs-twilio';
 @Injectable()
 export class UsersService {
     constructor(
-        @InjectModel(Users.name) private model: Model<Users>,
-        @InjectModel(Sessions.name) private sessionModel: Model<Sessions>,
+        @InjectModel(Users.name) private users: Model<Users>,
+        @InjectModel(Sessions.name) private sessions: Model<Sessions>,
         @InjectStripe() private stripe: Stripe,
         private jwtService: JwtService,
         private mailerService: MailerService,
@@ -31,31 +31,31 @@ export class UsersService {
     }
     async signUp(body: SignUpDto) {
         try {
-            let existMail = await this.model.findOne({ email: body.email, }, 'email temp_mail')
+            let existMail = await this.users.findOne({ email: body.email, }, 'email temp_mail')
             if (existMail != null) {
                 throw new HttpException('This Email is Already Exist! Please Use another Email Address', HttpStatus.BAD_REQUEST);
             }
             let otp = Math.floor(1000 + Math.random() * 9000);
             let hash = await this.encriptPass(body.password)
-            let customer = await this.stripe.customers.create({
-                email: body.email,
-                name: body.first_name
-            })
+            // let customer = await this.stripe.customers.create({
+            //     email: body.email,
+            //     name: body.first_name
+            // })
             let data = {
                 first_name: body.first_name,
                 last_name: body.last_name,
                 temp_mail: body.email,
                 temp_phone: body.phone,
                 password: hash,
-                custumer_id: customer.id,
+                custumer_id: '',
                 otp: otp,
                 created_at: moment().utc().valueOf()
             }
-            let user = await this.model.create(data)
+            let user = await this.users.create(data)
             await this.verification(user.temp_mail, otp)
             let payload = { id: user._id, email: user.temp_mail }
             let access_token = await this.jwtService.signAsync(payload)
-            await this.sessionModel.create({
+            await this.sessions.create({
                 user_id: user?._id,
                 access_token: access_token,
                 user_type: user?.user_type
@@ -84,7 +84,7 @@ export class UsersService {
             return await this.mailerService
                 .sendMail({
                     to: `${email}`,
-                    from: `master.henceforth@gmail.com`,
+                    from: process.env.EMAIL,
                     subject: 'Verify User',
                     text: ` OTP :${otp}`
                 });
@@ -95,7 +95,7 @@ export class UsersService {
 
     async verifyEmail(body: OtpDto, id: string) {
         try {
-            let user = await this.model.findById({ _id: new Types.ObjectId(id) })
+            let user = await this.users.findById({ _id: new Types.ObjectId(id) })
             if (user.otp != body.otp) {
                 throw new HttpException('Invalid OTP', HttpStatus.BAD_REQUEST)
             }
@@ -105,12 +105,12 @@ export class UsersService {
                 temp_mail: null,
                 otp: null
             }
-            await this.model.findByIdAndUpdate(
+            await this.users.findByIdAndUpdate(
                 { _id: new Types.ObjectId(id) },
                 data,
                 { new: true }
             )
-            await this.model.deleteMany({ temp_mail: user?.temp_mail })
+            await this.users.deleteMany({ temp_mail: user?.temp_mail })
             throw new HttpException('OTP Verified', HttpStatus.OK)
         } catch (error) {
             throw error
@@ -119,7 +119,7 @@ export class UsersService {
 
     async verifyPhone(body: OtpDto, id: string) {
         try {
-            let user = await this.model.findById({ _id: new Types.ObjectId(id) })
+            let user = await this.users.findById({ _id: new Types.ObjectId(id) })
             if (user.otp != body.otp) {
                 throw new HttpException('Invalid OTP', HttpStatus.BAD_REQUEST)
             }
@@ -131,7 +131,7 @@ export class UsersService {
                 temp_phone: null,
                 otp: null
             }
-            await this.model.findByIdAndUpdate(
+            await this.users.findByIdAndUpdate(
                 { _id: new Types.ObjectId(id) },
                 data,
                 { new: true }
@@ -144,7 +144,7 @@ export class UsersService {
 
     async verifyOtp(body: NewPassOtpDto) {
         try {
-            let user = await this.model.findOne({ unique_id: body.unique_id })
+            let user = await this.users.findOne({ unique_id: body.unique_id })
             if (user.otp != body.otp) {
                 throw new HttpException('Invalid OTP', HttpStatus.BAD_REQUEST)
             }
@@ -156,11 +156,11 @@ export class UsersService {
 
     async signIn(body: SignInDto) {
         try {
-            let user = await this.model.findOne({ email: body.email })
+            let user = await this.users.findOne({ email: body.email })
 
             let payload = { id: user?._id, email: user?.email }
             if (!user) {
-                user = await this.model.findOne({ temp_mail: body.email })
+                user = await this.users.findOne({ temp_mail: body.email })
                 payload = { id: user?._id, email: user?.temp_mail }
             }
             if (!user) {
@@ -204,12 +204,12 @@ export class UsersService {
             } else {
                 throw new HttpException('Invalid Request', HttpStatus.BAD_REQUEST)
             }
-            let user = await this.model.findOne({ email: response?.email, is_deleted: false })
+            let user = await this.users.findOne({ email: response?.email, is_deleted: false })
             let payload: any
             let newUser: any
             let access_token: string
             if (user == null) {
-                newUser = await this.model.create(data)
+                newUser = await this.users.create(data)
                 payload = { id: newUser?._id, email: response?.email }
                 access_token = await this.generateToken(payload)
                 await this.createSession(newUser?._id, access_token, body.fcm_token, newUser.user_type)
@@ -235,7 +235,7 @@ export class UsersService {
     }
     async createSession(user_id: any, access_token: string, fcm_token: string, user_type: string) {
         try {
-            return await this.sessionModel.create({
+            return await this.sessions.create({
                 user_id: user_id,
                 access_token: access_token,
                 fcm_token: fcm_token,
@@ -248,7 +248,7 @@ export class UsersService {
 
     async forgetPassword(body: ForgetPassDto) {
         try {
-            let user = await this.model.findOne({ email: body.email })
+            let user = await this.users.findOne({ email: body.email })
             if (!user) {
                 throw new HttpException('This User is no Exist', HttpStatus.BAD_REQUEST)
             }
@@ -258,7 +258,7 @@ export class UsersService {
                 charset: 'alphanumeric'
             })
             await this.verification(user.email, otp)
-            await this.model.findOneAndUpdate(
+            await this.users.findOneAndUpdate(
                 { _id: user._id },
                 { otp: otp, unique_id: uniqueId },
                 { new: true }
@@ -274,7 +274,7 @@ export class UsersService {
             let pass = await this.encriptPass(body.new_password)
             console.log(pass, 'pass');
 
-            let data = await this.model.findOneAndUpdate(
+            let data = await this.users.findOneAndUpdate(
                 { unique_id: body.unique_id },
                 { password: pass },
                 { new: true }
@@ -288,14 +288,15 @@ export class UsersService {
 
     async changePassward(body: ChangePassDto, id: string) {
         try {
-            let user = await this.model.findById({ _id: new Types.ObjectId(id) })
+            let user = await this.users.findById({ _id: new Types.ObjectId(id) })
             const isMatch = await bcrypt.compare(body.old_password, user?.password);
             if (!isMatch) {
                 throw new HttpException('Wrong Password', HttpStatus.BAD_REQUEST)
             }
-            let updated = await this.model.findByIdAndUpdate(
+            let newPass =await this.encriptPass(body.new_password)
+            let updated = await this.users.findByIdAndUpdate(
                 {_id: new Types.ObjectId(id)},
-                {password: body.new_password},
+                {password: newPass},
                 {new: true}
             )
             if(!updated){
@@ -310,7 +311,7 @@ export class UsersService {
 
     async logOut(id: string) {
         try {
-            let endSession = await this.sessionModel.deleteMany({ user_id: id })
+            let endSession = await this.sessions.deleteMany({ user_id: id })
             if (!endSession) {
                 throw new HttpException('No Session Exist', HttpStatus.OK)
             }
@@ -323,7 +324,7 @@ export class UsersService {
     async update(id: string, body: UpdateUserDto) {
         try {
             let data = { updated_at: moment().utc().valueOf(), ...body }
-            let updatedUser = await this.model.findByIdAndUpdate(
+            let updatedUser = await this.users.findByIdAndUpdate(
                 { _id: new Types.ObjectId(id) },
                 data,
                 { new: true }
@@ -343,7 +344,7 @@ export class UsersService {
                 is_email_verify: false,
                 updated_at: moment().utc().valueOf(),
             }
-            let updatedMail = await this.model.findByIdAndUpdate(
+            let updatedMail = await this.users.findByIdAndUpdate(
                 { _id: new Types.ObjectId(id) },
                 data,
                 { new: true }
@@ -369,7 +370,7 @@ export class UsersService {
             if (response.status == "failed") {
                 throw new HttpException('OTP not sent', HttpStatus.EXPECTATION_FAILED)
             }
-            let updatedPhone = await this.model.findByIdAndUpdate(
+            let updatedPhone = await this.users.findByIdAndUpdate(
                 { _id: new Types.ObjectId(id) },
                 data,
                 { new: true }

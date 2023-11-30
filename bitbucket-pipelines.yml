@@ -1,0 +1,38 @@
+image: node:16
+pipelines:
+  branches:
+    master:
+      - step:
+          name: Build
+          script:
+            - npm install --force
+            - npm run build
+          artifacts:
+            - dist/**
+      - step:
+          name: Removing folder
+          script:
+            - ssh $USER@$SERVER "sudo rm -rf /var/www/html/masterproject/masternestjs/dist"
+      - step:
+          name: Creating folder
+          script:
+            - ssh $USER@$SERVER "sudo mkdir /var/www/html/masterproject/masternestjs/dist"
+      - step:
+          name: Add Folder Permission
+          script:
+            - ssh $USER@$SERVER "sudo chmod 777 /var/www/html/masterproject/masternestjs/dist"
+      - step:
+          name: Deploy artifacts using SCP to PROD
+          deployment: production
+          script:
+            - pipe: atlassian/rsync-deploy:0.3.2
+              variables:
+                USER: $USER
+                SERVER: $SERVER
+                PASSWORD: $PASSWORD
+                REMOTE_PATH: "/var/www/html/masterproject/masternestjs/dist"
+                LOCAL_PATH: "dist/*"
+      - step:
+          name: PM2 restart
+          script:
+            - ssh $USER@$SERVER "pm2 restart masternestjs"
