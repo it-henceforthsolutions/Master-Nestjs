@@ -4,7 +4,6 @@ import { Users } from './schema/users.schema';
 import { Model, Types } from 'mongoose';
 import { ForgetPassDto, NewPassOtpDto, OtpDto, SignInDto, SignUpDto, SocialSignInDto } from './dto/user.dto';
 import * as moment from 'moment';
-import * as bcrypt from 'bcrypt';
 import { InjectStripe } from 'nestjs-stripe';
 import Stripe from 'stripe';
 import { Sessions } from './schema/sessions.schema';
@@ -13,7 +12,7 @@ import { ChangePassDto, ResetPassDto, UpdateEmailDto, UpdatePhoneDto, UpdateUser
 import { MailerService } from '@nestjs-modules/mailer';
 import * as randomString from "randomstring";
 import axios from 'axios';
-import { TwilioService } from 'nestjs-twilio';
+import { CommonService } from 'src/common/common.service';
 
 
 @Injectable()
@@ -23,20 +22,16 @@ export class UsersService {
         @InjectModel(Sessions.name) private sessions: Model<Sessions>,
         @InjectStripe() private stripe: Stripe,
         private jwtService: JwtService,
-        private mailerService: MailerService,
-        private twilio: TwilioService
-    ) {
-        const accountSid = process.env.TWILIO_SID
-        const auth = process.env.TWILIO_AUTH_TOKEN
-    }
+        private common: CommonService,
+    ) { }
     async signUp(body: SignUpDto) {
         try {
             let existMail = await this.users.findOne({ email: body.email, }, 'email temp_mail')
             if (existMail != null) {
                 throw new HttpException('This Email is Already Exist! Please Use another Email Address', HttpStatus.BAD_REQUEST);
             }
-            let otp = Math.floor(1000 + Math.random() * 9000);
-            let hash = await this.encriptPass(body.password)
+            let otp = await this.common.generateOtp()
+            let hash = await this.common.encriptPass(body.password)
             // let customer = await this.stripe.customers.create({
             //     email: body.email,
             //     name: body.first_name
@@ -52,7 +47,7 @@ export class UsersService {
                 created_at: moment().utc().valueOf()
             }
             let user = await this.users.create(data)
-            await this.verification(user.temp_mail, otp)
+            await this.common.verification(user.temp_mail, otp)
             let payload = { id: user._id, email: user.temp_mail }
             let access_token = await this.jwtService.signAsync(payload)
             await this.sessions.create({
@@ -65,30 +60,6 @@ export class UsersService {
             if (error.code === 11000) {
                 throw new HttpException('This Email is Already Exist! Please Use another Email Address', HttpStatus.BAD_REQUEST);
             }
-            throw error
-        }
-    }
-
-    async encriptPass(pass: string) {
-        try {
-            const saltOrRounds = 10;
-            const password = pass;
-            return await bcrypt.hash(password, saltOrRounds);
-        } catch (error) {
-            throw error
-        }
-    }
-
-    async verification(email: string, otp: any) {
-        try {
-            return await this.mailerService
-                .sendMail({
-                    to: `${email}`,
-                    from: process.env.EMAIL,
-                    subject: 'Verify User',
-                    text: ` OTP :${otp}`
-                });
-        } catch (error) {
             throw error
         }
     }
@@ -166,7 +137,7 @@ export class UsersService {
             if (!user) {
                 throw new HttpException('Invalid Email', HttpStatus.UNAUTHORIZED);
             }
-            const isMatch = await bcrypt.compare(body.password, user?.password);
+            const isMatch = this.common.bcriptPass(body.password, user?.password)
             if (!isMatch) {
                 throw new HttpException('Wrong Password', HttpStatus.UNAUTHORIZED);
             }
@@ -257,7 +228,7 @@ export class UsersService {
                 length: 7,
                 charset: 'alphanumeric'
             })
-            await this.verification(user.email, otp)
+            await this.common.verification(user.email, otp)
             await this.users.findOneAndUpdate(
                 { _id: user._id },
                 { otp: otp, unique_id: uniqueId },
@@ -271,7 +242,7 @@ export class UsersService {
 
     async resetPassward(body: ResetPassDto) {
         try {
-            let pass = await this.encriptPass(body.new_password)
+            let pass = await this.common.encriptPass(body.new_password)
             console.log(pass, 'pass');
 
             let data = await this.users.findOneAndUpdate(
@@ -289,11 +260,11 @@ export class UsersService {
     async changePassward(body: ChangePassDto, id: string) {
         try {
             let user = await this.users.findById({ _id: new Types.ObjectId(id) })
-            const isMatch = await bcrypt.compare(body.old_password, user?.password);
+            const isMatch = this.common.bcriptPass(body.old_password, user?.password)
             if (!isMatch) {
                 throw new HttpException('Wrong Password', HttpStatus.BAD_REQUEST)
             }
-            let newPass =await this.encriptPass(body.new_password)
+            let newPass =await this.common.encriptPass(body.new_password)
             let updated = await this.users.findByIdAndUpdate(
                 {_id: new Types.ObjectId(id)},
                 {password: newPass},
@@ -337,7 +308,7 @@ export class UsersService {
 
     async updateEmail(id: string, body: UpdateEmailDto) {
         try {
-            let otp = Math.floor(1000 + Math.random() * 9000);
+            let otp = await this.common.generateOtp()
             let data = {
                 temp_mail: body.email,
                 otp: otp,
@@ -349,15 +320,16 @@ export class UsersService {
                 data,
                 { new: true }
             )
-            await this.verification(body.email, otp)
+            await this.common.verification(body.email, otp)
             return updatedMail
         } catch (error) {
             throw error
         }
     }
+
     async updatePhone(id: string, body: UpdatePhoneDto) {
         try {
-            let otp = Math.floor(1000 + Math.random() * 9000);
+            let otp = await this.common.generateOtp();
             let data = {
                 temp_country_code: body.country_code,
                 temp_phone: body.phone,
@@ -366,7 +338,7 @@ export class UsersService {
                 updated_at: moment().utc().valueOf(),
             }
             let phoneNumber = `${body.country_code}${body.phone}`
-            let response = await this.sendOtpOnPhone(otp, phoneNumber)
+            let response = await this.common.sendOtpOnPhone(otp, phoneNumber)
             if (response.status == "failed") {
                 throw new HttpException('OTP not sent', HttpStatus.EXPECTATION_FAILED)
             }
@@ -381,15 +353,5 @@ export class UsersService {
         }
     }
 
-    async sendOtpOnPhone(otp: number, phoneNumber: string) {
-        try {
-            return await this.twilio.client.messages.create({
-                body: `Do Not Share Your OTP ${otp}`,
-                from: process.env.TWILIO_NUMBER,
-                to: phoneNumber,
-            })
-        } catch (error) {
-            throw error
-        }
-    }
+    
 }
