@@ -27,7 +27,9 @@ export class UsersService {
     async signUp(body: SignUpDto) {
         try {
             let existMail = await this.users.findOne({ email: body.email, }, 'email temp_mail')
-            if (existMail != null) {
+            if (existMail) {
+                console.log('here');
+                
                 throw new HttpException('This Email is Already Exist! Please Use another Email Address', HttpStatus.BAD_REQUEST);
             }
             let otp = await this.common.generateOtp()
