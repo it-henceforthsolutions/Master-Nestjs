@@ -353,5 +353,19 @@ export class UsersService {
         }
     }
 
-    
+    async findOne(query){
+        try {
+            return await this.users.findOne(query)
+        } catch (error) {
+            throw error
+        }
+    }
+
+    async createAdmin(data: any){
+        try {
+            return await this.users.create(data)
+        } catch (error) {
+            throw error
+        }
+    }
 }

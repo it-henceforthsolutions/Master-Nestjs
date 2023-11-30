@@ -9,6 +9,7 @@ import { config } from 'dotenv'
 import { JwtModule } from '@nestjs/jwt';
 import { jwtConstants } from './auth/constant';
 import { MailerModule } from '@nestjs-modules/mailer';
+import { AdminModule } from './admin/admin.module';
 
 config()
 @Module({
@@ -41,6 +42,7 @@ config()
       },
     }),
     UsersModule,
+    AdminModule,
     // DatabaseModule,
     // ChatModule,
     // AgoraModule

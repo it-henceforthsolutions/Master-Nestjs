@@ -5,14 +5,20 @@ import { UsersService } from './users/users.service';
 import { ApiBearerAuth } from '@nestjs/swagger';
 import { AuthGuard } from './auth/auth.guards';
 import { ChangePassDto, ResetPassDto } from './users/dto/update-user.dto';
+import { AdminService } from './admin/admin.service';
 
 @Controller()
 export class AppController {
     constructor(
         private readonly appService: AppService,
-        private userService: UsersService
+        private userService: UsersService,
+        private adminService: AdminService
     ) { }
 
+    async onApplicationBootstrap(): Promise<void> {
+        await this.adminService.createAdmin();
+    }
+    
     @Post('signup')
     signUp(@Body() body: SignUpDto) {
         return this.userService.signUp(body);
