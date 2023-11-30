@@ -37,6 +37,6 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe());
   app.use(cors());
   await app.listen(process.env.PORT);
-  console.log(`Server running at port 3000....`);
+  console.log(`Server running at port ${process.env.PORT}....`);
 }
 bootstrap();
