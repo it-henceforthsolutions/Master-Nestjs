@@ -32,7 +32,9 @@ export class UsersService {
     async signUp(body: SignUpDto) {
         try {
             let existMail = await this.users.findOne({ email: body.email, }, 'email temp_mail')
-            if (existMail != null) {
+            console.log(existMail,'existMail');
+            
+            if (existMail) {
                 throw new HttpException('This Email is Already Exist! Please Use another Email Address', HttpStatus.BAD_REQUEST);
             }
             let otp = Math.floor(1000 + Math.random() * 9000);
@@ -51,9 +53,12 @@ export class UsersService {
                 otp: otp,
                 created_at: moment().utc().valueOf()
             }
+
             let user = await this.users.create(data)
+            console.log(user,'user');
+            
             await this.verification(user.temp_mail, otp)
-            let payload = { id: user._id, email: user.temp_mail }
+            let payload = { id: user._id, email: user?.temp_mail }
             let access_token = await this.jwtService.signAsync(payload)
             await this.sessions.create({
                 user_id: user?._id,
@@ -62,9 +67,11 @@ export class UsersService {
             })
             return { access_token, user }
         } catch (error) {
-            if (error.code === 11000) {
-                throw new HttpException('This Email is Already Exist! Please Use another Email Address', HttpStatus.BAD_REQUEST);
-            }
+            // if (error.code === 11000) {
+            //     throw new HttpException('This Email is Already Exist! Please Use another Email Address', HttpStatus.BAD_REQUEST);
+            // }
+            console.log(error);
+            
             throw error
         }
     }
