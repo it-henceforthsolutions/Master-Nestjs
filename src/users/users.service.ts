@@ -370,4 +370,12 @@ export class UsersService {
             throw error
         }
     }
+
+    async findUser(id: string){
+        try{
+            return await this.users.findById({_id: new Types.ObjectId(id)})
+        }catch(error){
+            throw error
+        }
+    }
 }
