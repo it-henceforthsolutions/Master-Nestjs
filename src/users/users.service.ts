@@ -29,7 +29,7 @@ export class UsersService {
             let existMail = await this.users.findOne({ email: body.email, }, 'email temp_mail')
             if (existMail) {
                 console.log('here');
-                
+
                 throw new HttpException('This Email is Already Exist! Please Use another Email Address', HttpStatus.BAD_REQUEST);
             }
             let otp = await this.common.generateOtp()
@@ -78,12 +78,12 @@ export class UsersService {
                 temp_mail: null,
                 otp: null
             }
-            await this.users.findByIdAndUpdate(
+            await this.users.findOneAndUpdate(
                 { _id: new Types.ObjectId(id) },
                 data,
                 { new: true }
             )
-            await this.users.deleteMany({ temp_mail: user?.temp_mail })
+            await this.users.deleteMany({ temp_mail: user?.temp_mail, is_email_verify: false })
             throw new HttpException('OTP Verified', HttpStatus.OK)
         } catch (error) {
             throw error
@@ -132,12 +132,21 @@ export class UsersService {
             let user = await this.users.findOne({ email: body.email })
 
             let payload = { id: user?._id, email: user?.email }
+            console.log(user?.email, 'cant find by email');
+
             if (!user) {
                 user = await this.users.findOne({ temp_mail: body.email })
+                console.log(user?.temp_mail, 'cant find by temp');
+
                 payload = { id: user?._id, email: user?.temp_mail }
             }
             if (!user) {
                 throw new HttpException('Invalid Email', HttpStatus.UNAUTHORIZED);
+            }
+            if (user?.temp_mail && user?.email) {
+                let mail = user?.email.slice(0,5)
+
+                throw new HttpException(`This EmailId is Not verified.Please SignIn with Your Previous Email: ${mail}xxxxxx.com`, HttpStatus.UNAUTHORIZED);
             }
             const isMatch = this.common.bcriptPass(body.password, user?.password)
             if (!isMatch) {
@@ -266,16 +275,16 @@ export class UsersService {
             if (!isMatch) {
                 throw new HttpException('Wrong Password', HttpStatus.BAD_REQUEST)
             }
-            let newPass =await this.common.encriptPass(body.new_password)
+            let newPass = await this.common.encriptPass(body.new_password)
             let updated = await this.users.findByIdAndUpdate(
-                {_id: new Types.ObjectId(id)},
-                {password: newPass},
-                {new: true}
+                { _id: new Types.ObjectId(id) },
+                { password: newPass },
+                { new: true }
             )
-            if(!updated){
-            throw new HttpException('Something Went Wrong',HttpStatus.BAD_REQUEST)
+            if (!updated) {
+                throw new HttpException('Something Went Wrong', HttpStatus.BAD_REQUEST)
             }
-            throw new HttpException('Password Changed Successfully',HttpStatus.OK)
+            throw new HttpException('Password Changed Successfully', HttpStatus.OK)
 
         } catch (error) {
             throw error
@@ -294,7 +303,7 @@ export class UsersService {
         }
     }
 
-    async update(id: string, body : any) {
+    async update(id: string, body: any) {
         try {
             let data = { updated_at: moment().utc().valueOf(), ...body }
             let updatedUser = await this.users.findByIdAndUpdate(
@@ -355,7 +364,7 @@ export class UsersService {
         }
     }
 
-    async findOne(query){
+    async findOne(query) {
         try {
             return await this.users.findOne(query)
         } catch (error) {
@@ -363,7 +372,7 @@ export class UsersService {
         }
     }
 
-    async createAdmin(data: any){
+    async createAdmin(data: any) {
         try {
             return await this.users.create(data)
         } catch (error) {
@@ -371,10 +380,30 @@ export class UsersService {
         }
     }
 
-    async findUser(id: string){
-        try{
-            return await this.users.findById({_id: new Types.ObjectId(id)})
-        }catch(error){
+    async findUser(id: string) {
+        try {
+            return await this.users.findById({ _id: new Types.ObjectId(id) })
+        } catch (error) {
+            throw error
+        }
+    }
+
+    async resendOtp(id: string) {
+        try {
+            let user = await this.users.findById({ _id: new Types.ObjectId(id) })
+            let otp = await this.common.generateOtp()
+            let isSendVerification = await this.common.verification(user?.temp_mail, otp)
+
+            if (!isSendVerification) {
+                throw new HttpException(`We can't Resend Otp Please connect Administration`, HttpStatus.OK)
+            }
+            await this.users.findByIdAndUpdate(
+                { _id: new Types.ObjectId(id) },
+                { otp: otp },
+                { new: true }
+            )
+            throw new HttpException('OTP resend to your registered email address.', HttpStatus.OK)
+        } catch (error) {
             throw error
         }
     }

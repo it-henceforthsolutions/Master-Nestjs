@@ -53,6 +53,13 @@ export class AppController {
         return this.userService.verifyOtp(body)
     }
 
+    @UseGuards(AuthGuard)
+    @ApiBearerAuth('authentication')
+    @Put('resend-otp')
+    resendOtp(@Request() req) {
+        return this.userService.resendOtp(req.user.id)
+    }
+
     @Put('forget-password')
     forgetPassword(@Body() body: ForgetPassDto) {
         return this.userService.forgetPassword(body)

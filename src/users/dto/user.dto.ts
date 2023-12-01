@@ -30,10 +30,10 @@ export class SignUpDto {
 export class SignInDto {
     
     @IsEmail()
-    @ApiProperty()
+    @ApiProperty({default:'admin@gmail.com'})
     email: string
 
-    @ApiProperty()
+    @ApiProperty({default:'admin@1234'})
     password: string
 
     @ApiProperty({ type: 'string', required: false })
