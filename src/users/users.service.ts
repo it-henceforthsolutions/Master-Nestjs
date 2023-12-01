@@ -9,7 +9,6 @@ import Stripe from 'stripe';
 import { Sessions } from './schema/sessions.schema';
 import { JwtService } from '@nestjs/jwt';
 import { ChangePassDto, ResetPassDto, UpdateEmailDto, UpdatePhoneDto, UpdateUserDto } from './dto/update-user.dto';
-import { MailerService } from '@nestjs-modules/mailer';
 import * as randomString from "randomstring";
 import axios from 'axios';
 import { CommonService } from 'src/common/common.service';
@@ -215,6 +214,7 @@ export class UsersService {
             throw error
         }
     }
+    
     async createSession(user_id: any, access_token: string, fcm_token: string, user_type: string) {
         try {
             return await this.sessions.create({

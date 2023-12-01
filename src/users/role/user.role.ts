@@ -1,6 +1,7 @@
 export enum UsersType {
     user = 'user',
-    admin = 'admin'
+    admin = 'admin',
+    staff = 'staff'
 }
 
 export enum LoginType{
