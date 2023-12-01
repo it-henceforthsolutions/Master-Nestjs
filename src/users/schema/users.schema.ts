@@ -63,6 +63,12 @@ export class Users {
 
     @Prop({default: false})
     is_phone_verify: boolean
+
+    @Prop({default: true})
+    is_active: boolean
+
+    @Prop({default: false})
+    is_blocked: boolean
 }
 
 export type UsersDocument = HydratedDocument<Users>

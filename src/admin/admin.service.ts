@@ -37,27 +37,9 @@ export class AdminService {
             throw error
         }
     }
-    create(createAdminDto: CreateAdminDto) {
-        return 'This action adds a new admin';
-    }
 
-    findAll() {
-        return `This action returns all admin`;
+    async dashboard(){
+        return this.userService.getUsersCount()
     }
-
-    findOne(id: number) {
-        return `This action returns a #${id} admin`;
-    }
-
-    async update(id: string, body) {
-        try {
-            return await this.userService.update(id,body)
-        } catch (error) {
-            throw error
-        }
-    }
-
-    remove(id: number) {
-        return `This action removes a #${id} admin`;
-    }
+    
 }

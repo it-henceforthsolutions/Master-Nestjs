@@ -143,7 +143,7 @@ export class UsersService {
                 throw new HttpException('Invalid Email', HttpStatus.UNAUTHORIZED);
             }
             if (user?.temp_mail && user?.email) {
-                let mail = user?.email.slice(0,5)
+                let mail = user?.email.slice(0, 5)
 
                 throw new HttpException(`This EmailId is Not verified.Please SignIn with Your Previous Email: ${mail}xxxxxx.com`, HttpStatus.UNAUTHORIZED);
             }
@@ -214,7 +214,7 @@ export class UsersService {
             throw error
         }
     }
-    
+
     async createSession(user_id: any, access_token: string, fcm_token: string, user_type: string) {
         try {
             return await this.sessions.create({
@@ -403,6 +403,104 @@ export class UsersService {
                 { new: true }
             )
             throw new HttpException('OTP resend to your registered email address.', HttpStatus.OK)
+        } catch (error) {
+            throw error
+        }
+    }
+
+    async getAll() {
+        try {
+            let allUsers = await this.users.find(
+                { is_deleted: false },
+                'first_name last_name email temp_mail country_code phone temp_phone temp_country_code',
+                { lean: true }
+            )
+            return {
+                users: allUsers,
+                count: allUsers.length
+            }
+        } catch (error) {
+            throw error
+        }
+    }
+
+    async getById(id: string) {
+        try {
+            return await this.users.findById({ _id: new Types.ObjectId(id) },
+                'first_name last_name email temp_mail country_code phone temp_phone temp_country_code',
+                { lean: true })
+        } catch (error) {
+            throw error
+        }
+    }
+
+    async getUsersCount() {
+        try {
+            return await this.users.countDocuments({ is_active: true })
+        } catch (error) {
+            throw error
+        }
+    }
+
+    async block(id: string) {
+        try {
+            let user = await this.users.findById({ _id: new Types.ObjectId(id) })
+            if (user?.is_blocked == true) {
+                await this.users.findByIdAndUpdate(
+                    { _id: new Types.ObjectId(id) },
+                    { is_blocked: false, updated_at: moment().utc().valueOf() },
+                    { new: true }
+                )
+                throw new HttpException('Unblocked', HttpStatus.OK)
+            }
+            await this.users.findByIdAndUpdate(
+                { _id: new Types.ObjectId(id) },
+                { is_blocked: true, updated_at: moment().utc().valueOf() },
+                { new: true }
+            )
+            await this.sessions.deleteMany({ user_id: id })
+            throw new HttpException('Blocked', HttpStatus.OK)
+        } catch (error) {
+            throw error
+        }
+    }
+
+    async delete(id: string) {
+        try {
+            let isDeleted = await this.users.findOneAndUpdate(
+                { _id: new Types.ObjectId(id), is_deleted: false },
+                { is_deleted: true, updated_at: moment().utc().valueOf() },
+                { new: true }
+            )
+            if (!isDeleted) {
+                throw new HttpException('Already Deleted', HttpStatus.OK)
+
+            }
+            await this.sessions.deleteMany({ user_id: id })
+            throw new HttpException('Deleted', HttpStatus.OK)
+        } catch (error) {
+            throw error
+        }
+    }
+
+    async deactivate(id: string) {
+        try {
+            let user = await this.users.findById({ _id: new Types.ObjectId(id) })
+            if (user?.is_active == false) {
+                await this.users.findByIdAndUpdate(
+                    { _id: new Types.ObjectId(id) },
+                    { is_active: true, updated_at: moment().utc().valueOf() },
+                    { new: true }
+                )
+                throw new HttpException('Activated', HttpStatus.OK)
+            }
+            await this.users.findByIdAndUpdate(
+                { _id: new Types.ObjectId(id) },
+                { is_active: false, updated_at: moment().utc().valueOf() },
+                { new: true }
+            )
+            await this.sessions.deleteMany({ user_id: id })
+            throw new HttpException('Deactivated', HttpStatus.OK)
         } catch (error) {
             throw error
         }
