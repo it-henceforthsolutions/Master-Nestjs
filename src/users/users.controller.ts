@@ -11,7 +11,7 @@ export class UsersController {
     @UseGuards(AuthGuard)
     @ApiBearerAuth('authentication')
     @Put(':id/block')
-    @ApiOperation({summary: 'block user'})
+    @ApiOperation({summary: 'block user by admin'})
     block(@Param('id') id: string) {
         return this.usersService.block(id)
     }
@@ -19,7 +19,7 @@ export class UsersController {
     @UseGuards(AuthGuard)
     @ApiBearerAuth('authentication')
     @Put(':id/deactivate')
-    @ApiOperation({summary: 'deactivate user'})
+    @ApiOperation({summary: 'deactivate user by admin'})
     deactivate(@Param('id') id: string) {
         return this.usersService.deactivate(id)
     }
