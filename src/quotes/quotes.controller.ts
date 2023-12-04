@@ -13,7 +13,7 @@ export class QuotesController {
     constructor(private readonly quotesService: QuotesService) { }
 
     @ApiOperation({ summary: 'Contact-us' })
-    @ApiResponse({description: ''})
+    @ApiResponse({ status: 201, description: 'OK' })
     @Post()
     create(@Body() createQuoteDto: CreateQuoteDto) {
         return this.quotesService.create(createQuoteDto);
@@ -34,7 +34,7 @@ export class QuotesController {
     @UseGuards(AuthGuard, RolesGuard)
     @Roles(UsersType.admin)
     @ApiOperation({ summary: 'Resolve Contact-us' })
-    @ApiResponse({description: ''})
+    @ApiResponse({ status: 201, description: 'UPDATED' })
     @Patch('resolve/:id')
     update(@Param('id') id: string, @Req() req: any) {
         return this.quotesService.update(id);
@@ -44,7 +44,7 @@ export class QuotesController {
     @UseGuards(AuthGuard, RolesGuard)
     @Roles(UsersType.admin)
     @ApiOperation({ summary: 'Delete Contact-us' })
-    @ApiResponse({description: ''})
+    @ApiResponse({ status: 201, description: 'DELETED' })
     @Delete(':id')
     remove(@Param('id') id: string) {
         return this.quotesService.remove(id);

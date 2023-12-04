@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
 import { DbBackupService } from './db-backup.service';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { RolesGuard } from 'src/auth/role.guard';
 import { AuthGuard } from 'src/auth/auth.guards';
 import { UsersType } from 'src/users/role/user.role';
@@ -15,6 +15,7 @@ export class DbBackupController {
     @UseGuards(AuthGuard, RolesGuard)
     @Roles(UsersType.admin)
     @ApiOperation({summary: 'database backup'})
+    @ApiResponse({ status: 201, description: 'OK' })
     @Post()
     async backupAndUpload() {
         const s3Url = await this.dbBackupService.backup_case_1();

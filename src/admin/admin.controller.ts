@@ -2,7 +2,7 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request }
 import { AdminService } from './admin.service';
 import { CreateAdminDto } from './dto/create-admin.dto';
 import { UpdateAdminDto } from './dto/update-admin.dto';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from 'src/auth/auth.guards';
 import { RolesGuard } from 'src/auth/role.guard';
 import { Roles } from 'src/auth/role.decorator';
@@ -21,6 +21,7 @@ export class AdminController {
     @UseGuards(AuthGuard, RolesGuard)
     @Roles(UsersType.admin)
     @ApiOperation({summary: 'admin dashboard'})
+    @ApiResponse({ status: 201, description: 'OK' })
     @Get('dashboard')
     dashboard() {
         return this.adminService.dashboard();
