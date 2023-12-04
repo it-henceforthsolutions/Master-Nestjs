@@ -27,8 +27,6 @@ export class UsersService {
         try {
             let existMail = await this.users.findOne({ email: body.email, }, 'email temp_mail')
             if (existMail) {
-                console.log('here');
-
                 throw new HttpException('This Email is Already Exist! Please Use another Email Address', HttpStatus.BAD_REQUEST);
             }
             let otp = await this.common.generateOtp()
@@ -47,6 +45,7 @@ export class UsersService {
                 otp: otp,
                 created_at: moment().utc().valueOf()
             }
+
             let user = await this.users.create(data)
             await this.common.verification(user.temp_mail, otp)
             let payload = { id: user._id, email: user.temp_mail }
@@ -58,9 +57,11 @@ export class UsersService {
             })
             return { access_token, user }
         } catch (error) {
-            if (error.code === 11000) {
-                throw new HttpException('This Email is Already Exist! Please Use another Email Address', HttpStatus.BAD_REQUEST);
-            }
+            // if (error.code === 11000) {
+            //     throw new HttpException('This Email is Already Exist! Please Use another Email Address', HttpStatus.BAD_REQUEST);
+            // }
+            console.log(error);
+            
             throw error
         }
     }

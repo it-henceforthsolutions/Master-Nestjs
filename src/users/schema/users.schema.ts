@@ -12,7 +12,7 @@ export class Users {
     last_name:string
 
     @IsEmail()
-    @Prop({unique: true,})
+    @Prop({unique: true})
     email: string
 
     @IsEmail()
