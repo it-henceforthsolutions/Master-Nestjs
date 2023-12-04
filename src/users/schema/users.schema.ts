@@ -40,6 +40,9 @@ export class Users {
     @Prop({default:null})
     otp: number
 
+    @Prop({default:null})
+    role:string
+
     @Prop()
     unique_id: string
 
