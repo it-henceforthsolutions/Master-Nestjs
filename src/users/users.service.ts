@@ -61,7 +61,7 @@ export class UsersService {
             //     throw new HttpException('This Email is Already Exist! Please Use another Email Address', HttpStatus.BAD_REQUEST);
             // }
             console.log(error);
-            
+
             throw error
         }
     }
@@ -69,7 +69,7 @@ export class UsersService {
     async verifyEmail(body: OtpDto, id: string) {
         try {
             let user = await this.users.findById({ _id: new Types.ObjectId(id) })
-            if (user.otp != body.otp) {
+            if (user?.otp != body.otp) {
                 throw new HttpException('Invalid OTP', HttpStatus.BAD_REQUEST)
             }
             let data = {
@@ -93,7 +93,7 @@ export class UsersService {
     async verifyPhone(body: OtpDto, id: string) {
         try {
             let user = await this.users.findById({ _id: new Types.ObjectId(id) })
-            if (user.otp != body.otp) {
+            if (user?.otp != body.otp) {
                 throw new HttpException('Invalid OTP', HttpStatus.BAD_REQUEST)
             }
             let data = {
@@ -118,7 +118,7 @@ export class UsersService {
     async verifyOtp(body: NewPassOtpDto) {
         try {
             let user = await this.users.findOne({ unique_id: body.unique_id })
-            if (user.otp != body.otp) {
+            if (user?.otp != body.otp) {
                 throw new HttpException('Invalid OTP', HttpStatus.BAD_REQUEST)
             }
             throw new HttpException('OTP Verification Completed. Kindly Reset Your Password', HttpStatus.OK)
@@ -130,14 +130,10 @@ export class UsersService {
     async signIn(body: SignInDto) {
         try {
             let user = await this.users.findOne({ email: body.email })
-
             let payload = { id: user?._id, email: user?.email }
-            console.log(user?.email, 'cant find by email');
 
             if (!user) {
                 user = await this.users.findOne({ temp_mail: body.email })
-                console.log(user?.temp_mail, 'cant find by temp');
-
                 payload = { id: user?._id, email: user?.temp_mail }
             }
             if (!user) {
@@ -145,7 +141,6 @@ export class UsersService {
             }
             if (user?.temp_mail && user?.email) {
                 let mail = user?.email.slice(0, 5)
-
                 throw new HttpException(`This EmailId is Not verified.Please SignIn with Your Previous Email: ${mail}xxxxxx.com`, HttpStatus.UNAUTHORIZED);
             }
             const isMatch = this.common.bcriptPass(body.password, user?.password)
@@ -255,14 +250,12 @@ export class UsersService {
     async resetPassward(body: ResetPassDto) {
         try {
             let pass = await this.common.encriptPass(body.new_password)
-            console.log(pass, 'pass');
 
             let data = await this.users.findOneAndUpdate(
                 { unique_id: body.unique_id },
                 { password: pass },
                 { new: true }
             )
-            console.log(data, body);
             throw new HttpException('Password Reset Successfully', HttpStatus.OK)
         } catch (error) {
             throw error
@@ -391,7 +384,11 @@ export class UsersService {
 
     async resendOtp(id: string) {
         try {
-            let user = await this.users.findById({ _id: new Types.ObjectId(id) })
+            let user = await this.users.findOne({ _id: new Types.ObjectId(id) })
+            if (user?.is_email_verify == false) {
+                throw new HttpException(`Your Email is Already Verified`, HttpStatus.BAD_REQUEST)
+            }
+            if((user.is_phone_verify && user.is_email_verify) == false){}
             let otp = await this.common.generateOtp()
             let isSendVerification = await this.common.verification(user?.temp_mail, otp)
 
@@ -412,7 +409,7 @@ export class UsersService {
     async getAll() {
         try {
             let allUsers = await this.users.find(
-                { is_deleted: false },
+                { is_deleted: false ,user_type: 'user'},
                 'first_name last_name email temp_mail country_code phone temp_phone temp_country_code',
                 { lean: true }
             )

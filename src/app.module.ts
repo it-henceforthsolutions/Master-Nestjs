@@ -15,6 +15,7 @@ import { ManagementModule } from './management/management.module';
 import { FaqsModule } from './faqs/faqs.module';
 import { PagesModule } from './pages/pages.module';
 import { QuotesModule } from './quotes/quotes.module';
+import { StaffModule } from './staff/staff.module';
 
 config()
 @Module({
@@ -52,7 +53,8 @@ config()
     ManagementModule,
     FaqsModule,
     PagesModule,
-    QuotesModule
+    QuotesModule,
+    StaffModule
   ],
   controllers: [AppController],
   providers: [AppService],
