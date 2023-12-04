@@ -1,6 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
 import { IsEmail } from "class-validator";
-import { InvalidEmailFormat } from "src/handler/error.exception";
 
 export enum type{
     songs ='songs',
@@ -15,7 +14,7 @@ export class CreateQuoteDto {
     @ApiProperty()
     last_name: string;
 
-    @IsEmail({}, new InvalidEmailFormat())
+    @IsEmail()
     @ApiProperty()
     email: string;
 

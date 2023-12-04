@@ -1,27 +1,26 @@
 import { Injectable } from '@nestjs/common';
 import { CreateManagementDto } from './dto/create-management.dto';
 import { UpdateManagementDto } from './dto/update-management.dto';
-import { DatabaseService } from 'src/database/database.service';
+import { InjectModel } from '@nestjs/mongoose';
+import { Managements } from './schema/management.schema';
+import { Model } from 'mongoose';
 
 @Injectable()
 export class ManagementService {
 
     constructor(
-        private model: DatabaseService
+        @InjectModel(Managements.name) private management: Model<Managements>
     ) { }
 
-    async create(body: CreateManagementDto, admin_id: string) {
+    async create(body: CreateManagementDto) {
         try {
-            let admin = await this.model.Staffs.findById({ _id: admin_id })
-            if (admin) {
-                let page = await this.model.Managements.findOne({ type: 'HOME' })
+                let page = await this.management.findOne({ type: 'HOME' })
                 if (page) {
-                    return await this.model.Managements.findOneAndUpdate({ _id: page._id, type: 'HOME' }, body, { new: true })
+                    return await this.management.findOneAndUpdate({ _id: page._id, type: 'HOME' }, body, { new: true })
                 } else {
-                    return await this.model.Managements.create(body)
+                    return await this.management.create(body)
                 }
             }
-        }
         catch (error) {
             throw error
         }
@@ -29,8 +28,8 @@ export class ManagementService {
 
     async findAll() {
         try {
-            let data = await this.model.Managements.find();
-            let count = await this.model.Managements.countDocuments({ type: 'HOME' })
+            let data = await this.management.find();
+            let count = await this.management.countDocuments({ type: 'HOME' })
             return { data: data, count: count }
         }
         catch (error) {
@@ -40,7 +39,7 @@ export class ManagementService {
 
     findOne(id: string) {
         try {
-            return this.model.Managements.findOne({ _id: id });
+            return this.management.findOne({ _id: id });
         }
         catch (error) {
             throw error
@@ -49,7 +48,7 @@ export class ManagementService {
 
     async findHome() {
         try {
-            return this.model.Managements.findOne({ type: 'HOME' })
+            return this.management.findOne({ type: 'HOME' })
         }
         catch (error) {
             throw error

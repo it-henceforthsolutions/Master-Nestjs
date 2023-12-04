@@ -1,30 +1,23 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, HttpException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { CreatePageDto, PaginationDto } from './dto/create-page.dto';
 import { UpdatePageDto } from './dto/update-page.dto';
-import { DatabaseService } from 'src/database/database.service';
-import { UnauthorizeUser } from 'src/handler/error.exception';
 import { CommonService } from 'src/common/common.service';
+import { InjectModel } from '@nestjs/mongoose';
+import { Pages } from './schema/pages.schema';
+import { Model, Types } from 'mongoose';
+import * as moment from 'moment';
 
 @Injectable()
 export class PagesService {
-
     constructor(
-        private model: DatabaseService,
+        @InjectModel(Pages.name) private pages: Model<Pages>,
         private readonly commonService: CommonService
     ) { }
 
-    async create(uid: string, createPageDto: CreatePageDto) {
+    async create(createPageDto: CreatePageDto) {
         try {
-            let admin = await this.model.Staffs.findOne({ _id: uid })
-            if (admin) {
-                let pagesResponse = await this.model.Pages.create(createPageDto);
-                return {
-                    _id: pagesResponse._id,
-                    ...createPageDto
-                }
-            } else {
-                throw new UnauthorizeUser()
-            }
+            let pagesResponse = await this.pages.create({...createPageDto,created_at:moment().utc().valueOf()});
+            return pagesResponse
         }
         catch (error) {
             if (error.code === 11000) {
@@ -53,76 +46,48 @@ export class PagesService {
                 is_deleted: false,
             }
             let options = await this.commonService.set_options(paginationQuery.pagination, paginationQuery.limit)
-            let data = await this.model.Pages.find(query, {}, options);
-            let count = await this.model.Pages.countDocuments(query)
+            let data = await this.pages.find(query, {}, options);
+            let count = await this.pages.countDocuments(query)
             return { data, count }
-        }
-        catch (error) {
-            return error
-        }
-    }
-
-    async findOne(slug: string) {
-        try {
-            return await this.model.Pages.findOne({ slug, is_deleted: false });
-        }
-        catch (error) {
-            throw new NotFoundException('Page Record Not Found')
-        }
-    }
-
-    async update(uid: string, id: string, updatePageDto: UpdatePageDto) {
-        try {
-            let admin = await this.model.Staffs.findOne({ _id: id })
-
-            if (admin && admin != null) {
-                let query = { _id: uid }
-                await this.model.Pages.findByIdAndUpdate(query, updatePageDto, { new: true });
-                return updatePageDto
-            }
-            else {
-                throw new UnauthorizeUser()
-            }
-        }
-        catch (error) {
-            return error
-        }
-    }
-
-    async checkforDelOne(uid: string) {
-        try {
-            let query = { _id: uid }
-            return await this.model.Pages.findOne(query);
         }
         catch (error) {
             throw error
         }
     }
 
-    async remove(uid: string, id: string) {
+    async findOne(slug: string) {
         try {
-            let admin = await this.model.Staffs.findOne({ _id: id })
-            if (admin && admin != null) {
-                let query = { _id: uid }
-                const isdelPage = await this.checkforDelOne(uid)
-                if (isdelPage.is_deleted == false) {
-                    let is_deleted = true;
-                    let deleted = await this.model.Pages.findByIdAndUpdate(query, { is_deleted }, { new: true });
-                    return {
-                        message: 'Page deleted Successfully',
-                        deleted
-                    }
-                }
-                else {
-                    throw new NotFoundException('page not found');
-                }
-            }
-            else {
-                throw new UnauthorizeUser()
-            }
+            return await this.pages.findOne({ slug, is_deleted: false });
         }
         catch (error) {
-            return error
+            throw new NotFoundException('Page Record Not Found')
+        }
+    }
+
+    async update(id: string, updatePageDto: UpdatePageDto) {
+        try {
+            return await this.pages.findByIdAndUpdate(
+                { _id: new Types.ObjectId(id) },
+                { updated_at: moment().utc().valueOf(), ...updatePageDto },
+                { new: true }
+            );
+        }
+        catch (error) {
+            throw error
+        }
+    }
+
+    async remove(id: string) {
+        try {
+            await this.pages.findOneAndUpdate(
+                { _id: new Types.ObjectId(id), is_deleted: false },
+                { is_deleted: true },
+                { new: true }
+            )
+            throw new HttpException('Deleted!!', HttpStatus.OK)
+        }
+        catch (error) {
+            throw error
         }
     }
 }

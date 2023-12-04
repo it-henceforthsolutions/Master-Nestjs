@@ -18,13 +18,13 @@ export class Pages {
     @Prop({ default: false })
     is_deleted: boolean;
 
-    @Prop({ type: Number, default: +moment().utc().valueOf() })
+    @Prop({ type: Number})
     created_at: number
 
     @Prop({ type: Number, default: null })
     deleted_at: number
 
-    @Prop({ type: Number, default: +moment().utc().valueOf() })
+    @Prop({ type: Number, default: null })
     updated_at: number
 }
 

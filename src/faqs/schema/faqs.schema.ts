@@ -2,12 +2,10 @@ import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { HydratedDocument } from "mongoose";
 import * as moment from 'moment';
 
-export type FaqaDocument = HydratedDocument<Faqs>
+export type FaqDocument = HydratedDocument<Faqs>
 
 export enum type {
-    user = 'user',
-    artist = 'artist',
-    other = 'other'
+    user = 'user'
 }
 
 @Schema()
@@ -23,7 +21,7 @@ export class Faqs {
     type: string
 
     @Prop({ default: false })
-    isDeleted: boolean
+    is_deleted: boolean
 
     @Prop({ default: +moment().utc().valueOf() })
     created_at: number

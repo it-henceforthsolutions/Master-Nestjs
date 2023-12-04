@@ -3,10 +3,10 @@ import { PagesService } from './pages.service';
 import { CreatePageDto, PaginationDto } from './dto/create-page.dto';
 import { UpdatePageDto } from './dto/update-page.dto';
 import { ApiBearerAuth, ApiConsumes, ApiTags } from '@nestjs/swagger';
-import { AuthGuards } from 'src/auth/auth.services';
-import { RolesGuard } from 'src/auth/role.guards';
-import { StaffRoles } from 'src/staff/roles/StaffRoles';
-import { Roles } from 'src/staff/role.decorator';
+import { AuthGuard } from 'src/auth/auth.guards';
+import { RolesGuard } from 'src/auth/role.guard';
+import { Roles } from 'src/auth/role.decorator';
+import { UsersType } from 'src/users/role/user.role';
 
 @ApiTags('Pages')
 @Controller('pages')
@@ -14,12 +14,12 @@ export class PagesController {
     constructor(private readonly pagesService: PagesService) { }
 
     @Post()
-    @ApiBearerAuth()
+    @ApiBearerAuth('authentication')
     @ApiConsumes('application/json', 'application/x-www-form-urlencoded')
-    @UseGuards(AuthGuards,RolesGuard)
-    @Roles(StaffRoles.pages)
-    create(@Body() createPageDto: CreatePageDto, @Request() req) {
-        return this.pagesService.create(req.user._id, createPageDto);
+    @UseGuards(AuthGuard,RolesGuard)
+    @Roles(UsersType.admin)
+    create(@Body() createPageDto: CreatePageDto) {
+        return this.pagesService.create(createPageDto);
     }
 
     @ApiConsumes('application/json', 'application/x-www-form-urlencoded')
@@ -34,20 +34,20 @@ export class PagesController {
         return this.pagesService.findOne(slug);
     }
 
+    @ApiBearerAuth('authentication')
+    @UseGuards(AuthGuard,RolesGuard)
+    @Roles(UsersType.admin)
     @Patch(':id')
     @ApiConsumes('application/json', 'application/x-www-form-urlencoded')
-    @ApiBearerAuth()
-    @UseGuards(AuthGuards,RolesGuard)
-    @Roles(StaffRoles.pages)
-    update(@Param('id') id: string, @Body() updatePageDto: UpdatePageDto, @Request() req) {
-        return this.pagesService.update(id, req.user._id, updatePageDto);
+    update(@Param('id') id: string, @Body() updatePageDto: UpdatePageDto) {
+        return this.pagesService.update(id, updatePageDto);
     }
 
+    @ApiBearerAuth('authentication')
+    @UseGuards(AuthGuard,RolesGuard)
+    @Roles(UsersType.admin)
     @Delete(':id')
-    @ApiBearerAuth()
-    @UseGuards(AuthGuards,RolesGuard)
-    @Roles(StaffRoles.pages)
-    remove(@Param('id') id: string, @Request() req: any) {
-        return this.pagesService.remove(id, req.user._id);
+    remove(@Param('id') id: string) {
+        return this.pagesService.remove(id);
     }
 }

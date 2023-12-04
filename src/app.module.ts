@@ -10,6 +10,10 @@ import { JwtModule } from '@nestjs/jwt';
 import { jwtConstants } from './auth/constant';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { AdminModule } from './admin/admin.module';
+import { DbBackupModule } from './db-backup/db-backup.module';
+import { ManagementModule } from './management/management.module';
+import { FaqsModule } from './faqs/faqs.module';
+import { PagesModule } from './pages/pages.module';
 
 config()
 @Module({
@@ -43,9 +47,10 @@ config()
     }),
     UsersModule,
     AdminModule,
-    // DatabaseModule,
-    // ChatModule,
-    // AgoraModule
+    DbBackupModule,
+    ManagementModule,
+    FaqsModule,
+    PagesModule
   ],
   controllers: [AppController],
   providers: [AppService],

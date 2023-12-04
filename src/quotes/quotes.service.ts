@@ -1,47 +1,22 @@
 import { BadRequestException, GoneException, HttpException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateQuoteDto, PaginationDto } from './dto/create-quote.dto';
-import { DatabaseService } from 'src/database/database.service';
 import { CommonService } from 'src/common/common.service';
-import { UnauthorizeUser } from 'src/handler/error.exception';
-import { NotificaionsV2Types } from 'src/notifications/schema/notification-v2.schema';
 import * as  moment from 'moment';
-import { ItemType, type } from 'src/notifications/schema/notification.schema';
+import { InjectModel } from '@nestjs/mongoose';
+import { Quotes } from './schema/quotes.schema';
+import { Model, Types } from 'mongoose';
 
 @Injectable()
 export class QuotesService {
 
     constructor(
-        private model: DatabaseService,
+        @InjectModel(Quotes.name) private quotes: Model<Quotes>,
         private readonly commonService: CommonService
     ) { }
 
-    async create(createQuoteDto: CreateQuoteDto,user_id?: string) {
+    async create(createQuoteDto: CreateQuoteDto) {
         try {
-            let quote = await this.model.Quotes.create({...createQuoteDto, user_id: user_id})
-            let admin = await this.model.Staffs.findOne({email:'admin@gmail.com'})
-            let data = {
-                sent_by: quote?.user_id,
-                sender_email: quote?.email,
-                admin_id: admin?._id,
-                type: type.push,
-                item_type: ItemType.contactUs,
-                description: quote?.message,
-                subject: 'Contact Us',
-                quote_id: quote?._id,
-                created_at: moment().utc().valueOf(),
-                updated_at: moment().utc().valueOf(),
-            }
-            let newData = {
-                sent_to: admin._id,
-                type: NotificaionsV2Types.contactUs,
-                description: quote.message,
-                subject: quote.message,
-                body: quote,
-                created_at: moment().utc().valueOf(),
-                updated_at: moment().utc().valueOf(),
-            }            
-            await this.model.NotificaitonV2.create(newData)
-            await this.model.notifications.create(data)
+            let quote = await this.quotes.create(createQuoteDto)
             return quote
         }
         catch (error) {
@@ -50,10 +25,8 @@ export class QuotesService {
         }
     }
 
-    async findAll(id: string, searchQuery: PaginationDto) {
+    async findAll(searchQuery: PaginationDto) {
         try {
-            let admin = await this.model.Staffs.findById(id)
-            if (admin) {
                 let startDate: any;
                 let endDate: any;
                 if (searchQuery.start_date && searchQuery.end_date) {
@@ -83,87 +56,36 @@ export class QuotesService {
                     }
                 }
                 let options = await this.commonService.set_options(searchQuery.pagination, searchQuery.limit)
-                let data = await this.model.Quotes.find(query, project , options);
-                let count = await this.model.Quotes.countDocuments(query)
+                let data = await this.quotes.find(query, project , options);
+                let count = await this.quotes.countDocuments(query)
                 return {
                     data: data,
                     count: count
                 }
-            }
-            else {
-                throw new UnauthorizeUser()
-            }
         }
         catch (error) {
             throw new error
         }
     }
 
-    async findOne(uid: string, id: string) {
+    async findOne(id: string) {
         try {
-            let admin = await this.model.Staffs.findById(uid)
-            if (admin) {
-                let query = { _id: id }
-                let response = await this.model.Quotes.findById(query);
-                if (response?.is_deleted == false) {
-                    return response;
-                }
-                else {
-                    throw new BadRequestException("Quotes does not exist !!")
-                }
-            }
-            else {
-                throw new UnauthorizeUser()
-            }
+                return await this.quotes.findOne({_id: new Types.ObjectId(id),is_deleted:false});
         }
         catch (error) {
             throw error
         }
     }
 
-    async update(id: string, uid: string) {
+    async update(id: string) {
         try {
-            let admin = await this.model.Staffs.findById(uid)
-            if (admin) {
-                let toupdate = await this.findforDel(id)
-                let resolved: any = {}
-                if (toupdate.is_resolved == false) {
-                    let is_resolved = true
-                    resolved = await this.model.Quotes.findByIdAndUpdate({ _id: id }, { is_resolved: is_resolved }, { new: true });
+            let quote = await this.findOne(id)
+                if (quote.is_resolved == true) {
+                    await this.quotes.findByIdAndUpdate({ _id: id }, { is_resolved: false }, { new: true });
+                    throw new HttpException('Pending!!',HttpStatus.OK)
                 }
-                else {
-                    let is_resolved = false
-                    resolved = await this.model.Quotes.findByIdAndUpdate({ _id: id }, { is_resolved: is_resolved }, { new: true });
-                }
-
-                let data = {
-                    sent_by: admin?._id,
-                    // sender_email: quote?.email,
-                    sent_to: resolved?.user_id,
-                    type: type.push,
-                    item_type: ItemType.contactUs,
-                    description: resolved?.message,
-                    subject: 'Resolved',
-                    quote_id: id,
-                    created_at: moment().utc().valueOf(),
-                    updated_at: moment().utc().valueOf(),
-                }
-                let newData = {
-                    sent_to: resolved?.user_id,
-                    type: NotificaionsV2Types.contactUs,
-                    description: resolved.message,
-                    subject: 'Resolved',
-                    body: resolved,
-                    created_at: moment().utc().valueOf(),
-                    updated_at: moment().utc().valueOf(),
-                }            
-                await this.model.NotificaitonV2.create(newData)
-                await this.model.notifications.create(data)
-                return resolved
-            }
-            else {
-                throw new UnauthorizeUser()
-            }
+                    await this.quotes.findByIdAndUpdate({ _id: id }, { is_resolved: true }, { new: true });
+                    throw new HttpException('Resolved!!',HttpStatus.OK)
         }
         catch (error) {
             console.log(error);
@@ -171,38 +93,14 @@ export class QuotesService {
         }
     }
 
-    async findforDel(id: string) {
+    async remove(id: string) {
         try {
-            return await this.model.Quotes.findById({ _id: id });
-        }
-        catch (error) {
-            throw error
-        }
-    }
-
-    async remove(id: string, uid: string) {
-        try {
-            let query = { _id: uid }
-            let admin = await this.model.Staffs.findOne(query)
-            if (admin) {
-                let todelete = await this.findforDel(id)
-                if (todelete.is_deleted == false) {
-
-                    let isDeleted = true
-                    await this.model.Quotes.findByIdAndUpdate({ _id: id }, { is_deleted: isDeleted }, { new: true })
-                    return {
-                        message: 'Deleted Sucessfully'
-                    }
-                }
-                else {
-                    return {
-                        message: 'Already Deleted'
-                    }
-                }
-            }
-            else {
-                throw new UnauthorizeUser()
-            }
+            await this.quotes.findOneAndUpdate(
+                {is_deleted:false,_id: new Types.ObjectId(id)},
+                {is_deleted:true},
+                {new:true}
+            )
+            throw new HttpException('Deleted!!',HttpStatus.OK)
         } catch (error) {
             throw new error
         }

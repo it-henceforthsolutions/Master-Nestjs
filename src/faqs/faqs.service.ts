@@ -1,31 +1,26 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { CreateFaqDto, PaginationDto } from './dto/create-faq.dto';
 import { UpdateFaqDto } from './dto/update-faq.dto';
-import { DatabaseService } from 'src/database/database.service';
-import { UnauthorizeUser } from 'src/handler/error.exception';
 import { CommonService } from 'src/common/common.service';
+import { InjectModel } from '@nestjs/mongoose';
+import { Faqs } from './schema/faqs.schema';
+import { Model, Types } from 'mongoose';
+import * as moment from 'moment';
 
 @Injectable()
 export class FaqsService {
     constructor(
-        private model: DatabaseService,
+        @InjectModel(Faqs.name) private faqs: Model<Faqs>,
         private readonly commonService: CommonService
     ) { }
-    
-    async create(uid: string, createFaqDto: CreateFaqDto,) {
-        try {
-            let admin = await this.model.Staffs.findOne({ _id: uid })
 
-            if (admin && admin != null) {
-                let newFaq = this.model.Faqs.create(createFaqDto);
-                return newFaq
-            }
-            else {
-                throw new UnauthorizeUser()
-            }
+    async create(createFaqDto: CreateFaqDto,) {
+        try {
+            let newFaq = this.faqs.create(createFaqDto);
+            return newFaq
         }
         catch (error) {
-            return error;
+            throw error;
         }
     }
 
@@ -39,84 +34,59 @@ export class FaqsService {
                         { answer: { $regex: paginationSearch.search, $options: 'i' } },
                     ]
                 }),
-                ...(paginationSearch.type && { type: paginationSearch.type }),
-                isDeleted: false,
+                // ...(paginationSearch.type && { type: paginationSearch.type }),
+                is_deleted: false,
             }
             let options = await this.commonService.set_options(paginationSearch.pagination, paginationSearch.limit)
-            let data = await this.model.Faqs.find(query, {}, options);
-            let count = await this.model.Faqs.countDocuments(query)
+            let data = await this.faqs.find(query, {}, options);
+            let count = await this.faqs.countDocuments(query)
             return {
                 data, count
             }
         }
         catch (error) {
-            return error;
+            throw error;
         }
     }
 
-    async findOne(uid: string, id: string) {
+    async findOne(id: string) {
         try {
-            let admin = await this.model.Staffs.findOne({ _id: id })
-
-            if (admin && admin != null) {
-                // let projection = { isDeleted: false }
-                let query = { _id: uid }
-                return this.model.Faqs.findOne(query);
-            } else {
-                throw new UnauthorizeUser()
-            }
+            let query = { _id: new Types.ObjectId(id) }
+            return this.faqs.findOne(query);
         }
         catch (error) {
-            return error;
+            throw error;
         }
     }
 
-    async update(uid: string, id: string, updateFaqDto: UpdateFaqDto) {
+    async update(id: string, updateFaqDto: UpdateFaqDto) {
         try {
-            let admin = await this.model.Staffs.findById({ _id: id })
-
-            if (admin && admin != null) {
-                let query = { _id: uid }
-                let updatedFaq = await this.model.Faqs.findByIdAndUpdate(query, updateFaqDto, { new: true });
-
-                return {
-                    updatedFaq,
-                    message: 'Faq updated successfully'
-                }
+            let updated= await this.faqs.findOneAndUpdate(
+                { _id: new Types.ObjectId(id),is_deleted:false },
+                { updated_at: moment().utc().valueOf(),...updateFaqDto},
+                { new: true }
+            );
+            if(!updated){
+            throw new HttpException('Deleted FAQs!!', HttpStatus.BAD_REQUEST)
             }
-            else {
-                throw new UnauthorizeUser()
-            }
+            return updated
         }
         catch (error) {
-            return error;
+            throw error;
         }
     }
 
-    async remove(uid: string, id: any) {
+    async remove(id: string) {
         try {
-            let admin = await this.model.Staffs.findById({ _id: id })
-            // return admin;
-            if (admin && admin != null) {
-                let query = { _id: uid }
-                // return query;
-                let data = await this.findOne(uid, id)
-                // return data;
-                if (data?.isDeleted == false) {
-                    let deleted = true
-                    let delFaq = await this.model.Faqs.findByIdAndUpdate(query, { isDeleted: deleted }, { new: true });
-                    return {
-                        delFaq,
-                        message: 'Deleted Successfully!!'
-                    }
-                }
-            }
-            else {
-                throw new UnauthorizeUser()
-            }
+            await this.faqs.findOneAndUpdate(
+                { _id: new Types.ObjectId(id), is_deleted: false },
+                { is_deleted: true, updated_at: moment().utc().valueOf() },
+                { new: true }
+            )
+            throw new HttpException('Deleted!!', HttpStatus.OK)
         }
         catch (error) {
-            return error;
+            throw error;
         }
     }
 }

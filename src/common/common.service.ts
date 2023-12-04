@@ -65,4 +65,50 @@ export class CommonService {
             throw error
         }
     }
+
+    async set_options(pagination: any, limit: any) {
+        try {
+            let options: any = {
+                lean: true,
+                sort: { _id: -1 }
+            }
+            if (pagination == undefined && limit == undefined) {
+                options = {
+                    lean: true,
+                    sort: { _id: -1 },
+                    limit: 100,
+                    pagination: 0,
+                    skip: 0
+                }
+            }
+            else if (pagination == undefined && typeof limit != undefined) {
+                options = {
+                    lean: true,
+                    sort: { _id: -1 },
+                    limit: Number(limit),
+                    skip: 0,
+                }
+            }
+            else if (typeof pagination != undefined && limit == undefined) {
+                options = {
+                    lean: true,
+                    sort: { _id: -1 },
+                    skip: Number(pagination) * Number(process.env.DEFAULT_LIMIT),
+                    limit: Number(process.env.DEFAULT_LIMIT)
+                }
+            }
+            else if (typeof pagination != undefined && typeof limit != undefined) {
+                options = {
+                    lean: true,
+                    sort: { _id: -1 },
+                    limit: Number(limit),
+                    skip: (0 + (pagination - 1) * limit)
+                }
+            }
+            return options
+        }
+        catch (err) {
+            throw err;
+        }
+    }
 }

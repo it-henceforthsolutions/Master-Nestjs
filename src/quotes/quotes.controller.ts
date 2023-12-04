@@ -2,60 +2,57 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Query, Re
 import { QuotesService } from './quotes.service';
 import { CreateQuoteDto, PaginationDto } from './dto/create-quote.dto';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { AuthGuards } from 'src/auth/auth.services';
-import { RolesGuard } from 'src/auth/role.guards';
-import { Roles } from 'src/staff/role.decorator';
-import { StaffRoles } from 'src/staff/roles/StaffRoles';
-import { UserAuthguard } from 'src/auth/auth.guards';
+import { AuthGuard } from 'src/auth/auth.guards';
+import { RolesGuard } from 'src/auth/role.guard';
+import { Roles } from 'src/auth/role.decorator';
+import { UsersType } from 'src/users/role/user.role';
 
 @ApiTags('Quotes')
 @Controller('quotes')
 export class QuotesController {
     constructor(private readonly quotesService: QuotesService) { }
 
-    @ApiBearerAuth()
-    @UseGuards(UserAuthguard)
     @ApiOperation({ summary: 'Contact-us' })
     @Post()
-    create(@Body() createQuoteDto: CreateQuoteDto, @Request() req) {
-        return this.quotesService.create(createQuoteDto, req?.user?._id);
+    create(@Body() createQuoteDto: CreateQuoteDto) {
+        return this.quotesService.create(createQuoteDto);
     }
 
-    @ApiBearerAuth()
-    @UseGuards(AuthGuards, RolesGuard)
-    @Roles(StaffRoles.contact_us)
+    @ApiBearerAuth('authentication')
+    @UseGuards(AuthGuard, RolesGuard)
+    @Roles(UsersType.admin)
     @ApiOperation({ summary: 'Get All Contact-us' })
     @Get()
-    findAll(@Req() req: any, @Query() searchQuery: PaginationDto) {
-        return this.quotesService.findAll(req.user._id, searchQuery);
+    findAll(@Query() searchQuery: PaginationDto) {
+        return this.quotesService.findAll(searchQuery);
     }
 
 
-    @ApiBearerAuth()
-    @UseGuards(AuthGuards, RolesGuard)
-    @Roles(StaffRoles.contact_us)
+    @ApiBearerAuth('authentication')
+    @UseGuards(AuthGuard, RolesGuard)
+    @Roles(UsersType.admin)
     @ApiOperation({ summary: 'Resolve Contact-us' })
     @Patch('resolve/:id')
     update(@Param('id') id: string, @Req() req: any) {
-        return this.quotesService.update(id, req.user._id);
+        return this.quotesService.update(id);
     }
 
-    @ApiBearerAuth()
-    @UseGuards(AuthGuards, RolesGuard)
-    @Roles(StaffRoles.contact_us)
+    @ApiBearerAuth('authentication')
+    @UseGuards(AuthGuard, RolesGuard)
+    @Roles(UsersType.admin)
     @ApiOperation({ summary: 'Delete Contact-us' })
     @Delete(':id')
-    remove(@Param('id') id: string, @Req() req: any) {
-        return this.quotesService.remove(id, req.user._id);
+    remove(@Param('id') id: string) {
+        return this.quotesService.remove(id);
     }
 
-    @ApiBearerAuth()
-    @UseGuards(AuthGuards, RolesGuard)
-    @Roles(StaffRoles.contact_us)
+    @ApiBearerAuth('authentication')
+    @UseGuards(AuthGuard, RolesGuard)
+    @Roles(UsersType.admin)
     @ApiOperation({ summary: 'Get Contact-us View Details' })
     @Get(':id')
-    findOne(@Param('id') id: string, @Req() req: any) {
-        return this.quotesService.findOne(req.user._id, id);
+    findOne(@Param('id') id: string) {
+        return this.quotesService.findOne(id);
     }
 
 }
