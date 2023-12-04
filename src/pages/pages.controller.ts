@@ -2,7 +2,7 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request, 
 import { PagesService } from './pages.service';
 import { CreatePageDto, PaginationDto } from './dto/create-page.dto';
 import { UpdatePageDto } from './dto/update-page.dto';
-import { ApiBearerAuth, ApiConsumes, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from 'src/auth/auth.guards';
 import { RolesGuard } from 'src/auth/role.guard';
 import { Roles } from 'src/auth/role.decorator';
@@ -18,22 +18,26 @@ export class PagesController {
     @ApiConsumes('application/json', 'application/x-www-form-urlencoded')
     @UseGuards(AuthGuard,RolesGuard)
     @Roles(UsersType.admin)
+    @ApiOperation({summary: 'Add Page'})
     create(@Body() createPageDto: CreatePageDto) {
         return this.pagesService.create(createPageDto);
     }
 
+    @ApiOperation({summary: 'FindAll Page'})
     @ApiConsumes('application/json', 'application/x-www-form-urlencoded')
     @Get()
     findAll(@Query() query: PaginationDto) {
         return this.pagesService.findAll(query);
     }
 
+    @ApiOperation({summary: 'Find Page By Slug'})
     @Get(':slug')
     @ApiConsumes('application/json', 'application/x-www-form-urlencoded')
     findOne(@Param('slug') slug: string) {
         return this.pagesService.findOne(slug);
     }
 
+    @ApiOperation({summary: 'update page'})
     @ApiBearerAuth('authentication')
     @UseGuards(AuthGuard,RolesGuard)
     @Roles(UsersType.admin)
@@ -46,6 +50,7 @@ export class PagesController {
     @ApiBearerAuth('authentication')
     @UseGuards(AuthGuard,RolesGuard)
     @Roles(UsersType.admin)
+    @ApiOperation({summary: 'delete page'})
     @Delete(':id')
     remove(@Param('id') id: string) {
         return this.pagesService.remove(id);

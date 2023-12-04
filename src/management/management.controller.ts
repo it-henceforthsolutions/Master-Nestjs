@@ -2,7 +2,7 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request }
 import { ManagementService } from './management.service';
 import { CreateManagementDto } from './dto/create-management.dto';
 import { UpdateManagementDto } from './dto/update-management.dto';
-import { ApiBearerAuth, ApiConsumes, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from 'src/auth/auth.guards';
 import { RolesGuard } from 'src/auth/role.guard';
 import { UsersType } from 'src/users/role/user.role';
@@ -18,21 +18,25 @@ export class ManagementController {
     @UseGuards(AuthGuard,RolesGuard)
     @Roles(UsersType.admin)
     @ApiConsumes('application/json','application/x-www-form-urlencoded')
+    @ApiOperation({summary: 'Add HomePage'})
     @Post()
     create(@Body() body: CreateManagementDto) {
         return this.managementService.create(body);
     }
 
+    @ApiOperation({summary: 'find All Pages'})
     @Get()
     findAll() {
         return this.managementService.findAll();
     }
 
+    @ApiOperation({summary: 'find Home Page'})
     @Get('homepage')
     find() {
         return this.managementService.findHome();
     }
 
+    @ApiOperation({summary: 'findOne Page'})
     @Get(':id')
     findOne(@Param('id') id: string) {
         return this.managementService.findOne(id);

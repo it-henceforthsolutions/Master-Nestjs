@@ -2,7 +2,7 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request, 
 import { FaqsService } from './faqs.service';
 import { CreateFaqDto, PaginationDto } from './dto/create-faq.dto';
 import { UpdateFaqDto } from './dto/update-faq.dto';
-import { ApiBearerAuth, ApiConsumes, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from 'src/auth/auth.guards';
 import { RolesGuard } from 'src/auth/role.guard';
 import { Roles } from 'src/auth/role.decorator';
@@ -17,12 +17,14 @@ export class FaqsController {
     @ApiBearerAuth('authentication')
     @UseGuards(AuthGuard,RolesGuard)
     @Roles(UsersType.admin)
+    @ApiOperation({summary: 'create FAQs'})
     @ApiConsumes('application/json', 'application/x-www-form-urlencoded')
     @Post()
     create(@Body() createFaqDto: CreateFaqDto) {
         return this.faqsService.create(createFaqDto);
     }
 
+    @ApiOperation({summary: 'Find All FAQs'})
     @Get()
     findAll(@Query() body: PaginationDto) {
         return this.faqsService.findAll(body);
@@ -31,6 +33,7 @@ export class FaqsController {
     @ApiBearerAuth('authentication')
     @UseGuards(AuthGuard,RolesGuard)
     @Roles(UsersType.admin)
+    @ApiOperation({summary: 'Find FAQs By Id'})
     @Get(':id')
     findOne(@Param('id') id: string) {
         return this.faqsService.findOne(id);
@@ -39,6 +42,7 @@ export class FaqsController {
     @ApiBearerAuth('authentication')
     @UseGuards(AuthGuard,RolesGuard)
     @Roles(UsersType.admin)
+    @ApiOperation({summary: 'Update FAQs'})
     @Patch(':id')
     update(@Param('id') id: string, @Body() updateFaqDto: UpdateFaqDto) {
         return this.faqsService.update(id, updateFaqDto);
@@ -47,6 +51,7 @@ export class FaqsController {
     @ApiBearerAuth('authentication')
     @UseGuards(AuthGuard,RolesGuard)
     @Roles(UsersType.admin)
+    @ApiOperation({summary: 'Delete FAQs'})
     @Delete(':id')
     remove(@Param('id') id: string) {
         return this.faqsService.remove(id);

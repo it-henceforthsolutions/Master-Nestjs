@@ -14,6 +14,7 @@ import { DbBackupModule } from './db-backup/db-backup.module';
 import { ManagementModule } from './management/management.module';
 import { FaqsModule } from './faqs/faqs.module';
 import { PagesModule } from './pages/pages.module';
+import { QuotesModule } from './quotes/quotes.module';
 
 config()
 @Module({
@@ -50,7 +51,8 @@ config()
     DbBackupModule,
     ManagementModule,
     FaqsModule,
-    PagesModule
+    PagesModule,
+    QuotesModule
   ],
   controllers: [AppController],
   providers: [AppService],
