@@ -57,9 +57,9 @@ export class UsersService {
             })
             return { access_token, user }
         } catch (error) {
-            // if (error.code === 11000) {
-            //     throw new HttpException('This Email is Already Exist! Please Use another Email Address', HttpStatus.BAD_REQUEST);
-            // }
+            if (error.code === 11000) {
+                throw new HttpException('This Email is Already Exist! Please Use another Email Address', HttpStatus.BAD_REQUEST);
+            }
             console.log(error);
 
             throw error
