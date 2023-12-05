@@ -5,8 +5,9 @@ import { UpdateFaqDto } from './dto/update-faq.dto';
 import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from 'src/auth/auth.guards';
 import { RolesGuard } from 'src/auth/role.guard';
-import { Roles } from 'src/auth/role.decorator';
+import { Permission, Roles } from 'src/auth/role.decorator';
 import { UsersType } from 'src/users/role/user.role';
+import { Role } from 'src/staff/role/staff.role';
 
 
 @ApiTags('FAQs')
@@ -15,8 +16,9 @@ export class FaqsController {
     constructor(private readonly faqsService: FaqsService) { }
 
     @ApiBearerAuth('authentication')
-    @UseGuards(AuthGuard,RolesGuard)
-    @Roles(UsersType.admin)
+    @UseGuards(AuthGuard, RolesGuard)
+    @Roles(UsersType.admin,UsersType.staff)
+    @Permission(Role.manage)
     @ApiOperation({summary: 'create FAQs'})
     @ApiConsumes('application/json', 'application/x-www-form-urlencoded')
     @ApiResponse({ status: 201, description: 'OK' })
@@ -32,8 +34,9 @@ export class FaqsController {
     }
 
     @ApiBearerAuth('authentication')
-    @UseGuards(AuthGuard,RolesGuard)
-    @Roles(UsersType.admin)
+    @UseGuards(AuthGuard, RolesGuard)
+    @Roles(UsersType.admin,UsersType.staff)
+    @Permission(Role.readonly)
     @ApiOperation({summary: 'Find FAQs By Id'})
     @Get(':id')
     findOne(@Param('id') id: string) {
@@ -41,8 +44,9 @@ export class FaqsController {
     }
 
     @ApiBearerAuth('authentication')
-    @UseGuards(AuthGuard,RolesGuard)
-    @Roles(UsersType.admin)
+    @UseGuards(AuthGuard, RolesGuard)
+    @Roles(UsersType.admin,UsersType.staff)
+    @Permission(Role.manage)
     @ApiResponse({ status: 201, description: 'OK' })
     @ApiOperation({summary: 'Update FAQs'})
     @Patch(':id')
@@ -51,8 +55,9 @@ export class FaqsController {
     }
 
     @ApiBearerAuth('authentication')
-    @UseGuards(AuthGuard,RolesGuard)
-    @Roles(UsersType.admin)
+    @UseGuards(AuthGuard, RolesGuard)
+    @Roles(UsersType.admin,UsersType.staff)
+    @Permission(Role.manage)
     @ApiResponse({ status: 201, description: 'DELETED!!' })
     @ApiOperation({summary: 'Delete FAQs'})
     @Delete(':id')

@@ -31,11 +31,7 @@ export class StaffService {
                 user_type: UsersType.staff,
                 created_at: moment().utc().valueOf()
             }
-            let newStaff = await this.staff.create(data)
-            newStaff = await this.staff.findById(newStaff._id,{
-                first_name:1,last_name:1,email:1,temp_country_code:1,temp_mail:1,temp_phone:1,user_type:1,role:1
-            })
-            return newStaff
+            return await this.staff.create(data)
         } catch (error) {
             throw error
         }

@@ -4,7 +4,8 @@ import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagg
 import { RolesGuard } from 'src/auth/role.guard';
 import { AuthGuard } from 'src/auth/auth.guards';
 import { UsersType } from 'src/users/role/user.role';
-import { Roles } from 'src/auth/role.decorator';
+import { Permission, Roles } from 'src/auth/role.decorator';
+import { Role } from 'src/staff/role/staff.role';
 
 @ApiTags('db-backup')
 @Controller('db-backup')
@@ -13,7 +14,8 @@ export class DbBackupController {
 
     @ApiBearerAuth('authentication')
     @UseGuards(AuthGuard, RolesGuard)
-    @Roles(UsersType.admin)
+    @Roles(UsersType.admin,UsersType.staff)
+    @Permission(Role.manage)
     @ApiOperation({summary: 'database backup'})
     @ApiResponse({ status: 201, description: 'OK' })
     @Post()

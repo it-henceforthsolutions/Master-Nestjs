@@ -5,9 +5,10 @@ import { UpdateAdminDto } from './dto/update-admin.dto';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from 'src/auth/auth.guards';
 import { RolesGuard } from 'src/auth/role.guard';
-import { Roles } from 'src/auth/role.decorator';
+import { Permission, Roles } from 'src/auth/role.decorator';
 import { UsersType } from 'src/users/role/user.role';
 import { UsersService } from 'src/users/users.service';
+import { Role } from 'src/staff/role/staff.role';
 
 @ApiTags('admin')
 @Controller('admin')
@@ -19,7 +20,8 @@ export class AdminController {
 
     @ApiBearerAuth('authentication')
     @UseGuards(AuthGuard, RolesGuard)
-    @Roles(UsersType.admin)
+    @Roles(UsersType.admin,UsersType.staff)
+    @Permission(Role.readonly)
     @ApiOperation({summary: 'admin dashboard'})
     @ApiResponse({ status: 201, description: 'OK' })
     @Get('dashboard')
