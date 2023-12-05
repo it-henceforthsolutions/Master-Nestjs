@@ -19,6 +19,9 @@ export class RolesGuard implements CanActivate {
         }
         let user = context.switchToHttp().getRequest();
         user = await this.userService.findUser(user.user.id)
+        if(user.user_type == 'staff'){
+            
+        }
         let hasrequiredRoles = requiredRoles.some((role) => user.user_type?.includes(role));
         if (!hasrequiredRoles) {
             throw new HttpException('You have no permission to access this resource', HttpStatus.FORBIDDEN)

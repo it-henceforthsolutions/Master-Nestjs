@@ -25,12 +25,17 @@ export class StaffService {
                 first_name: body.first_name,
                 last_name: body.last_name,
                 temp_mail: body.email,
+                email: body.email,
                 password: hash,
                 role: body.role,
                 user_type: UsersType.staff,
                 created_at: moment().utc().valueOf()
             }
-            return await this.staff.create(data)
+            let newStaff = await this.staff.create(data)
+            newStaff = await this.staff.findById(newStaff._id,{
+                first_name:1,last_name:1,email:1,temp_country_code:1,temp_mail:1,temp_phone:1,user_type:1,role:1
+            })
+            return newStaff
         } catch (error) {
             throw error
         }

@@ -18,7 +18,7 @@ export class StaffController {
   @ApiBearerAuth('authentication')
   @ApiConsumes('application/json', 'application/x-www-form-urlencoded')
   @UseGuards(AuthGuard, RolesGuard)
-  @Roles(UsersType.admin)
+  @Roles(UsersType.admin,UsersType.staff)
   @ApiOperation({ summary: 'Add Staff' })
   @ApiCreatedResponse({
     description: 'The record has been successfully created.',

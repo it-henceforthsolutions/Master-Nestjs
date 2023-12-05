@@ -33,7 +33,10 @@ export class CreateStaffResponseDto {
     @ApiProperty({default:'abc'})
     last_name: string
     @ApiProperty({default:'a***@gmail.com'})
+    temp_mail: string
+    @ApiProperty({default:'a***@gmail.com'})
     email: string
+    
 
 }
 

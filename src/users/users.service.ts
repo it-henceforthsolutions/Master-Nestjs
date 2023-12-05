@@ -149,7 +149,9 @@ export class UsersService {
             }
             let access_token = await this.generateToken(payload)
             await this.createSession(user._id, access_token, body.fcm_token, user.user_type)
-            return { user, access_token }
+            user = await this.users.findById({_id:user._id}
+                ,{first_name:1,last_name:1,email:1,temp_phone:1,user_type:1,country_code:1,temp_country_code:1,role:1})
+            return {access_token, user}
         } catch (error) {
             throw error
         }

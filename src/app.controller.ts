@@ -137,7 +137,7 @@ export class AppController {
     @UseGuards(AuthGuard)
     @ApiBearerAuth('authentication')
     @ApiOperation({ summary: 'logout' })
-    @ApiResponse({ status: 201, description: 'LOGOUT' })
+    @ApiResponse({ status: 201, description: "LogOut Successfully!" })
     @ApiConsumes('application/json', 'application/x-www-form-urlencoded')
     @Delete('/logout')
     logOut(@Request() req) {
