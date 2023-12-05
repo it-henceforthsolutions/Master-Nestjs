@@ -57,10 +57,10 @@ export class UsersService {
             })
             return { access_token, user }
         } catch (error) {
-            if (error.code === 11000) {
-                throw new HttpException('This Email is Already Exist! Please Use another Email Address', HttpStatus.BAD_REQUEST);
-            }
             console.log(error);
+            // if (error.code === 11000) {
+            //     throw new HttpException('This Email is Already Exist! Please Use another Email Address', HttpStatus.BAD_REQUEST);
+            // }
 
             throw error
         }
@@ -83,8 +83,8 @@ export class UsersService {
                 data,
                 { new: true }
             )
-            await this.users.deleteMany({ temp_mail: user?.temp_mail, is_email_verify: false })
-            throw new HttpException('OTP Verified', HttpStatus.OK)
+            let temp_destroy = await this.users.deleteMany({ temp_mail: user?.temp_mail, is_email_verify: false })
+            if(temp_destroy){throw new HttpException('OTP Verified', HttpStatus.OK)}
         } catch (error) {
             throw error
         }
