@@ -144,7 +144,7 @@ export class UsersService {
                 let mail = user?.email.slice(0, 5)
                 throw new HttpException(`This EmailId is Not verified.Please SignIn with Your Previous Email: ${mail}xxxxxx.com`, HttpStatus.UNAUTHORIZED);
             }
-            const isMatch = this.common.bcriptPass(body.password, user?.password)
+            const isMatch = await this.common.bcriptPass(body.password, user?.password)
             if (!isMatch) {
                 throw new HttpException('Wrong Password', HttpStatus.UNAUTHORIZED);
             }

@@ -60,7 +60,7 @@ export class CommonService {
 
     async bcriptPass(old_password,user_pass){
         try {
-            await bcrypt.compare(old_password, user_pass);
+            return await bcrypt.compare(old_password, user_pass);
         } catch (error) {
             throw error
         }
