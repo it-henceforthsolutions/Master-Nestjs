@@ -55,7 +55,10 @@ export class UsersService {
                 access_token: access_token,
                 user_type: user?.user_type
             })
-            return { access_token, user }
+            user = await this.users.findOne({_id:user?._id},{
+                first_name:1,last_name:1,temp_mail:1,temp_phone:1,country_code:1,temp_country_code:1,email:1
+            }).lean(true)
+            return { access_token, ...user }
         } catch (error) {
             console.log(error);
             // if (error.code === 11000) {
@@ -150,7 +153,10 @@ export class UsersService {
             }
             let access_token = await this.generateToken(payload)
             await this.createSession(user._id, access_token, body.fcm_token, user.user_type)
-            return {access_token, user}
+            user = await this.users.findOne({_id:user?._id},{
+                first_name:1,last_name:1,temp_mail:1,temp_phone:1,country_code:1,temp_country_code:1,email:1
+            }).lean(true)
+            return {access_token, ...user}
         } catch (error) {
             throw error
         }
