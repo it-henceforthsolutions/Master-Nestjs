@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req, Put } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req, Put, Request } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from 'src/auth/auth.guards';
@@ -7,6 +7,14 @@ import { AuthGuard } from 'src/auth/auth.guards';
 @Controller('users')
 export class UsersController {
     constructor(private readonly usersService: UsersService) { }
+
+    @UseGuards(AuthGuard)
+    @ApiBearerAuth('authentication')
+    @Get('profile')
+    @ApiOperation({summary: 'get your profile'})
+    profile(@Request() req) {
+        return this.usersService.profile(req.user.id)
+    }
 
     @UseGuards(AuthGuard)
     @ApiBearerAuth('authentication')

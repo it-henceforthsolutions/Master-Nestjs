@@ -511,4 +511,21 @@ export class UsersService {
             throw error
         }
     }
+
+    async profile(id:string){
+        try {
+            let data = await this.users.findOne(
+                {_id: new Types.ObjectId(id),is_deleted:false,is_active:true,is_blocked:false},
+                {first_name:1,last_name:1,temp_mail:1,temp_phone:1,country_code:1,temp_country_code:1,email:1}
+                ).lean(true)
+                if(!data){
+                    throw new HttpException('You May be deactivated',HttpStatus.BAD_REQUEST)
+                }
+                return data
+        } catch (error) {
+            console.log(error);
+            
+            throw error
+        }
+    }
 }
