@@ -10,6 +10,9 @@ export class SignUpDto {
     last_name: string
 
     @ApiProperty()
+    country_code: string
+
+    @ApiProperty()
     phone: string
 
     @IsEmail()

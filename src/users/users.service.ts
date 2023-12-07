@@ -39,6 +39,7 @@ export class UsersService {
                 first_name: body.first_name,
                 last_name: body.last_name,
                 temp_mail: body.email,
+                temp_country_code :body.country_code,
                 temp_phone: body.phone,
                 password: hash,
                 custumer_id: '',
