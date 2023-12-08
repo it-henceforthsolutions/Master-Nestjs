@@ -393,10 +393,10 @@ export class UsersService {
     async resendOtp(id: string) {
         try {
             let user = await this.users.findOne({ _id: new Types.ObjectId(id) })
-            if (user?.is_email_verify == false) {
+
+            if (user?.is_email_verify == true) {
                 throw new HttpException(`Your Email is Already Verified`, HttpStatus.BAD_REQUEST)
             }
-            if((user.is_phone_verify && user.is_email_verify) == false){}
             let otp = await this.common.generateOtp()
             let isSendVerification = await this.common.verification(user?.temp_mail, otp)
 
