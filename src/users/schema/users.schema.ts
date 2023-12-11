@@ -43,6 +43,9 @@ export class Users {
     @Prop({default:null})
     role:string
 
+    @Prop({default:null,type:String})
+    profile_pic: string
+
     @Prop()
     unique_id: string
 

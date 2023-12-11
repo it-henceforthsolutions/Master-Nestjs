@@ -9,6 +9,9 @@ export class UpdateUserDto {
     @ApiProperty({required:false})
     last_name: string
 
+    @ApiProperty({required:false})
+    profile_pic: string
+
     @ApiProperty({ type: String, default: null,readOnly:true})
     country_code: string
 

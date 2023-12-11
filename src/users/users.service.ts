@@ -235,6 +235,11 @@ export class UsersService {
     async forgetPassword(body: ForgetPassDto) {
         try {
             let user = await this.users.findOne({ email: body.email })
+            let mail = user?.email
+            if (!user) {
+                user = await this.users.findOne({ temp_mail: body.email })
+                mail = user?.temp_mail
+            }
             if (!user) {
                 throw new HttpException('This User is no Exist', HttpStatus.BAD_REQUEST)
             }
@@ -243,7 +248,7 @@ export class UsersService {
                 length: 7,
                 charset: 'alphanumeric'
             })
-            await this.common.verification(user.email, otp)
+            await this.common.verification(mail, otp)
             await this.users.findOneAndUpdate(
                 { _id: user._id },
                 { otp: otp, unique_id: uniqueId },
