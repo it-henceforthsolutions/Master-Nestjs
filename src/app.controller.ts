@@ -72,12 +72,29 @@ export class AppController {
 
     @UseGuards(AuthGuard)
     @ApiBearerAuth('authentication')
-    @ApiOperation({ summary: 'resend otp' })
+    @ApiOperation({ summary: 'resend otp on email' })
+    @ApiConsumes('application/json', 'application/x-www-form-urlencoded')
+    @ApiResponse({ status: 201, description: 'OK' })
+    @Put('resend-otp-email')
+    resendEmailOtp(@Request() req) {
+        return this.userService.resendEmailOtp(req.user.id)
+    }
+    @UseGuards(AuthGuard)
+    @ApiBearerAuth('authentication')
+    @ApiOperation({ summary: 'resend otp on phone' })
+    @ApiConsumes('application/json', 'application/x-www-form-urlencoded')
+    @ApiResponse({ status: 201, description: 'OK' })
+    @Put('resend-otp-phone')
+    resendPhoneOtp(@Request() req) {
+        return this.userService.resendPhoneOtp(req.user.id)
+    }
+    
+    @ApiOperation({ summary: 'resend otp on email for forget password' })
     @ApiConsumes('application/json', 'application/x-www-form-urlencoded')
     @ApiResponse({ status: 201, description: 'OK' })
     @Put('resend-otp')
-    resendOtp(@Request() req) {
-        return this.userService.resendOtp(req.user.id)
+    resendOtp(@Body() body: UpdateEmailDto) {
+        return this.userService.resendOtp(body)
     }
     @ApiOperation({ summary: 'forget password' })
     @ApiConsumes('application/json', 'application/x-www-form-urlencoded')

@@ -12,6 +12,7 @@ import { ChangePassDto, ResetPassDto, UpdateEmailDto, UpdatePhoneDto, UpdateUser
 import * as randomString from "randomstring";
 import axios from 'axios';
 import { CommonService } from 'src/common/common.service';
+import { jwtConstants } from 'src/auth/constant';
 
 
 @Injectable()
@@ -39,7 +40,7 @@ export class UsersService {
                 first_name: body.first_name,
                 last_name: body.last_name,
                 temp_mail: body.email,
-                temp_country_code :body.country_code,
+                temp_country_code: body.country_code,
                 temp_phone: body.phone,
                 password: hash,
                 custumer_id: '',
@@ -56,8 +57,8 @@ export class UsersService {
                 access_token: access_token,
                 user_type: user?.user_type
             })
-            user = await this.users.findOne({_id:user?._id},{
-                first_name:1,last_name:1,temp_mail:1,temp_phone:1,country_code:1,temp_country_code:1,email:1
+            user = await this.users.findOne({ _id: user?._id }, {
+                first_name: 1, last_name: 1, temp_mail: 1, temp_phone: 1, country_code: 1, temp_country_code: 1, email: 1
             }).lean(true)
             return { access_token, ...user }
         } catch (error) {
@@ -88,7 +89,7 @@ export class UsersService {
                 { new: true }
             )
             let temp_destroy = await this.users.deleteMany({ temp_mail: user?.temp_mail, is_email_verify: false })
-            if(temp_destroy){throw new HttpException('OTP Verified', HttpStatus.OK)}
+            if (temp_destroy) { throw new HttpException('OTP Verified', HttpStatus.OK) }
         } catch (error) {
             throw error
         }
@@ -137,7 +138,7 @@ export class UsersService {
             let payload = { id: user?._id, email: user?.email }
 
             if (!user) {
-                
+
                 user = await this.users.findOne({ temp_mail: body.email })
                 payload = { id: user?._id, email: user?.temp_mail }
             }
@@ -154,10 +155,10 @@ export class UsersService {
             }
             let access_token = await this.generateToken(payload)
             await this.createSession(user._id, access_token, body.fcm_token, user.user_type)
-            user = await this.users.findOne({_id:user?._id},{
-                first_name:1,last_name:1,temp_mail:1,temp_phone:1,country_code:1,temp_country_code:1,email:1
+            user = await this.users.findOne({ _id: user?._id }, {
+                first_name: 1, last_name: 1, temp_mail: 1, temp_phone: 1, country_code: 1, temp_country_code: 1, email: 1
             }).lean(true)
-            return {access_token, ...user}
+            return { access_token, ...user }
         } catch (error) {
             throw error
         }
@@ -395,7 +396,7 @@ export class UsersService {
         }
     }
 
-    async resendOtp(id: string) {
+    async resendEmailOtp(id: string) {
         try {
             let user = await this.users.findOne({ _id: new Types.ObjectId(id) })
 
@@ -403,8 +404,8 @@ export class UsersService {
                 throw new HttpException(`Your Email is Already Verified`, HttpStatus.BAD_REQUEST)
             }
             let otp = await this.common.generateOtp()
-            let isSendVerification = await this.common.verification(user?.temp_mail, otp)
 
+            let isSendVerification = await this.common.verification(user.temp_mail, otp)
             if (!isSendVerification) {
                 throw new HttpException(`We can't Resend Otp Please connect Administration`, HttpStatus.OK)
             }
@@ -419,10 +420,62 @@ export class UsersService {
         }
     }
 
+    async resendPhoneOtp(id: string) {
+        try {
+            let user = await this.users.findOne({ _id: new Types.ObjectId(id) })
+
+            if (user?.is_phone_verify == true) {
+                throw new HttpException(`Your Phone no. is Already Verified`, HttpStatus.BAD_REQUEST)
+            }
+            let otp = await this.common.generateOtp()
+            let phone = `${user.temp_country_code} ${user.temp_phone}`
+            console.log(phone)
+            
+            let isSendVerification = await this.common.sendOtpOnPhone(otp, phone)
+            console.log(!isSendVerification,'===========');
+            
+            if (!isSendVerification) {
+                throw new HttpException(`We can't Resend Otp Please connect Administration`, HttpStatus.BAD_REQUEST)
+            }
+            await this.users.findByIdAndUpdate(
+                { _id: new Types.ObjectId(id) },
+                { otp: otp },
+                { new: true }
+            )
+            throw new HttpException('OTP resend to your registered Phone No.', HttpStatus.OK)
+        } catch (error) {
+            throw error
+        }
+    }
+
+    async resendOtp(body: UpdateEmailDto) {
+        try {
+            let user = await this.users.findOne({ temp_mail: body.email })
+            let otp = await this.common.generateOtp()
+            let mail = user?.temp_mail
+            if (!user) {
+                user = await this.users.findOne({ email: body.email })
+                mail = user?.email
+            }
+            let isSendVerification = await this.common.verification(mail, otp)
+            if (!isSendVerification) {
+                throw new HttpException(`We can't Resend Otp Please connect Administration`, HttpStatus.OK)
+            }
+            await this.users.findByIdAndUpdate(
+                { _id: user?._id },
+                { otp: otp },
+                { new: true }
+            )
+            throw new HttpException('OTP resend to your registered email address.', HttpStatus.OK)
+        } catch (error) {
+            throw error
+        }
+    }
+
     async getAll() {
         try {
             let allUsers = await this.users.find(
-                { is_deleted: false ,user_type: 'user'},
+                { is_deleted: false, user_type: 'user' },
                 'first_name last_name email temp_mail country_code phone temp_phone temp_country_code',
                 { lean: true }
             )
@@ -517,19 +570,19 @@ export class UsersService {
         }
     }
 
-    async profile(id:string){
+    async profile(id: string) {
         try {
             let data = await this.users.findOne(
-                {_id: new Types.ObjectId(id),is_deleted:false,is_active:true,is_blocked:false},
-                {first_name:1,last_name:1,temp_mail:1,temp_phone:1,country_code:1,temp_country_code:1,email:1,is_email_verify:1,is_phone_verify:1}
-                ).lean(true)
-                if(!data){
-                    throw new HttpException('You May be deactivated',HttpStatus.BAD_REQUEST)
-                }
-                return data
+                { _id: new Types.ObjectId(id), is_deleted: false, is_active: true, is_blocked: false },
+                { first_name: 1, last_name: 1, temp_mail: 1, temp_phone: 1, country_code: 1, temp_country_code: 1, email: 1, is_email_verify: 1, is_phone_verify: 1, profile_pic: 1 }
+            ).lean(true)
+            if (!data) {
+                throw new HttpException('You May be deactivated', HttpStatus.BAD_REQUEST)
+            }
+            return data
         } catch (error) {
             console.log(error);
-            
+
             throw error
         }
     }
