@@ -521,7 +521,7 @@ export class UsersService {
         try {
             let data = await this.users.findOne(
                 {_id: new Types.ObjectId(id),is_deleted:false,is_active:true,is_blocked:false},
-                {first_name:1,last_name:1,temp_mail:1,temp_phone:1,country_code:1,temp_country_code:1,email:1}
+                {first_name:1,last_name:1,temp_mail:1,temp_phone:1,country_code:1,temp_country_code:1,email:1,is_email_verify:1,is_phone_verify:1}
                 ).lean(true)
                 if(!data){
                     throw new HttpException('You May be deactivated',HttpStatus.BAD_REQUEST)
