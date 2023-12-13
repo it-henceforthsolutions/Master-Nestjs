@@ -5,9 +5,9 @@ export enum UsersType {
 }
 
 export enum LoginType{
-    normal = 'normal',
-    google = 'google',
-    facebook = 'facebook'
+    normal = 'NORMAL',
+    google = 'GOOGLE',
+    facebook = 'FACEBOOK'
 }
 
 export enum DeviceType{

@@ -13,6 +13,7 @@ import * as randomString from "randomstring";
 import axios from 'axios';
 import { CommonService } from 'src/common/common.service';
 import { jwtConstants } from 'src/auth/constant';
+import { LoginType } from './role/user.role';
 
 const positiveIntegerRegex = /^\d+$/;
 
@@ -174,23 +175,23 @@ export class UsersService {
         try {
             let response
             let data
-            if (body.social_type == 'google') {
+            if (body.social_type == LoginType.google) {
                 response = this.jwtService.decode(body.social_token)
                 data = {
                     first_name: response?.given_name,
                     last_name: response?.family_name,
                     email: response?.email,
-                    image: response?.picture,
+                    profile_pic: response?.picture,
                     social_id: response?.sub
                 }
-            } else if (body.social_type == 'facebook') {
+            } else if (body.social_type == LoginType.facebook) {
                 response = await axios.get(`https://graph.facebook.com/v2.12/me?fields=name,first_name,last_name,email&access_token=${body.social_token}`);
                 response = response.data
                 data = {
                     first_name: response?.first_name,
                     last_name: response?.last_name,
                     email: response?.email,
-                    image: response?.picture,
+                    profile_pic: response?.picture,
                     social_id: response?.id
                 }
             } else {
