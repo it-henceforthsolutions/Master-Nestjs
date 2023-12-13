@@ -14,6 +14,7 @@ import axios from 'axios';
 import { CommonService } from 'src/common/common.service';
 import { jwtConstants } from 'src/auth/constant';
 
+const positiveIntegerRegex = /^\d+$/;
 
 @Injectable()
 export class UsersService {
@@ -36,6 +37,11 @@ export class UsersService {
             //     email: body.email,
             //     name: body.first_name
             // })
+            const isPositiveInteger = positiveIntegerRegex.test(body.phone);
+            if (!isPositiveInteger) {
+                throw new HttpException('please enter a valid phone number', HttpStatus.BAD_REQUEST);
+ 
+            }
             let data = {
                 first_name: body.first_name,
                 last_name: body.last_name,
