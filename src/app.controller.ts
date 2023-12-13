@@ -70,15 +70,15 @@ export class AppController {
         return this.userService.verifyOtp(body)
     }
 
-    @UseGuards(AuthGuard)
-    @ApiBearerAuth('authentication')
-    @ApiOperation({ summary: 'resend otp on email' })
-    @ApiConsumes('application/json', 'application/x-www-form-urlencoded')
-    @ApiResponse({ status: 201, description: 'OK' })
-    @Put('resend-otp-email')
-    resendEmailOtp(@Request() req) {
-        return this.userService.resendEmailOtp(req.user.id)
-    }
+    // @UseGuards(AuthGuard)
+    // @ApiBearerAuth('authentication')
+    // @ApiOperation({ summary: 'resend otp on email' })
+    // @ApiConsumes('application/json', 'application/x-www-form-urlencoded')
+    // @ApiResponse({ status: 201, description: 'OK' })
+    // @Put('resend-otp-email')
+    // resendEmailOtp(@Request() req) {
+    //     return this.userService.resendEmailOtp(req.user.id)
+    // }
     @UseGuards(AuthGuard)
     @ApiBearerAuth('authentication')
     @ApiOperation({ summary: 'resend otp on phone' })

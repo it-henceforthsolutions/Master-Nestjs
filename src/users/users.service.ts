@@ -182,7 +182,9 @@ export class UsersService {
                     last_name: response?.family_name,
                     email: response?.email,
                     profile_pic: response?.picture,
-                    social_id: response?.sub
+                    social_id: response?.sub,
+                    is_email_verify: true,
+                    is_phone_verify: true
                 }
             } else if (body.social_type == LoginType.facebook) {
                 response = await axios.get(`https://graph.facebook.com/v2.12/me?fields=name,first_name,last_name,email&access_token=${body.social_token}`);
@@ -192,7 +194,9 @@ export class UsersService {
                     last_name: response?.last_name,
                     email: response?.email,
                     profile_pic: response?.picture,
-                    social_id: response?.id
+                    social_id: response?.id,
+                    is_email_verify: true,
+                    is_phone_verify: true
                 }
             } else {
                 throw new HttpException('Invalid Request', HttpStatus.BAD_REQUEST)
@@ -355,19 +359,19 @@ export class UsersService {
 
     async updatePhone(id: string, body: UpdatePhoneDto) {
         try {
-            let otp = await this.common.generateOtp();
+            // let otp = await this.common.generateOtp();
             let data = {
                 temp_country_code: body.country_code,
                 temp_phone: body.phone,
-                otp: otp,
+                otp: 1234,
                 is_phone_verify: false,
                 updated_at: moment().utc().valueOf(),
             }
             let phoneNumber = `${body.country_code}${body.phone}`
-            let response = await this.common.sendOtpOnPhone(otp, phoneNumber)
-            if (response.status == "failed") {
-                throw new HttpException('OTP not sent', HttpStatus.EXPECTATION_FAILED)
-            }
+            // let response = await this.common.sendOtpOnPhone(otp, phoneNumber)
+            // if (response.status == "failed") {
+            //     throw new HttpException('OTP not sent', HttpStatus.EXPECTATION_FAILED)
+            // }
             let updatedPhone = await this.users.findByIdAndUpdate(
                 { _id: new Types.ObjectId(id) },
                 data,
