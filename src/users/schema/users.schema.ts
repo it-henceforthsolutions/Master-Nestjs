@@ -75,6 +75,12 @@ export class Users {
 
     @Prop({default: false})
     is_blocked: boolean
+
+    @Prop({default: null})
+    socket_id: string
+
+    @Prop({default: null})
+    chat_active: string
 }
 
 export type UsersDocument = HydratedDocument<Users>
