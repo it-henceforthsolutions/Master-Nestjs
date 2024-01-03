@@ -16,6 +16,7 @@ import { FaqsModule } from './faqs/faqs.module';
 import { PagesModule } from './pages/pages.module';
 import { QuotesModule } from './quotes/quotes.module';
 import { StaffModule } from './staff/staff.module';
+import { ChatModule } from './chat/chat.module';
 
 config()
 @Module({
@@ -54,7 +55,8 @@ config()
         FaqsModule,
         PagesModule,
         QuotesModule,
-        StaffModule
+        StaffModule,
+        ChatModule
     ],
     controllers: [AppController],
     providers: [AppService],
