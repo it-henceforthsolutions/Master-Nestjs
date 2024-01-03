@@ -51,7 +51,8 @@ export class UsersService {
                 temp_phone: body.phone,
                 password: hash,
                 custumer_id: '',
-                otp: otp,
+                email_otp: otp,
+                phone_otp: 1234,
                 created_at: moment().utc().valueOf()
             }
 
@@ -81,7 +82,7 @@ export class UsersService {
     async verifyEmail(body: OtpDto, id: string) {
         try {
             let user = await this.users.findById({ _id: new Types.ObjectId(id) })
-            if (user?.otp != body.otp) {
+            if (user?.email_otp != body.otp) {
                 throw new HttpException('Invalid OTP', HttpStatus.BAD_REQUEST)
             }
             let data = {
@@ -105,7 +106,7 @@ export class UsersService {
     async verifyPhone(body: OtpDto, id: string) {
         try {
             let user = await this.users.findById({ _id: new Types.ObjectId(id) })
-            if (user?.otp != body.otp) {
+            if (user?.phone_otp != body.otp) {
                 throw new HttpException('Invalid OTP', HttpStatus.BAD_REQUEST)
             }
             let data = {
@@ -130,7 +131,7 @@ export class UsersService {
     async verifyOtp(body: NewPassOtpDto) {
         try {
             let user = await this.users.findOne({ unique_id: body.unique_id })
-            if (user?.otp != body.otp) {
+            if (user?.email_otp != body.otp) {
                 throw new HttpException('Invalid OTP', HttpStatus.BAD_REQUEST)
             }
             throw new HttpException('OTP Verification Completed. Kindly Reset Your Password', HttpStatus.OK)

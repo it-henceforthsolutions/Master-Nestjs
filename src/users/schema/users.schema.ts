@@ -38,7 +38,10 @@ export class Users {
     user_type: string
 
     @Prop({default:null})
-    otp: number
+    email_otp: number
+
+    @Prop({default:null})
+    phone_otp: number
 
     @Prop({default:null})
     role:string
