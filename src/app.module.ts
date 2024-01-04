@@ -17,8 +17,6 @@ import { PagesModule } from './pages/pages.module';
 import { QuotesModule } from './quotes/quotes.module';
 import { StaffModule } from './staff/staff.module';
 import { StripeModule } from './stripe/stripe.module';
-import { Plan, PlansModel } from './stripe/schema/plan';
-
 
 config()
 @Global()

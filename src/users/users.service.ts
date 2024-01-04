@@ -78,14 +78,14 @@ export class UsersService {
     async verifyEmail(body: OtpDto, id: string) {
         try {
             let user = await this.users.findById({ _id: new Types.ObjectId(id) })
-            if (user?.otp != body.otp) {
+            if (user?.email_otp != body.otp) {
                 throw new HttpException('Invalid OTP', HttpStatus.BAD_REQUEST)
             }
             let data = {
                 is_email_verify: true,
                 email: user?.temp_mail,
                 temp_mail: null,
-                otp: null
+                email_otp: null
             }
             await this.users.findOneAndUpdate(
                 { _id: new Types.ObjectId(id) },
@@ -102,7 +102,7 @@ export class UsersService {
     async verifyPhone(body: OtpDto, id: string) {
         try {
             let user = await this.users.findById({ _id: new Types.ObjectId(id) })
-            if (user?.otp != body.otp) {
+            if (user?.phone_otp != body.otp) {
                 throw new HttpException('Invalid OTP', HttpStatus.BAD_REQUEST)
             }
             let data = {
@@ -111,7 +111,7 @@ export class UsersService {
                 phone: user?.temp_phone,
                 temp_country_code: null,
                 temp_phone: null,
-                otp: null
+                phone_otp: null
             }
             await this.users.findByIdAndUpdate(
                 { _id: new Types.ObjectId(id) },
@@ -127,7 +127,7 @@ export class UsersService {
     async verifyOtp(body: NewPassOtpDto) {
         try {
             let user = await this.users.findOne({ unique_id: body.unique_id })
-            if (user?.otp != body.otp) {
+            if (user?.email_otp != body.otp) {
                 throw new HttpException('Invalid OTP', HttpStatus.BAD_REQUEST)
             }
             throw new HttpException('OTP Verification Completed. Kindly Reset Your Password', HttpStatus.OK)
@@ -336,18 +336,22 @@ export class UsersService {
     async updateEmail(id: string, body: UpdateEmailDto) {
         try {
             let otp = await this.common.generateOtp()
+            let check = await this.findUser(id)
+            if(check.email == body.email){
+                throw new HttpException('This Email is Already Exist! Please Use another Email Address', HttpStatus.BAD_REQUEST);
+            }
             let data = {
                 temp_mail: body.email,
                 otp: otp,
                 is_email_verify: false,
                 updated_at: moment().utc().valueOf(),
             }
+            await this.common.verification(body.email, otp)
             let updatedMail = await this.users.findByIdAndUpdate(
                 { _id: new Types.ObjectId(id) },
                 data,
                 { new: true }
             )
-            await this.common.verification(body.email, otp)
             return updatedMail
         } catch (error) {
             throw error
@@ -437,10 +441,8 @@ export class UsersService {
             }
             let otp = await this.common.generateOtp()
             let phone = `${user.temp_country_code} ${user.temp_phone}`
-            console.log(phone)
             
             let isSendVerification = await this.common.sendOtpOnPhone(otp, phone)
-            console.log(!isSendVerification,'===========');
             
             if (!isSendVerification) {
                 throw new HttpException(`We can't Resend Otp Please connect Administration`, HttpStatus.BAD_REQUEST)
@@ -591,6 +593,38 @@ export class UsersService {
         } catch (error) {
             console.log(error);
 
+            throw error
+        }
+    }
+
+    async getUserData(query:any, projection:any, options:any){
+        try {
+            let data=  await this.users.findOne(query, projection, options)
+            console.log("🚀 ~ file: users.service.ts:407 ~ UsersService ~ getUserData ~ data:", data)
+            return data
+        } catch (error) {
+            throw error
+        }
+    }
+
+    async findupdateUser( query:any , update:any, options:any){
+        try {
+            console.log("query",query)
+            console.log("update",update)
+           let data =  await this.users.findOneAndUpdate(query, update, options)
+           console.log("🚀 ~ file: users.service.ts:419 ~ UsersService ~ findupdateUser ~ data:", data)
+          
+            return data
+        } catch (error) { 
+            throw error
+        }
+    }
+    
+    async getUsers(query:any, projection:any, options:any){
+        try {
+            let data =  await this.users.find(query, projection, options)
+            return data
+        } catch (error) {
             throw error
         }
     }

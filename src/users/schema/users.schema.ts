@@ -38,7 +38,10 @@ export class Users {
     user_type: string
 
     @Prop({default:null})
-    otp: number
+    email_otp: number
+
+    @Prop({default:null})
+    phone_otp: number
 
     @Prop({default:null})
     role:string
@@ -75,6 +78,12 @@ export class Users {
 
     @Prop({default: false})
     is_blocked: boolean
+
+    @Prop({default: null})
+    socket_id: string
+
+    @Prop({default: null})
+    chat_active: string
 }
 
 export type UsersDocument = HydratedDocument<Users>
