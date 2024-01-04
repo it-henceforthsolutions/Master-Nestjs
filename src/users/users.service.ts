@@ -445,10 +445,8 @@ export class UsersService {
             }
             let otp = await this.common.generateOtp()
             let phone = `${user.temp_country_code} ${user.temp_phone}`
-            console.log(phone)
             
             let isSendVerification = await this.common.sendOtpOnPhone(otp, phone)
-            console.log(!isSendVerification,'===========');
             
             if (!isSendVerification) {
                 throw new HttpException(`We can't Resend Otp Please connect Administration`, HttpStatus.BAD_REQUEST)
@@ -625,6 +623,7 @@ export class UsersService {
             throw error
         }
     }
+    
     async getUsers(query:any, projection:any, options:any){
         try {
             let data =  await this.users.find(query, projection, options)
