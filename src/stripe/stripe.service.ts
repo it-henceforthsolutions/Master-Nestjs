@@ -83,7 +83,7 @@ export class StripeService {
     try {
       console.log(body);
       
-      // let { _id: user_id } = req.user_data
+      let { id: user_id } = req.user
       let { success_url, cancel_url } = body
       let price= await this.create_price(body)
       const session = await this.stripeClient.checkout.sessions.create({
@@ -98,7 +98,7 @@ export class StripeService {
         success_url: success_url,
         cancel_url: cancel_url,
         metadata: {
-          user_id: "user_id"
+          user_id: user_id
         }
       });
 
@@ -122,7 +122,7 @@ export class StripeService {
           name: 'total price of product user'
         }
       });
-      console.log(price);
+      // console.log(price);
 
       return price
 

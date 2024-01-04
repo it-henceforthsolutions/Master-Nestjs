@@ -26,6 +26,8 @@ export class StripeController {
     }
   }
 
+  @ApiBearerAuth('authentication')
+  @UseGuards(AuthGuard)
   @Post('/create-checkout-session')
   async checkout_session(@Body() body:dto.checkoutSession ,@Request() req: any) {
     try {
