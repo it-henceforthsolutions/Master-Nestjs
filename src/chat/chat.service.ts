@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import mongoose, { Model } from 'mongoose';
+import mongoose, { Model, connection } from 'mongoose';
 import * as dto from './dto/index';
 import { Types } from 'mongoose';
 import { UsersService } from 'src/users/users.service';
@@ -705,14 +705,20 @@ export class ChatService {
         options,
       ).populate(populate_to).exec()
      let members:any
-     let count = 2
+     let member_count = 2
       if(connections.group_id){
         let membersQuery = { group_id : connections.group_id}
         let projection = { _id:0 , created_at:0, group_id:0, __v:0, }
-        members = await this.membersModel.find(membersQuery, projection, options).populate(   { path: "user_id", select: 'first_name last_name profile_pic' },).exec()
-        count = members.length
+        members = await this.membersModel.find(membersQuery, projection, {lean:true , limit:10 }).populate(   { path: "user_id", select: 'first_name last_name profile_pic' },).exec()
+        member_count = members.length
+      }else if(connections.sent_by){
+         if(connections.sent_by== user_id){
+          connections.other_user = connections.sent_to
+         }else {
+           connections.other_user = connections.sent_by
+         }
       }
-      connections.members_count = count
+      connections.members_count = member_count
       connections.members = members
    
       return connections;
