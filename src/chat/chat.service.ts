@@ -303,8 +303,8 @@ export class ChatService {
         _id:-1
       }
       let populate1 = [
-        { path: 'sent_by', select: 'name profile_pic ' },
-        { path: 'sent_to', select: 'name profile_pic ' },
+        { path: 'sent_by', select: 'first_name, last_name, profile_pic ' },
+        { path: 'sent_to', select: 'first_name, last_name, profile_pic ' },
         { path: 'connection_id', select: 'updated_at group_id' ,populate:{ path:"group_id" ,select:"name image description"} },
       ];
       let response = await this.messageModel
