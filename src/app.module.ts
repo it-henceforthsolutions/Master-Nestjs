@@ -17,6 +17,7 @@ import { PagesModule } from './pages/pages.module';
 import { QuotesModule } from './quotes/quotes.module';
 import { StaffModule } from './staff/staff.module';
 import { StripeModule } from './stripe/stripe.module';
+import { ChatModule } from './chat/chat.module';
 
 config()
 @Global()
@@ -57,7 +58,8 @@ config()
         PagesModule,
         QuotesModule,
         StaffModule,
-        StripeModule
+        StripeModule,
+        ChatModule,
     ],
     controllers: [AppController],
     providers: [AppService],
