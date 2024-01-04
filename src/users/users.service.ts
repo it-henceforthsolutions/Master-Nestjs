@@ -14,7 +14,7 @@ import axios from 'axios';
 import { CommonService } from 'src/common/common.service';
 import { jwtConstants } from 'src/auth/constant';
 import { LoginType } from './role/user.role';
-
+import { StripeService } from 'src/stripe/stripe.service';
 const positiveIntegerRegex = /^\d+$/;
 
 @Injectable()
@@ -25,6 +25,7 @@ export class UsersService {
         @InjectStripe() private stripe: Stripe,
         private jwtService: JwtService,
         private common: CommonService,
+        private readonly StripeService:StripeService 
     ) { }
     async signUp(body: SignUpDto) {
         try {
@@ -34,14 +35,10 @@ export class UsersService {
             }
             let otp = await this.common.generateOtp()
             let hash = await this.common.encriptPass(body.password)
-            // let customer = await this.stripe.customers.create({
-            //     email: body.email,
-            //     name: body.first_name
-            // })
+            let customer = await this.StripeService.createCustomer(body)
             const isPositiveInteger = positiveIntegerRegex.test(body.phone);
             if (!isPositiveInteger) {
                 throw new HttpException('please enter a valid phone number', HttpStatus.BAD_REQUEST);
- 
             }
             let data = {
                 first_name: body.first_name,
@@ -50,7 +47,7 @@ export class UsersService {
                 temp_country_code: body.country_code,
                 temp_phone: body.phone,
                 password: hash,
-                custumer_id: '',
+                custumer_id: customer.id,
                 otp: otp,
                 created_at: moment().utc().valueOf()
             }

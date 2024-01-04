@@ -9,23 +9,73 @@ import { Permission, Roles } from 'src/auth/role.decorator';
 import { UsersType } from 'src/users/role/user.role';
 import { UsersService } from 'src/users/users.service';
 import { Role } from 'src/staff/role/staff.role';
+import { StripeService } from 'src/stripe/stripe.service';
 
 @ApiTags('admin')
 @Controller('admin')
 export class AdminController {
     constructor(
         private readonly adminService: AdminService,
+        private  StripeService: StripeService,
         private userService: UsersService
     ) { }
 
     @ApiBearerAuth('authentication')
     @UseGuards(AuthGuard, RolesGuard)
-    @Roles(UsersType.admin,UsersType.staff)
+    @Roles(UsersType.admin, UsersType.staff)
     @Permission(Role.readonly)
-    @ApiOperation({summary: 'admin dashboard'})
+    @ApiOperation({ summary: 'admin dashboard' })
     @ApiResponse({ status: 201, description: 'OK' })
     @Get('dashboard')
     dashboard() {
         return this.adminService.dashboard();
     }
+
+
+
+    // @UseGuards(AuthGuard)
+    // @ApiBearerAuth('access_token')
+    // @Post('plan')
+    // async create_plan(@Body() body: dto.plan) {
+    //     try {
+    //         let data = await this.StripeService.create_plan(body)
+    //         return data;
+    //     } catch (error) {
+    //         throw error
+    //     }
+    // }
+
+
+    // @Get('plan')
+    // async list_plan() {
+    //     try {
+    //         let data = await this.StripeService.list_plan()
+    //         return data;
+    //     } catch (error) {
+    //         throw error
+    //     }
+    // }
+
+    // @Get('plan/:_id')
+    // async get_plan(@Param('_id') _id: string) {
+    //     try {
+    //         let data = await this.StripeService.get_plan(_id)
+    //         return data;
+    //     } catch (error) {
+    //         throw error
+    //     }
+    // }
+
+    // @UseGuards(AuthGuard)
+    // @ApiBearerAuth('access_token')
+    // @Delete('plan/:_id')
+    // async delete_plan(@Param('_id') _id: string) {
+    //     try {
+    //         let data = await this.StripeService.delete_plan(_id)
+    //         return data;
+    //     } catch (error) {
+    //         throw error
+    //     }
+    // }
+
 }
