@@ -695,8 +695,8 @@ export class ChatService {
       let projection = { __v: 0 };
       let options = { lean: true };
       let populate_to = [
-        { path: "sent_to", select: 'first_name last_name profile_pic chat_active' },
-        { path: "sent_by", select: 'first_name last_name profile_pic chat_active' },
+        { path: "sent_to", select: 'first_name last_name profile_pic chat_active email phone' },
+        { path: "sent_by", select: 'first_name last_name profile_pic chat_active email phone' },
         { path: "group_id", select: 'name image' }
       ]
       let connections :any= await this.connectionModel.findOne(
@@ -704,24 +704,32 @@ export class ChatService {
         projection,
         options,
       ).populate(populate_to).exec()
-     let members:any
-     let member_count = 2
+     let members:any= null;
+     let member_count:number = 2
+     let group_data:any= null;
+     let other_user:any = null;
       if(connections.group_id){
+         group_data = await this.groupsModel.findOne({_id:connections.group_id},{__v:0},{lean:true})
         let membersQuery = { group_id : connections.group_id}
         let projection = { _id:0 , created_at:0, group_id:0, __v:0, }
         members = await this.membersModel.find(membersQuery, projection, {lean:true , limit:10 }).populate(   { path: "user_id", select: 'first_name last_name profile_pic' },).exec()
-        member_count = members.length
+        member_count = await this.membersModel.countDocuments(membersQuery)
       }else if(connections.sent_by){
          if(connections.sent_by== user_id){
-          connections.other_user = connections.sent_to
+          other_user = connections.sent_to
          }else {
-           connections.other_user = connections.sent_by
+           other_user = connections.sent_by
          }
       }
-      connections.members_count = member_count
-      connections.members = members
-   
-      return connections;
+      return {
+        _id: connections._id,
+        other_user_id:other_user?._id?? null,
+        other_user:other_user,
+        group_id: group_data?._id?? null,
+        group: group_data,
+        group_member:members,
+        member_count
+      };
     } catch (err) {
       throw err;
     }
