@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { MongooseModule } from '@nestjs/mongoose';
@@ -16,9 +16,10 @@ import { FaqsModule } from './faqs/faqs.module';
 import { PagesModule } from './pages/pages.module';
 import { QuotesModule } from './quotes/quotes.module';
 import { StaffModule } from './staff/staff.module';
-import { ChatModule } from './chat/chat.module';
+import { StripeModule } from './stripe/stripe.module';
 
 config()
+@Global()
 @Module({
     imports: [
         ConfigModule.forRoot({ isGlobal: true, }),
@@ -56,7 +57,7 @@ config()
         PagesModule,
         QuotesModule,
         StaffModule,
-        ChatModule
+        StripeModule
     ],
     controllers: [AppController],
     providers: [AppService],
