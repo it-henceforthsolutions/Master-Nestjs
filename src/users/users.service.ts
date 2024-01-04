@@ -89,7 +89,7 @@ export class UsersService {
                 is_email_verify: true,
                 email: user?.temp_mail,
                 temp_mail: null,
-                otp: null
+                email_otp: null
             }
             await this.users.findOneAndUpdate(
                 { _id: new Types.ObjectId(id) },
@@ -115,7 +115,7 @@ export class UsersService {
                 phone: user?.temp_phone,
                 temp_country_code: null,
                 temp_phone: null,
-                otp: null
+                phone_otp: null
             }
             await this.users.findByIdAndUpdate(
                 { _id: new Types.ObjectId(id) },
@@ -340,18 +340,22 @@ export class UsersService {
     async updateEmail(id: string, body: UpdateEmailDto) {
         try {
             let otp = await this.common.generateOtp()
+            let check = await this.findUser(id)
+            if(check.email == body.email){
+                throw new HttpException('This Email is Already Exist! Please Use another Email Address', HttpStatus.BAD_REQUEST);
+            }
             let data = {
                 temp_mail: body.email,
                 otp: otp,
                 is_email_verify: false,
                 updated_at: moment().utc().valueOf(),
             }
+            await this.common.verification(body.email, otp)
             let updatedMail = await this.users.findByIdAndUpdate(
                 { _id: new Types.ObjectId(id) },
                 data,
                 { new: true }
             )
-            await this.common.verification(body.email, otp)
             return updatedMail
         } catch (error) {
             throw error
