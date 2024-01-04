@@ -695,8 +695,8 @@ export class ChatService {
       let projection = { __v: 0 };
       let options = { lean: true };
       let populate_to = [
-        { path: "sent_to", select: 'first_name last name profile_pic' },
-        { path: "sent_by", select: 'first_name last name profile_pic' },
+        { path: "sent_to", select: 'first_name last_name profile_pic chat_active' },
+        { path: "sent_by", select: 'first_name last_name profile_pic chat_active' },
         { path: "group_id", select: 'name image' }
       ]
       let connections :any= await this.connectionModel.findOne(
