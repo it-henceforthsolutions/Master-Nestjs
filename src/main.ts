@@ -5,6 +5,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import * as cors from 'cors'
 import { config } from 'dotenv';
+import { ErrorHandler } from './handler/handler.services';
 config();
 
 const SSL = process.env.SSL;
@@ -34,6 +35,7 @@ async function bootstrap() {
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
+  //app.useGlobalFilters(new ErrorHandler())
   app.useGlobalPipes(new ValidationPipe());
   app.use(cors());
   await app.listen(process.env.PORT);
