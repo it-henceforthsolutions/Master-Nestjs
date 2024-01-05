@@ -82,10 +82,10 @@ export class StripeService {
   async checkout_session(body: any, req: any) {
     try {
       console.log(body);
-      
+
       let { id: user_id } = req.user
       let { success_url, cancel_url } = body
-      let price= await this.create_price(body)
+      let price = await this.create_price(body)
       const session = await this.stripeClient.checkout.sessions.create({
         line_items: [
           {
@@ -102,7 +102,7 @@ export class StripeService {
         }
       });
 
-      return session.url
+      return { url: session.url }
 
 
     } catch (error) {
