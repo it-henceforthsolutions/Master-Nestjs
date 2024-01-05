@@ -695,8 +695,8 @@ export class ChatService {
       let projection = { __v: 0 };
       let options = { lean: true };
       let populate_to = [
-        { path: "sent_to", select: 'first_name last_name profile_pic chat_active email phone' },
-        { path: "sent_by", select: 'first_name last_name profile_pic chat_active email phone' },
+        { path: "sent_to", select: 'first_name last_name profile_pic chat_active email phone temp_mail temp_phone' },
+        { path: "sent_by", select: 'first_name last_name profile_pic chat_active email phone temp_mail temp_phone' },
         { path: "group_id", select: 'name image' }
       ]
       let connections :any= await this.connectionModel.findOne(
@@ -712,10 +712,10 @@ export class ChatService {
          group_data = await this.groupsModel.findOne({_id:connections.group_id},{__v:0},{lean:true})
         let membersQuery = { group_id : connections.group_id}
         let projection = { _id:0 , created_at:0, group_id:0, __v:0, }
-        members = await this.membersModel.find(membersQuery, projection, {lean:true , limit:10 }).populate(   { path: "user_id", select: 'first_name last_name profile_pic' },).exec()
+        members = await this.membersModel.find(membersQuery, projection, {lean:true , limit:5 }).populate(   { path: "user_id", select: 'first_name last_name profile_pic' },).exec()
         member_count = await this.membersModel.countDocuments(membersQuery)
-      }else if(connections.sent_by){
-         if(connections.sent_by== user_id){
+      }else if(connections?.sent_by){
+         if(connections.sent_by._id == user_id){
           other_user = connections.sent_to
          }else {
            other_user = connections.sent_by
