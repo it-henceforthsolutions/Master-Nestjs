@@ -43,7 +43,7 @@ export class ChatController {
   @ApiOperation({summary:"get  group members"})
   @UseGuards(AuthGuard)
   @ApiBearerAuth('authentication')
-  @Get('group/:_id')
+  @Get('group/memberlist')
   getGroupMembers(@Param('_id') _id:string, @Req() req:any, @Query() query: dto.paginationsort ) {
     return this.chatservice.getGroupMembers(_id, query)
   }

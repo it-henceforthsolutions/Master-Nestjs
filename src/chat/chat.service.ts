@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import mongoose, { Model } from 'mongoose';
+import mongoose, { Model, connection } from 'mongoose';
 import * as dto from './dto/index';
 import { Types } from 'mongoose';
 import { UsersService } from 'src/users/users.service';
@@ -303,8 +303,8 @@ export class ChatService {
         _id:-1
       }
       let populate1 = [
-        { path: 'sent_by', select: 'name profile_pic ' },
-        { path: 'sent_to', select: 'name profile_pic ' },
+        { path: 'sent_by', select: 'first_name, last_name, profile_pic ' },
+        { path: 'sent_to', select: 'first_name, last_name, profile_pic ' },
         { path: 'connection_id', select: 'updated_at group_id' ,populate:{ path:"group_id" ,select:"name image description"} },
       ];
       let response = await this.messageModel
@@ -695,8 +695,8 @@ export class ChatService {
       let projection = { __v: 0 };
       let options = { lean: true };
       let populate_to = [
-        { path: "sent_to", select: 'first_name last name profile_pic' },
-        { path: "sent_by", select: 'first_name last name profile_pic' },
+        { path: "sent_to", select: 'first_name last_name profile_pic chat_active email phone temp_mail temp_phone' },
+        { path: "sent_by", select: 'first_name last_name profile_pic chat_active email phone temp_mail temp_phone' },
         { path: "group_id", select: 'name image' }
       ]
       let connections :any= await this.connectionModel.findOne(
@@ -704,18 +704,32 @@ export class ChatService {
         projection,
         options,
       ).populate(populate_to).exec()
-     let members:any
-     let count = 2
+     let members:any= null;
+     let member_count:number = 2
+     let group_data:any= null;
+     let other_user:any = null;
       if(connections.group_id){
+         group_data = await this.groupsModel.findOne({_id:connections.group_id},{__v:0},{lean:true})
         let membersQuery = { group_id : connections.group_id}
         let projection = { _id:0 , created_at:0, group_id:0, __v:0, }
-        members = await this.membersModel.find(membersQuery, projection, options).populate(   { path: "user_id", select: 'first_name last_name profile_pic' },).exec()
-        count = members.length
+        members = await this.membersModel.find(membersQuery, projection, {lean:true , limit:5 }).populate(   { path: "user_id", select: 'first_name last_name profile_pic' },).exec()
+        member_count = await this.membersModel.countDocuments(membersQuery)
+      }else if(connections?.sent_by){
+         if(connections.sent_by._id == user_id){
+          other_user = connections.sent_to
+         }else {
+           other_user = connections.sent_by
+         }
       }
-      connections.members_count = count
-      connections.members = members
-   
-      return connections;
+      return {
+        _id: connections._id,
+        other_user_id:other_user?._id?? null,
+        other_user:other_user,
+        group_id: group_data?._id?? null,
+        group: group_data,
+        group_member:members,
+        member_count
+      };
     } catch (err) {
       throw err;
     }

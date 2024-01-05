@@ -82,8 +82,8 @@ export class Users {
     @Prop({default: null})
     socket_id: string
 
-    @Prop({default: null})
-    chat_active: string
+    @Prop({default: false})
+    chat_active: boolean
 }
 
 export type UsersDocument = HydratedDocument<Users>
