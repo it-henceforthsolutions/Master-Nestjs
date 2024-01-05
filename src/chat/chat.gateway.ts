@@ -94,7 +94,7 @@ export class ChatServiceGateway implements OnGatewayConnection, OnGatewayDisconn
     }
 
     @UseGuards(SocketGuard)
-    @SubscribeMessage('getAllMessage')
+    @SubscribeMessage('get_all_message')
     async handleAllMessage(socket: CustomSocket, payload: dto.join_connection) {
         try {
             let { connection_id } = payload
@@ -103,7 +103,7 @@ export class ChatServiceGateway implements OnGatewayConnection, OnGatewayDisconn
             data: null
         }
         response.data = await this.chatservice.getAllMessage(payload)
-        this.server.to(socket.id).emit('getAllMessage', response)
+        this.server.to(socket.id).emit('get_all_message', response)
         } catch (error) {
             this.server.to(socket.id).emit('error', error.message)
         }
@@ -202,6 +202,12 @@ export class ChatServiceGateway implements OnGatewayConnection, OnGatewayDisconn
             let { group_id, members }= payload
             let data = await this.chatservice.addGroupMember(group_id, payload, user_id)
             console.log("🚀 ~ file: chat.gateway.ts:163 ~ ChatServiceGateway ~ group_add_member ~ data:", data)
+            let { connection_id } = payload;
+            if(!connection_id) throw Error("Connection_id is mandatory")
+            let get_connection = await this.chatservice.get_connection(connection_id)
+            if(!get_connection) throw  Error("Invalid connection_id")
+            let socket_ids = await this.chatservice.get_socket_id_by_connection(connection_id)
+            this.server.to(socket_ids).emit('group_member_added', data)
         } catch (error) {
             this.server.to(socket.id).emit('error', error.message) 
         }

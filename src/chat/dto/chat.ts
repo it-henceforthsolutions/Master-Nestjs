@@ -48,6 +48,7 @@ export class list_connection {
 }
 
 export class addGroupMember{
+  connection_id:string;
   group_id:string;
   members:string[];
 }
