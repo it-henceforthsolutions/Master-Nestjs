@@ -180,32 +180,34 @@ export class ChatService {
     try {
      let  { sent_to, group_id } = connection_data
       let {
-        // group_id,
-        // sent_to,
         message,
         connection_id,
         media_url,
         message_type,
         type,
       } = payload;
-      //console.log('payloadmsg1........', media_url, message_type, type);
-      //console.log('payload........', payload);
-
+     
+      console.log("sent_By==>",new Types.ObjectId(sent_by))
+      console.log("sent_to==>",connection_data?.sent_to._id)
+      if (sent_by === connection_data?.sent_to._id.valueOf()){ ///sent_by == user_id
+          sent_to = connection_data.sent_by
+          console.log("match")
+      }
       let data_to_save = {
         group_id,
         sent_by,
         type,
-        sent_to,
+        sent_to:sent_to,
         message,
         media_url,
         message_type,
         connection_id,
         created_at: +new Date(),
       };
-      //console.log('savedata...........', data_to_save);
+     
 
       let saved_message: any = await this.messageModel.create(data_to_save);
-      //console.log('savedmessage........', saved_message);
+ 
       let { _id: new_msg_id } = saved_message;
 
       let response = await this.makeMsgResponse(new_msg_id);
