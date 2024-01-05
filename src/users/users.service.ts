@@ -35,7 +35,7 @@ export class UsersService {
             }
             let otp = await this.common.generateOtp()
             let hash = await this.common.encriptPass(body.password)
-            // let customer = await this.StripeService.createCustomer(body)
+            let customer = await this.StripeService.createCustomer(body)
             const isPositiveInteger = positiveIntegerRegex.test(body.phone);
             if (!isPositiveInteger) {
                 throw new HttpException('please enter a valid phone number', HttpStatus.BAD_REQUEST);
@@ -47,7 +47,7 @@ export class UsersService {
                 temp_country_code: body.country_code,
                 temp_phone: body.phone,
                 password: hash,
-                custumer_id: 'customer.id',
+                custumer_id: customer.id,
                 otp: otp,
                 created_at: moment().utc().valueOf()
             }
