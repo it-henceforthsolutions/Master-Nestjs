@@ -675,10 +675,10 @@ export class ChatService {
         let query = { group_id: connection.group_id, user_id: user_id }
         let member = await this.membersModel.deleteMany(query)
       }else{
-        let query = { sent_to: user_id, connection_id: connection_id }
+        let query = { sent_to: new Types.ObjectId(user_id) , connection_id: connection_id }
         let deleted = await this.connectionModel.findOneAndUpdate(query, {sent_to: null }, {new:true })
         if(!deleted){
-          let query1 =  { sent_by: user_id, connection_id: connection_id }
+          let query1 =  { sent_by: new Types.ObjectId(user_id), connection_id: connection_id }
            await this.connectionModel.findOneAndUpdate(query, {sent_by: null }, { new:true })
         }
         

@@ -140,7 +140,7 @@ export class ChatServiceGateway implements OnGatewayConnection, OnGatewayDisconn
     @SubscribeMessage('leave_connection')
     async handleLeaveChat(socket: CustomSocket, payload: dto.join_connection) {  
        try {
-        const user_id = socket.user.id;
+        const user_id =  socket.user.id;
         const user_name = socket.user.name
         let { connection_id } = payload;
         if(!connection_id) throw Error("Connection_id is mandatory")
