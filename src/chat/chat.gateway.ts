@@ -47,7 +47,11 @@ export class ChatServiceGateway implements OnGatewayConnection, OnGatewayDisconn
     async handleCreateConnection(socket: CustomSocket, payload: dto.create_connection) {
         const user_id = socket.user.id;  //sent_by
         let { sent_to , group_id } = payload;
-        let response = await this.chatservice.checkConnection(user_id,payload)
+        let response = {
+            message:"",
+            data: null
+        }
+        response.data =  await this.chatservice.checkConnection(user_id,payload)
         socket.emit("create_connection", response);
     }
     
@@ -148,7 +152,10 @@ export class ChatServiceGateway implements OnGatewayConnection, OnGatewayDisconn
         if(!get_connection) throw Error("Invalid connection_id")
         let socket_ids = await this.chatservice.get_socket_id_by_connection(connection_id)
         await this.chatservice.leaveConnection(connection_id, user_id)
-        let response = {  message:"", data: null }
+        let response = { 
+             message:"",
+              data: null
+             }
         response.message= `${user_name} left the group`
         this.server.to(socket_ids).emit('leave_connection', response)
         response.message= `leave chat successfully`
@@ -200,6 +207,7 @@ export class ChatServiceGateway implements OnGatewayConnection, OnGatewayDisconn
         try {
             const user_id = socket.user.id;
             let { group_id, members }= payload
+            let response = {  message:"", data: null }
             let data = await this.chatservice.addGroupMember(group_id, payload, user_id)
             console.log("🚀 ~ file: chat.gateway.ts:163 ~ ChatServiceGateway ~ group_add_member ~ data:", data)
             let { connection_id } = payload;
@@ -207,7 +215,8 @@ export class ChatServiceGateway implements OnGatewayConnection, OnGatewayDisconn
             let get_connection = await this.chatservice.get_connection(connection_id)
             if(!get_connection) throw  Error("Invalid connection_id")
             let socket_ids = await this.chatservice.get_socket_id_by_connection(connection_id)
-            this.server.to(socket_ids).emit('group_member_added', data)
+            response.data= data
+            this.server.to(socket_ids).emit('group_member_added', response)
         } catch (error) {
             this.server.to(socket.id).emit('error', error.message) 
         }
