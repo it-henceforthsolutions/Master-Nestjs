@@ -38,7 +38,7 @@ export class ChatServiceGateway implements OnGatewayConnection, OnGatewayDisconn
         socket.emit('connected', 'Socket connected');
     }
 
-    handleDisconnect(socket: Socket) {
+    handleDisconnect(socket: CustomSocket) {
         const token:any = socket.handshake.headers.token;
         let Bearer_token = token.split(' ')[1];
         this.chatservice.updateUserSocketid(Bearer_token, socket?.id, false )           
