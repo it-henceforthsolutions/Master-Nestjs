@@ -19,6 +19,8 @@ import { StaffModule } from './staff/staff.module';
 import { StripeModule } from './stripe/stripe.module';
 import { ChatModule } from './chat/chat.module';
 
+
+
 config()
 @Global()
 @Module({
@@ -38,7 +40,7 @@ config()
         JwtModule.register({
             global: true,
             secret: jwtConstants.secret,
-            signOptions: { expiresIn: '86400s' },
+            signOptions: { expiresIn: '30d' },  ///one months
         }),
         MailerModule.forRoot({
             transport: {
@@ -60,6 +62,7 @@ config()
         StaffModule,
         StripeModule,
         ChatModule,
+      
     ],
     controllers: [AppController],
     providers: [AppService],

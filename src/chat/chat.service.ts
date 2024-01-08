@@ -27,20 +27,20 @@ export class ChatService {
     private jwtService: JwtService,
   ) {}
 
-  async updateUserSocketid(token: any, socket_id: string) {
+  async updateUserSocketid(token: any, socket_id: string, is_connect:boolean) {
     //console.log('update running');
     try {
       const payload = await this.jwtService.verifyAsync(token, {
         secret: jwtConstants.secret,
       });
-      //console.log(
-      //   '🚀 ~ file: chat.service.ts:34 ~ updateUserSocketid ~ payload:',
-      //   payload,
-      // );
-
       let { id: user_id } = payload;
       let query = { _id: new Types.ObjectId(user_id) };
-      let update = { socket_id: socket_id };
+      let update:any 
+      if(is_connect===true){
+        update = { socket_id: socket_id, updated_at: moment().utc().valueOf(), chat_active:true };
+      }else {
+        update = { updated_at: moment().utc().valueOf(), chat_active:false };
+      }
       let options = { new: true };
       let updated_data = await this.userservices.findupdateUser(
         query,
@@ -697,8 +697,8 @@ export class ChatService {
       let projection = { __v: 0 };
       let options = { lean: true };
       let populate_to = [
-        { path: "sent_to", select: 'first_name last_name profile_pic chat_active email phone temp_mail temp_phone' },
-        { path: "sent_by", select: 'first_name last_name profile_pic chat_active email phone temp_mail temp_phone' },
+        { path: "sent_to", select: 'first_name last_name profile_pic chat_active email phone temp_mail temp_phone updated_at' },
+        { path: "sent_by", select: 'first_name last_name profile_pic chat_active email phone temp_mail temp_phone updated_at' },
         { path: "group_id", select: 'name image' }
       ]
       let connections :any= await this.connectionModel.findOne(

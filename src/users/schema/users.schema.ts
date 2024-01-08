@@ -2,6 +2,7 @@ import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { HydratedDocument } from "mongoose";
 import { UsersType } from "../role/user.role";
 import { IsEmail } from "class-validator";
+import * as moment from "moment"
 
 @Schema()
 export class Users {
