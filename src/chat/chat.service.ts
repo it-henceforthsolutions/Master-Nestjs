@@ -61,14 +61,14 @@ export class ChatService {
       let connection_id: any;
       let response: any;
       let query = group_id
-        ? { group_id: group_id }
+        ? { group_id: new Types.ObjectId(group_id) }
         : {
             $or: [
               {
-                $and: [{ sent_by: sent_by }, { sent_to: sent_to }],
+                $and: [{ sent_by: new Types.ObjectId(sent_by) }, { sent_to: new Types.ObjectId(sent_to) }],
               },
               {
-                $and: [{ sent_by: sent_to }, { sent_to: sent_by }],
+                $and: [{ sent_by: new Types.ObjectId(sent_to) }, { sent_to: new Types.ObjectId(sent_by) }],
               },
             ],
           };
@@ -246,7 +246,7 @@ export class ChatService {
 
   async makeMsgResponse(_id: string) {
     try {
-      let query = { _id: _id };
+      let query = { _id: new Types.ObjectId(_id) };
       let projection = { __v: 0 };
       let options = { lean: true };
       let populate1 = [
@@ -289,7 +289,7 @@ export class ChatService {
     try {
       let { connection_id } = payload;
      
-      let query = { connection_id: connection_id, deleted_for: { $nin:[user_id] }, };
+      let query = { connection_id: new Types.ObjectId(connection_id), deleted_for: { $nin:[new Types.ObjectId(user_id)] }, };
       let projection = {
         sent_to: 1,
         sent_by: 1,
