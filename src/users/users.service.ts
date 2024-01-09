@@ -501,7 +501,7 @@ export class UsersService {
     async getById(id: string) {
         try {
             return await this.users.findById({ _id: new Types.ObjectId(id) },
-                'first_name last_name email temp_mail country_code phone temp_phone temp_country_code',
+                'first_name last_name email temp_mail country_code phone temp_phone temp_country_code updated_at chat_active',
                 { lean: true })
         } catch (error) {
             throw error
