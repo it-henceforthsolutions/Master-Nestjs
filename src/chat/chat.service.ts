@@ -15,6 +15,7 @@ import { jwtConstants } from 'src/auth/constant';
 import { Connection, connectionSchema } from './schema/connection.schemas';
 import { Message } from './schema/message.schemas';
 import { Group } from './schema/group.schema';
+import { message_deleted_type } from 'utils';
 
 @Injectable()
 export class ChatService {
@@ -271,7 +272,7 @@ export class ChatService {
     try {
       let { message_id } = payload;
       let query = { _id: new Types.ObjectId(message_id)  };
-      let update = { $addToSet: { read_by: user_id }, updated_at:moment().utc().valueOf() };
+      let update = { $addToSet: { read_by: new Types.ObjectId(user_id) }, updated_at:moment().utc().valueOf() };
       let options = { new: true };
       const response = await this.messageModel.findOneAndUpdate(
         query,
@@ -371,7 +372,45 @@ export class ChatService {
     }
   }
 
-  async deleteMessage(user_id: any, payload: dto.deleteMessage) {}
+  async deleteMessage ( user_id: string, payload:any )  {
+    try {
+      let { message_id, deleted_type } = payload
+      let query = { _id: new Types.ObjectId(message_id) };
+      let projection = { __v:0 }
+      //let update = { is_read: true };
+      let options = { new: true };
+      let response: any = await this.messageModel.find(
+        query,
+        projection,
+        options
+      );
+      let data_to_update: any;
+      if (response.length) {
+        let { sent_by, sent_to } = response[0];
+        if (new Types.ObjectId(user_id) == sent_by && deleted_type == message_deleted_type.BOTH ) {
+          data_to_update = {
+            $push: { deleted_for: { $each: [new Types.ObjectId(sent_by), new Types.ObjectId(sent_to)] } },
+          };
+        } else {
+          data_to_update = { deleted_for: new Types.ObjectId(user_id) };
+        }
+      } else {
+        throw {
+          type: "NOT_FOUND",
+          error_message: "request message not exits or already deleted",
+        };
+      }
+      const updated_data: any = await this.messageModel.findOneAndUpdate(
+        query ,
+        data_to_update,
+       options
+      );
+      //console.log("updated_at", updated_data)
+      return { type: "SUCCESS", message: `${updated_data._id} is deleted` };
+    } catch (error) {
+      throw error;
+    }
+  };
 
   async get_connections() {
     try {
