@@ -85,6 +85,9 @@ export class Users {
 
     @Prop({default: false})
     chat_active: boolean
+
+    @Prop({default: 0})
+    last_seen: number
 }
 
 export type UsersDocument = HydratedDocument<Users>

@@ -81,10 +81,10 @@ export class ChatController {
   @UseGuards(AuthGuard)
   @ApiBearerAuth('authentication')
   @Get('connections/:_id/message')
-  listMessage(@Req() req:any,@Param('_id') _id:string, @Query() query: dto.pagination ) {
+  listMessage(@Req() req:any, @Param('_id') _id:string, @Query() query: dto.pagination ) {
     let user_id = req.user.id;
       let payload =  { connection_id:_id } 
-    return this.chatservice.getAllMessage( payload, query )
+    return this.chatservice.getAllMessage( payload, query, user_id)
   }
 
 }

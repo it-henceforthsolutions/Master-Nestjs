@@ -110,7 +110,8 @@ export class ChatServiceGateway implements OnGatewayConnection, OnGatewayDisconn
             message:"",
             data: null
         }
-        response.data = await this.chatservice.getAllMessage(payload)
+        const user_id = socket.user.id;
+        response.data = await this.chatservice.getAllMessage(payload, null ,user_id)
         this.server.to(socket.id).emit('get_all_message', response)
         } catch (error) {
             this.server.to(socket.id).emit('error', error.message)

@@ -37,9 +37,9 @@ export class ChatService {
       let query = { _id: new Types.ObjectId(user_id) };
       let update:any 
       if(is_connect===true){
-        update = { socket_id: socket_id, updated_at: moment().utc().valueOf(), chat_active:true };
+        update = { socket_id: socket_id, last_seen: moment().utc().valueOf(), chat_active:true };
       }else {
-        update = { updated_at: moment().utc().valueOf(), chat_active:false };
+        update = { last_seen: moment().utc().valueOf(), chat_active:false };
       }
       let options = { new: true };
       let updated_data = await this.userservices.findupdateUser(
@@ -271,7 +271,7 @@ export class ChatService {
     try {
       let { message_id } = payload;
       let query = { _id: new Types.ObjectId(message_id)  };
-      let update = { $addToSet: { read_by: user_id } };
+      let update = { $addToSet: { read_by: user_id }, updated_at:moment().utc().valueOf() };
       let options = { new: true };
       const response = await this.messageModel.findOneAndUpdate(
         query,
@@ -284,17 +284,18 @@ export class ChatService {
     }
   }
 
-  async getAllMessage(payload: dto.join_connection, pagin?:dto.pagination) {
+  async getAllMessage(payload: dto.join_connection, pagin?:dto.pagination, user_id?:string) {
     try {
       let { connection_id } = payload;
      
-      let query = { connection_id: connection_id };
+      let query = { connection_id: connection_id, deleted_for: { $nin:[user_id] }, };
       let projection = {
         sent_to: 1,
         sent_by: 1,
         message: 1,
         read_by: 1,
         created_at: 1,
+        updated_at:1,
         media_url: 1,
       };
       let options:any = { lean: true };
@@ -315,6 +316,8 @@ export class ChatService {
         .exec();
       // let data=await this.messageModel.find(query,{sent_to:1,sent_by:1,message:1},{lean:true})
       let count = await this.messageModel.countDocuments(query)
+      let update = { $addToSet: { read_by: user_id } };
+      let updated_Data = await this.messageModel.updateMany(query, update, {new:true})
       return {
         count: count,
         data: response
@@ -697,8 +700,8 @@ export class ChatService {
       let projection = { __v: 0 };
       let options = { lean: true };
       let populate_to = [
-        { path: "sent_to", select: 'first_name last_name profile_pic chat_active email phone temp_mail temp_phone updated_at' },
-        { path: "sent_by", select: 'first_name last_name profile_pic chat_active email phone temp_mail temp_phone updated_at' },
+        { path: "sent_to", select: 'first_name last_name profile_pic chat_active email phone temp_mail temp_phone last_seen' },
+        { path: "sent_by", select: 'first_name last_name profile_pic chat_active email phone temp_mail temp_phone last_seen' },
         { path: "group_id", select: 'name image' }
       ]
       let connections :any= await this.connectionModel.findOne(
