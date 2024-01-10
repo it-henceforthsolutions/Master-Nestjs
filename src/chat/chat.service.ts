@@ -317,7 +317,7 @@ export class ChatService {
         .exec();
       // let data=await this.messageModel.find(query,{sent_to:1,sent_by:1,message:1},{lean:true})
       let count = await this.messageModel.countDocuments(query)
-      let update = { $addToSet: { read_by: user_id } };
+      let update = { $addToSet: { read_by: user_id }, updated_at:moment().utc().valueOf() };
       let updated_Data = await this.messageModel.updateMany(query, update, {new:true})
       return {
         count: count,
