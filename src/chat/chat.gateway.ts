@@ -1,14 +1,12 @@
 import { SubscribeMessage, WebSocketGateway, WebSocketServer, OnGatewayConnection, OnGatewayDisconnect } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io'
-import { BadGatewayException, UseGuards } from '@nestjs/common';
+import { UseGuards } from '@nestjs/common';
 import { SocketGuard } from 'src/auth/auth.guards';
 import * as dto from "./dto"
 import { ChatService } from './chat.service';
 import { UsersService } from 'src/users/users.service';
-import { query } from 'express';
 import { Types, set } from 'mongoose';
-import { group } from 'console';
-import { invalid } from 'moment';
+
 
 
 
@@ -65,17 +63,13 @@ export class ChatServiceGateway implements OnGatewayConnection, OnGatewayDisconn
         try {
             const user_id = socket.user.id; 
             let { connection_id } = payload;
-            if(!connection_id) throw Error("Connection_id is mandatory")
             let get_connection = await this.chatservice.get_connection(connection_id)
-            if(!get_connection)  throw  Error("Connection not found")
             let socket_ids = await this.chatservice.get_socket_id_by_connection(connection_id)
-            console.log("🚀 ~ file: chat.gateway.ts:64 ~ ChatServiceGateway ~ handleSendMessage ~ socket_ids:", socket_ids)
             let response = {
                 message:"",
                 data: null
             }
             response.data =  await this.chatservice.saveMessage(user_id, payload , get_connection)
-            console.log("🚀 ~ file: chat.gateway.ts:70 ~ ChatServiceGateway ~ handleSendMessage ~ data:", response.data)
             this.server.to(socket_ids).emit('get_message', response)
             }
         catch (error) {
@@ -134,9 +128,6 @@ export class ChatServiceGateway implements OnGatewayConnection, OnGatewayDisconn
             console.log(data)
             let { connection_id } = data
             response.data = data
-            if(!connection_id) throw Error("Connection_id is mandatory")
-            let get_connection = await this.chatservice.get_connection(connection_id)
-            if(!get_connection) throw  Error("Invalid connection_id")
             let socket_ids = await this.chatservice.get_socket_id_by_connection(connection_id)
             this.server.to(socket_ids).emit('read_message', response)
         } catch (error) {
@@ -152,9 +143,6 @@ export class ChatServiceGateway implements OnGatewayConnection, OnGatewayDisconn
         const user_id =  socket.user.id;
         const user_name = socket.user.name
         let { connection_id } = payload;
-        if(!connection_id) throw Error("Connection_id is mandatory")
-        let get_connection = await this.chatservice.get_connection(connection_id)
-        if(!get_connection) throw Error("Invalid connection_id")
         let socket_ids = await this.chatservice.get_socket_id_by_connection(connection_id)
         await this.chatservice.leaveConnection(connection_id, user_id)
         let response = { 
@@ -194,9 +182,6 @@ export class ChatServiceGateway implements OnGatewayConnection, OnGatewayDisconn
               let user_data = await this.userservices.getUserData(query,projection, options)
               let user_name = `${user_data.first_name} ${user_data.last_name}`;
               let { connection_id } = payload;
-              if(!connection_id) throw Error("Connection_id is mandatory")
-              let get_connection = await this.chatservice.get_connection(connection_id)
-              if(!get_connection) throw  Error("Invalid connection_id")
               let socket_ids = await this.chatservice.get_socket_id_by_connection(connection_id)
               let response = {  message:"", data: null }
               response.message =`${user_name} is typing`,
@@ -214,11 +199,7 @@ export class ChatServiceGateway implements OnGatewayConnection, OnGatewayDisconn
             let { group_id, members }= payload
             let response = {  message:"", data: null }
             let data = await this.chatservice.addGroupMember(group_id, payload, user_id)
-            console.log("🚀 ~ file: chat.gateway.ts:163 ~ ChatServiceGateway ~ group_add_member ~ data:", data)
             let { connection_id } = payload;
-            if(!connection_id) throw Error("Connection_id is mandatory")
-            let get_connection = await this.chatservice.get_connection(connection_id)
-            if(!get_connection) throw  Error("Invalid connection_id")
             let socket_ids = await this.chatservice.get_socket_id_by_connection(connection_id)
             response.data= data
             this.server.to(socket_ids).emit('group_member_added', response)

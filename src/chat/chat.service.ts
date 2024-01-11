@@ -429,6 +429,7 @@ export class ChatService {
   }
   async get_connection(connection_id:string) {
     try {
+      if(!connection_id) throw Error("Connection_id is mandatory")
       let query = {_id: new Types.ObjectId(connection_id)};
       let projection = { __v: 0 };
       let options = { lean: true };
@@ -437,6 +438,7 @@ export class ChatService {
         projection,
         options,
       ).populate([{path:"sent_to",select:'socket_id'},{path:"sent_by", select:'socket_id'}]).exec()
+      if(!connections)  throw  Error("Connection not found")
       return connections;
     } catch (err) {
       throw err;
