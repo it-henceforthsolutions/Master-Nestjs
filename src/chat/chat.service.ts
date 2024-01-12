@@ -439,6 +439,7 @@ export class ChatService {
         options,
       ).populate([{path:"sent_to",select:'socket_id'},{path:"sent_by", select:'socket_id'}]).exec()
       if(!connections)  throw  Error("Connection not found")
+      console.log("connection==>", connections)
       return connections;
     } catch (err) {
       throw err;
@@ -455,6 +456,7 @@ export class ChatService {
     else if(sent_to){
       socket_ids = [connection.sent_by.socket_id, connection.sent_to.socket_id]
     }
+    console.log("socket_ids==>", socket_ids)
     return socket_ids
   }
 

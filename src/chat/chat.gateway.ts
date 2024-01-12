@@ -66,7 +66,6 @@ export class ChatServiceGateway implements OnGatewayConnection, OnGatewayDisconn
             let { connection_id } = payload;
             let get_connection = await this.chatservice.get_connection(connection_id)
             let socket_ids = await this.chatservice.get_socket_id_by_connection(connection_id)
-            console.log("socket_ids", socket_ids)
             let response = {
                 message:"",
                 data: null
