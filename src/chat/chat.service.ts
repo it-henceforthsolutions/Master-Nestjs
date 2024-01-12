@@ -189,11 +189,14 @@ export class ChatService {
       } = payload;
      
       console.log("sent_By==>",new Types.ObjectId(sent_by))
-      console.log("sent_to==>",connection_data?.sent_to._id)
-      if (sent_by === connection_data?.sent_to._id.valueOf()){ ///sent_by == user_id
-          sent_to = connection_data.sent_by
-          console.log("match")
+      
+     if(sent_to){
+      console.log("sent_to==>",connection_data?.sent_to?._id)
+      if (sent_by === connection_data?.sent_to?._id.valueOf()){ ///sent_by == user_id
+        sent_to = connection_data.sent_by
+        console.log("match")
       }
+     }
       let data_to_save = {
         group_id,
         sent_by,
