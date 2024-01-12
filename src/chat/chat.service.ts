@@ -15,6 +15,7 @@ import { jwtConstants } from 'src/auth/constant';
 import { Connection, connectionSchema } from './schema/connection.schemas';
 import { Message } from './schema/message.schemas';
 import { Group } from './schema/group.schema';
+import { message_deleted_type } from 'utils';
 
 @Injectable()
 export class ChatService {
@@ -60,14 +61,14 @@ export class ChatService {
       let connection_id: any;
       let response: any;
       let query = group_id
-        ? { group_id: group_id }
+        ? { group_id: new Types.ObjectId(group_id) }
         : {
             $or: [
               {
-                $and: [{ sent_by: sent_by }, { sent_to: sent_to }],
+                $and: [{ sent_by: new Types.ObjectId(sent_by) }, { sent_to: new Types.ObjectId(sent_to) }],
               },
               {
-                $and: [{ sent_by: sent_to }, { sent_to: sent_by }],
+                $and: [{ sent_by: new Types.ObjectId(sent_to) }, { sent_to: new Types.ObjectId(sent_by) }],
               },
             ],
           };
@@ -245,7 +246,7 @@ export class ChatService {
 
   async makeMsgResponse(_id: string) {
     try {
-      let query = { _id: _id };
+      let query = { _id: new Types.ObjectId(_id) };
       let projection = { __v: 0 };
       let options = { lean: true };
       let populate1 = [
@@ -271,7 +272,7 @@ export class ChatService {
     try {
       let { message_id } = payload;
       let query = { _id: new Types.ObjectId(message_id)  };
-      let update = { $addToSet: { read_by: user_id }, updated_at:moment().utc().valueOf() };
+      let update = { $addToSet: { read_by: new Types.ObjectId(user_id) }, updated_at:moment().utc().valueOf() };
       let options = { new: true };
       const response = await this.messageModel.findOneAndUpdate(
         query,
@@ -288,7 +289,7 @@ export class ChatService {
     try {
       let { connection_id } = payload;
      
-      let query = { connection_id: connection_id, deleted_for: { $nin:[user_id] }, };
+      let query = { connection_id: new Types.ObjectId(connection_id), deleted_for: { $nin:[new Types.ObjectId(user_id)] }, };
       let projection = {
         sent_to: 1,
         sent_by: 1,
@@ -316,7 +317,7 @@ export class ChatService {
         .exec();
       // let data=await this.messageModel.find(query,{sent_to:1,sent_by:1,message:1},{lean:true})
       let count = await this.messageModel.countDocuments(query)
-      let update = { $addToSet: { read_by: user_id } };
+      let update = { $addToSet: { read_by: user_id }, updated_at:moment().utc().valueOf() };
       let updated_Data = await this.messageModel.updateMany(query, update, {new:true})
       return {
         count: count,
@@ -371,7 +372,45 @@ export class ChatService {
     }
   }
 
-  async deleteMessage(user_id: any, payload: dto.deleteMessage) {}
+  async deleteMessage ( user_id: string, payload:any )  {
+    try {
+      let { message_id, deleted_type } = payload
+      let query = { _id: new Types.ObjectId(message_id) };
+      let projection = { __v:0 }
+      //let update = { is_read: true };
+      let options = { new: true };
+      let response: any = await this.messageModel.find(
+        query,
+        projection,
+        options
+      );
+      let data_to_update: any;
+      if (response.length) {
+        let { sent_by, sent_to } = response[0];
+        if (new Types.ObjectId(user_id) == sent_by && deleted_type == message_deleted_type.BOTH ) {
+          data_to_update = {
+            $push: { deleted_for: { $each: [new Types.ObjectId(sent_by), new Types.ObjectId(sent_to)] } },
+          };
+        } else {
+          data_to_update = { deleted_for: new Types.ObjectId(user_id) };
+        }
+      } else {
+        throw {
+          type: "NOT_FOUND",
+          error_message: "request message not exits or already deleted",
+        };
+      }
+      const updated_data: any = await this.messageModel.findOneAndUpdate(
+        query ,
+        data_to_update,
+       options
+      );
+      //console.log("updated_at", updated_data)
+      return { type: "SUCCESS", message: `${updated_data._id} is deleted` };
+    } catch (error) {
+      throw error;
+    }
+  };
 
   async get_connections() {
     try {
@@ -390,6 +429,7 @@ export class ChatService {
   }
   async get_connection(connection_id:string) {
     try {
+      if(!connection_id) throw Error("Connection_id is mandatory")
       let query = {_id: new Types.ObjectId(connection_id)};
       let projection = { __v: 0 };
       let options = { lean: true };
@@ -398,6 +438,8 @@ export class ChatService {
         projection,
         options,
       ).populate([{path:"sent_to",select:'socket_id'},{path:"sent_by", select:'socket_id'}]).exec()
+      if(!connections)  throw  Error("Connection not found")
+      console.log("connection==>", connections)
       return connections;
     } catch (err) {
       throw err;
@@ -414,6 +456,7 @@ export class ChatService {
     else if(sent_to){
       socket_ids = [connection.sent_by.socket_id, connection.sent_to.socket_id]
     }
+    console.log("socket_ids==>", socket_ids)
     return socket_ids
   }
 

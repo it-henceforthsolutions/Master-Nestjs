@@ -29,7 +29,8 @@ export class readMessage {
 
 
 export class deleteMessage {
-  message_id: string
+  deleted_type:number;  //0
+  message_id:string;
 }
 
 
