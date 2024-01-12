@@ -18,7 +18,7 @@ export class ChatController {
   @UseGuards(AuthGuard)
   @ApiBearerAuth('authentication')
   @Post('group')
-  create_group(@Body() body:dto.CreateGroupDto ,@Req() req) {
+  create_group(@Body() body:dto.CreateGroupDto , @Req() req) {
     return this.chatservice.createGroup(req, body)
   }
 
