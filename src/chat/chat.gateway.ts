@@ -61,15 +61,18 @@ export class ChatServiceGateway implements OnGatewayConnection, OnGatewayDisconn
     @SubscribeMessage('send_message')
     async handleSendMessage(socket: CustomSocket, payload: dto.sendMessage){
         try {
+            console.log("socket called send_message-->", payload)
             const user_id = socket.user.id; 
             let { connection_id } = payload;
             let get_connection = await this.chatservice.get_connection(connection_id)
             let socket_ids = await this.chatservice.get_socket_id_by_connection(connection_id)
+            console.log("socket_ids", socket_ids)
             let response = {
                 message:"",
                 data: null
             }
             response.data =  await this.chatservice.saveMessage(user_id, payload , get_connection)
+            console.log("get_message",response.data)
             this.server.to(socket_ids).emit('get_message', response)
             }
         catch (error) {
@@ -83,6 +86,7 @@ export class ChatServiceGateway implements OnGatewayConnection, OnGatewayDisconn
     @SubscribeMessage('list_connection')
     async handleUserList(socket: any) {
         try {
+            console.log("socket called ===>  list_conneciton")
             const user_id = socket.user.id;
             let response = {
                 message:"",
@@ -99,6 +103,7 @@ export class ChatServiceGateway implements OnGatewayConnection, OnGatewayDisconn
     @SubscribeMessage('get_all_message')
     async handleAllMessage(socket: CustomSocket, payload: dto.join_connection) {
         try {
+            console.log("socket called ===>get_all_message", payload)
             let { connection_id } = payload
         let response = {
             message:"",
@@ -106,6 +111,7 @@ export class ChatServiceGateway implements OnGatewayConnection, OnGatewayDisconn
         }
         const user_id = socket.user.id;
         response.data = await this.chatservice.getAllMessage(payload, null ,user_id)
+        console.log("🚀 ~ ChatServiceGateway ~ handleAllMessage ~ response:", response)
         this.server.to(socket.id).emit('get_all_message', response)
         } catch (error) {
             this.server.to(socket.id).emit('error', error.message)
@@ -117,6 +123,7 @@ export class ChatServiceGateway implements OnGatewayConnection, OnGatewayDisconn
     @SubscribeMessage('read_message')
     async handleReadSendMessage(socket: CustomSocket, payload: dto.readMessage) {
         try {
+            console.log("socket called ===>read_message", payload)
             const user_id = socket.user.id;
             let { message_id } = payload;
            
@@ -128,7 +135,9 @@ export class ChatServiceGateway implements OnGatewayConnection, OnGatewayDisconn
             console.log(data)
             let { connection_id } = data
             response.data = data
+            console.log("🚀 ~ ChatServiceGateway ~ handleReadSendMessage ~ response:", response)
             let socket_ids = await this.chatservice.get_socket_id_by_connection(connection_id)
+            console.log("")
             this.server.to(socket_ids).emit('read_message', response)
         } catch (error) {
             this.server.to(socket.id).emit('error', error.message)
@@ -140,6 +149,7 @@ export class ChatServiceGateway implements OnGatewayConnection, OnGatewayDisconn
     @SubscribeMessage('leave_connection')
     async handleLeaveChat(socket: CustomSocket, payload: dto.join_connection) {  
        try {
+        console.log("socket called ===>leave_connection", payload)
         const user_id =  socket.user.id;
         const user_name = socket.user.name
         let { connection_id } = payload;
@@ -153,6 +163,7 @@ export class ChatServiceGateway implements OnGatewayConnection, OnGatewayDisconn
         this.server.to(socket_ids).emit('leave_connection', response)
         response.message= `leave chat successfully`
         this.server.to(socket.id).emit('leave_connection', response)
+        console.log("🚀 ~ ChatServiceGateway ~ handleLeaveChat ~ response:", response)
        } catch (error) {
         this.server.to(socket.id).emit('error', error.message)
        }
@@ -162,10 +173,12 @@ export class ChatServiceGateway implements OnGatewayConnection, OnGatewayDisconn
     @SubscribeMessage('delete_message')
     async handleDeleteMessage(socket: CustomSocket, payload: dto.deleteMessage) {
      try {
+        console.log("socket called ===>delete_message", payload)
         const user_id = socket.user.id;
         await this.chatservice.deleteMessage(user_id, payload)
         let response = {  message:"", data: null }
         response.message = "message deleted successfully"
+        console.log("🚀 ~ ChatServiceGateway ~ handleDeleteMessage ~ response:", response)
         this.server.to(socket.id).emit("delete_message",response )
      } catch (error) {
         this.server.to(socket.id).emit('error', error.message)
@@ -176,6 +189,7 @@ export class ChatServiceGateway implements OnGatewayConnection, OnGatewayDisconn
     @SubscribeMessage('is_typing')
     async handleTyping(socket: CustomSocket, payload: dto.sendMessage) {
          try {
+            console.log("socket called ===>is_typing", payload)
                let query = { _id:new Types.ObjectId(socket.user.id)}
               let projection = { first_name:1, last_name:1 }
               let options = { lean:true }
@@ -185,6 +199,7 @@ export class ChatServiceGateway implements OnGatewayConnection, OnGatewayDisconn
               let socket_ids = await this.chatservice.get_socket_id_by_connection(connection_id)
               let response = {  message:"", data: null }
               response.message =`${user_name} is typing`,
+              console.log("🚀 ~ ChatServiceGateway ~ handleTyping ~ response:", response)
               this.server.to(socket_ids).emit('is_typing', response)
          } catch (error) {
           this.server.to(socket.id).emit('error', error.message)
@@ -195,6 +210,7 @@ export class ChatServiceGateway implements OnGatewayConnection, OnGatewayDisconn
     @SubscribeMessage('group_add_member')
     async group_add_member(socket:CustomSocket, payload:dto.addGroupMember){
         try {
+            console.log("socket called ===>group_add_member", payload)
             const user_id = socket.user.id;
             let { group_id, members }= payload
             let response = {  message:"", data: null }

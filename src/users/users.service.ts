@@ -600,7 +600,6 @@ export class UsersService {
     async getUserData(query:any, projection:any, options:any){
         try {
             let data=  await this.users.findOne(query, projection, options)
-            console.log("🚀 ~ file: users.service.ts:407 ~ UsersService ~ getUserData ~ data:", data)
             return data
         } catch (error) {
             throw error
@@ -609,11 +608,7 @@ export class UsersService {
 
     async findupdateUser( query:any , update:any, options:any){
         try {
-            console.log("query",query)
-            console.log("update",update)
            let data =  await this.users.findOneAndUpdate(query, update, options)
-           console.log("🚀 ~ file: users.service.ts:419 ~ UsersService ~ findupdateUser ~ data:", data)
-          
             return data
         } catch (error) { 
             throw error

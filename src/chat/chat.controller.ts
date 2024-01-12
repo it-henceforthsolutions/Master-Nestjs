@@ -54,7 +54,6 @@ export class ChatController {
   @ApiBearerAuth('authentication')
   @Get('users')
   getUsers(@Req() req:any, @Query() query: dto.paginationsortsearch ) {
-    console.log("heloo")
     return this.chatservice.getUsers(query)
   }
 
