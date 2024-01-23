@@ -58,7 +58,7 @@ export class CommonService {
         }
     }
 
-    async bcriptPass(old_password,user_pass){
+    async bcriptPass(old_password, user_pass) {
         try {
             return await bcrypt.compare(old_password, user_pass);
         } catch (error) {
@@ -109,6 +109,22 @@ export class CommonService {
         }
         catch (err) {
             throw err;
+        }
+    }
+
+    async email_notification(data, emails) {
+        console.log("data:", data);
+        console.log("emails:", emails);
+        try {
+            await this.mailerService
+                .sendMail({
+                    to: `${emails}`,
+                    from: process.env.EMAIL,
+                    subject: data.subject,
+                    text: data.text
+                });
+        } catch (error) {
+            throw error
         }
     }
 }

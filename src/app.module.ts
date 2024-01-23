@@ -18,6 +18,7 @@ import { QuotesModule } from './quotes/quotes.module';
 import { StaffModule } from './staff/staff.module';
 import { StripeModule } from './stripe/stripe.module';
 import { ChatModule } from './chat/chat.module';
+import { NotificationModule } from './notification/notification.module';
 
 
 
@@ -62,6 +63,7 @@ config()
         StaffModule,
         StripeModule,
         ChatModule,
+        NotificationModule,
       
     ],
     controllers: [AppController],

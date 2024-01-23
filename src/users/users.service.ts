@@ -20,12 +20,12 @@ const positiveIntegerRegex = /^\d+$/;
 @Injectable()
 export class UsersService {
     constructor(
-        @InjectModel(Users.name) private users: Model<Users>,
+        @InjectModel(Users.name) public users: Model<Users>,
         @InjectModel(Sessions.name) private sessions: Model<Sessions>,
         @InjectStripe() private stripe: Stripe,
         private jwtService: JwtService,
         private common: CommonService,
-        private readonly StripeService:StripeService 
+        private readonly StripeService: StripeService
     ) { }
     async signUp(body: SignUpDto) {
         try {
@@ -337,7 +337,7 @@ export class UsersService {
         try {
             let otp = await this.common.generateOtp()
             let check = await this.findUser(id)
-            if(check.email == body.email){
+            if (check.email == body.email) {
                 throw new HttpException('This Email is Already Exist! Please Use another Email Address', HttpStatus.BAD_REQUEST);
             }
             let data = {
@@ -441,9 +441,9 @@ export class UsersService {
             }
             let otp = await this.common.generateOtp()
             let phone = `${user.temp_country_code} ${user.temp_phone}`
-            
+
             let isSendVerification = await this.common.sendOtpOnPhone(otp, phone)
-            
+
             if (!isSendVerification) {
                 throw new HttpException(`We can't Resend Otp Please connect Administration`, HttpStatus.BAD_REQUEST)
             }
@@ -597,27 +597,27 @@ export class UsersService {
         }
     }
 
-    async getUserData(query:any, projection:any, options:any){
+    async getUserData(query: any, projection: any, options: any) {
         try {
-            let data=  await this.users.findOne(query, projection, options)
+            let data = await this.users.findOne(query, projection, options)
             return data
         } catch (error) {
             throw error
         }
     }
 
-    async findupdateUser( query:any , update:any, options:any){
+    async findupdateUser(query: any, update: any, options: any) {
         try {
-           let data =  await this.users.findOneAndUpdate(query, update, options)
+            let data = await this.users.findOneAndUpdate(query, update, options)
             return data
-        } catch (error) { 
+        } catch (error) {
             throw error
         }
     }
-    
-    async getUsers(query:any, projection:any, options:any){
+
+    async getUsers(query: any, projection: any, options: any) {
         try {
-            let data =  await this.users.find(query, projection, options)
+            let data = await this.users.find(query, projection, options)
             return data
         } catch (error) {
             throw error
