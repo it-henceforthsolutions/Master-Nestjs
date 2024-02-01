@@ -29,7 +29,8 @@ export class readMessage {
 
 
 export class deleteMessage {
-  message_id: string
+  deleted_type:number;  //0
+  message_id:string;
 }
 
 
@@ -48,6 +49,7 @@ export class list_connection {
 }
 
 export class addGroupMember{
+  connection_id:string;
   group_id:string;
   members:string[];
 }

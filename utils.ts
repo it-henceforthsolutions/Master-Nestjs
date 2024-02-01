@@ -51,6 +51,11 @@ export enum chat_type {
     GROUP = "GROUP"
 }
 
+export enum message_deleted_type{
+    ME="ME",
+    BOTH = "BOTH"
+}
+
 export enum type {
     NORMAL = "NORMAL",
     REPLY = "REPLY",

@@ -2,6 +2,7 @@ import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { HydratedDocument } from "mongoose";
 import { UsersType } from "../role/user.role";
 import { IsEmail } from "class-validator";
+import * as moment from "moment"
 
 @Schema()
 export class Users {
@@ -82,8 +83,11 @@ export class Users {
     @Prop({default: null})
     socket_id: string
 
-    @Prop({default: null})
-    chat_active: string
+    @Prop({default: false})
+    chat_active: boolean
+
+    @Prop({default: 0})
+    last_seen: number
 }
 
 export type UsersDocument = HydratedDocument<Users>

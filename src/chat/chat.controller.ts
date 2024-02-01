@@ -18,7 +18,7 @@ export class ChatController {
   @UseGuards(AuthGuard)
   @ApiBearerAuth('authentication')
   @Post('group')
-  create_group(@Body() body:dto.CreateGroupDto ,@Req() req) {
+  create_group(@Body() body:dto.CreateGroupDto , @Req() req) {
     return this.chatservice.createGroup(req, body)
   }
 
@@ -43,7 +43,7 @@ export class ChatController {
   @ApiOperation({summary:"get  group members"})
   @UseGuards(AuthGuard)
   @ApiBearerAuth('authentication')
-  @Get('group/:_id')
+  @Get('group/memberlist')
   getGroupMembers(@Param('_id') _id:string, @Req() req:any, @Query() query: dto.paginationsort ) {
     return this.chatservice.getGroupMembers(_id, query)
   }
@@ -54,7 +54,6 @@ export class ChatController {
   @ApiBearerAuth('authentication')
   @Get('users')
   getUsers(@Req() req:any, @Query() query: dto.paginationsortsearch ) {
-    console.log("heloo")
     return this.chatservice.getUsers(query)
   }
 
@@ -81,10 +80,10 @@ export class ChatController {
   @UseGuards(AuthGuard)
   @ApiBearerAuth('authentication')
   @Get('connections/:_id/message')
-  listMessage(@Req() req:any,@Param('_id') _id:string, @Query() query: dto.pagination ) {
+  listMessage(@Req() req:any, @Param('_id') _id:string, @Query() query: dto.pagination ) {
     let user_id = req.user.id;
-      let payload =  { connection_id:_id } 
-    return this.chatservice.getAllMessage( payload, query )
+    let payload =  { connection_id:_id } 
+    return this.chatservice.getAllMessage( payload, query, user_id)
   }
 
 }

@@ -6,7 +6,7 @@ import { Users, UsersModel } from './schema/users.schema';
 import { Sessions, SessionsModel } from './schema/sessions.schema';
 import { TwilioModule, TwilioService } from 'nestjs-twilio';
 import { CommonModule } from 'src/common/common.module';
-
+import { StripeService } from 'src/stripe/stripe.service';
 @Module({
   imports: [
     MongooseModule.forFeature([
@@ -16,7 +16,7 @@ import { CommonModule } from 'src/common/common.module';
     CommonModule
   ],
   controllers: [UsersController],
-  providers: [UsersService],
+  providers: [UsersService,StripeService],
   exports: [UsersService]
 })
 export class UsersModule { }

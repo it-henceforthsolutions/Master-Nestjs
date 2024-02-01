@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import mongoose, { Model } from 'mongoose';
+import mongoose, { Model, connection } from 'mongoose';
 import * as dto from './dto/index';
 import { Types } from 'mongoose';
 import { UsersService } from 'src/users/users.service';
@@ -15,6 +15,7 @@ import { jwtConstants } from 'src/auth/constant';
 import { Connection, connectionSchema } from './schema/connection.schemas';
 import { Message } from './schema/message.schemas';
 import { Group } from './schema/group.schema';
+import { message_deleted_type } from 'utils';
 
 @Injectable()
 export class ChatService {
@@ -27,20 +28,20 @@ export class ChatService {
     private jwtService: JwtService,
   ) {}
 
-  async updateUserSocketid(token: any, socket_id: string) {
+  async updateUserSocketid(token: any, socket_id: string, is_connect:boolean) {
     //console.log('update running');
     try {
       const payload = await this.jwtService.verifyAsync(token, {
         secret: jwtConstants.secret,
       });
-      //console.log(
-      //   '🚀 ~ file: chat.service.ts:34 ~ updateUserSocketid ~ payload:',
-      //   payload,
-      // );
-
       let { id: user_id } = payload;
       let query = { _id: new Types.ObjectId(user_id) };
-      let update = { socket_id: socket_id };
+      let update:any 
+      if(is_connect===true){
+        update = { socket_id: socket_id, last_seen: moment().utc().valueOf(), chat_active:true };
+      }else {
+        update = { last_seen: moment().utc().valueOf(), chat_active:false };
+      }
       let options = { new: true };
       let updated_data = await this.userservices.findupdateUser(
         query,
@@ -60,14 +61,14 @@ export class ChatService {
       let connection_id: any;
       let response: any;
       let query = group_id
-        ? { group_id: group_id }
+        ? { group_id: new Types.ObjectId(group_id) }
         : {
             $or: [
               {
-                $and: [{ sent_by: sent_by }, { sent_to: sent_to }],
+                $and: [{ sent_by: new Types.ObjectId(sent_by) }, { sent_to: new Types.ObjectId(sent_to) }],
               },
               {
-                $and: [{ sent_by: sent_to }, { sent_to: sent_by }],
+                $and: [{ sent_by: new Types.ObjectId(sent_to) }, { sent_to: new Types.ObjectId(sent_by) }],
               },
             ],
           };
@@ -180,32 +181,37 @@ export class ChatService {
     try {
      let  { sent_to, group_id } = connection_data
       let {
-        // group_id,
-        // sent_to,
         message,
         connection_id,
         media_url,
         message_type,
         type,
       } = payload;
-      //console.log('payloadmsg1........', media_url, message_type, type);
-      //console.log('payload........', payload);
-
+     
+      console.log("sent_By==>",new Types.ObjectId(sent_by))
+      
+     if(sent_to){
+      console.log("sent_to==>",connection_data?.sent_to?._id)
+      if (sent_by === connection_data?.sent_to?._id.valueOf()){ ///sent_by == user_id
+        sent_to = connection_data.sent_by
+        console.log("match")
+      }
+     }
       let data_to_save = {
         group_id,
         sent_by,
         type,
-        sent_to,
+        sent_to:sent_to,
         message,
         media_url,
         message_type,
         connection_id,
         created_at: +new Date(),
       };
-      //console.log('savedata...........', data_to_save);
+     
 
       let saved_message: any = await this.messageModel.create(data_to_save);
-      //console.log('savedmessage........', saved_message);
+ 
       let { _id: new_msg_id } = saved_message;
 
       let response = await this.makeMsgResponse(new_msg_id);
@@ -243,7 +249,7 @@ export class ChatService {
 
   async makeMsgResponse(_id: string) {
     try {
-      let query = { _id: _id };
+      let query = { _id: new Types.ObjectId(_id) };
       let projection = { __v: 0 };
       let options = { lean: true };
       let populate1 = [
@@ -269,7 +275,7 @@ export class ChatService {
     try {
       let { message_id } = payload;
       let query = { _id: new Types.ObjectId(message_id)  };
-      let update = { $addToSet: { read_by: user_id } };
+      let update = { $addToSet: { read_by: new Types.ObjectId(user_id) }, updated_at:moment().utc().valueOf() };
       let options = { new: true };
       const response = await this.messageModel.findOneAndUpdate(
         query,
@@ -282,17 +288,18 @@ export class ChatService {
     }
   }
 
-  async getAllMessage(payload: dto.join_connection, pagin?:dto.pagination) {
+  async getAllMessage(payload: dto.join_connection, pagin?:dto.pagination, user_id?:string) {
     try {
       let { connection_id } = payload;
      
-      let query = { connection_id: connection_id };
+      let query = { connection_id: new Types.ObjectId(connection_id), deleted_for: { $nin:[new Types.ObjectId(user_id)] }, };
       let projection = {
         sent_to: 1,
         sent_by: 1,
         message: 1,
         read_by: 1,
         created_at: 1,
+        updated_at:1,
         media_url: 1,
       };
       let options:any = { lean: true };
@@ -303,8 +310,8 @@ export class ChatService {
         _id:-1
       }
       let populate1 = [
-        { path: 'sent_by', select: 'name profile_pic ' },
-        { path: 'sent_to', select: 'name profile_pic ' },
+        { path: 'sent_by', select: 'first_name, last_name, profile_pic ' },
+        { path: 'sent_to', select: 'first_name, last_name, profile_pic ' },
         { path: 'connection_id', select: 'updated_at group_id' ,populate:{ path:"group_id" ,select:"name image description"} },
       ];
       let response = await this.messageModel
@@ -313,6 +320,8 @@ export class ChatService {
         .exec();
       // let data=await this.messageModel.find(query,{sent_to:1,sent_by:1,message:1},{lean:true})
       let count = await this.messageModel.countDocuments(query)
+      let update = { $addToSet: { read_by: user_id }, updated_at:moment().utc().valueOf() };
+      let updated_Data = await this.messageModel.updateMany(query, update, {new:true})
       return {
         count: count,
         data: response
@@ -366,7 +375,45 @@ export class ChatService {
     }
   }
 
-  async deleteMessage(user_id: any, payload: dto.deleteMessage) {}
+  async deleteMessage ( user_id: string, payload:any )  {
+    try {
+      let { message_id, deleted_type } = payload
+      let query = { _id: new Types.ObjectId(message_id) };
+      let projection = { __v:0 }
+      //let update = { is_read: true };
+      let options = { new: true };
+      let response: any = await this.messageModel.find(
+        query,
+        projection,
+        options
+      );
+      let data_to_update: any;
+      if (response.length) {
+        let { sent_by, sent_to } = response[0];
+        if (new Types.ObjectId(user_id) == sent_by && deleted_type == message_deleted_type.BOTH ) {
+          data_to_update = {
+            $push: { deleted_for: { $each: [new Types.ObjectId(sent_by), new Types.ObjectId(sent_to)] } },
+          };
+        } else {
+          data_to_update = { deleted_for: new Types.ObjectId(user_id) };
+        }
+      } else {
+        throw {
+          type: "NOT_FOUND",
+          error_message: "request message not exits or already deleted",
+        };
+      }
+      const updated_data: any = await this.messageModel.findOneAndUpdate(
+        query ,
+        data_to_update,
+       options
+      );
+      //console.log("updated_at", updated_data)
+      return { type: "SUCCESS", message: `${updated_data._id} is deleted` };
+    } catch (error) {
+      throw error;
+    }
+  };
 
   async get_connections() {
     try {
@@ -385,6 +432,7 @@ export class ChatService {
   }
   async get_connection(connection_id:string) {
     try {
+      if(!connection_id) throw Error("Connection_id is mandatory")
       let query = {_id: new Types.ObjectId(connection_id)};
       let projection = { __v: 0 };
       let options = { lean: true };
@@ -393,6 +441,8 @@ export class ChatService {
         projection,
         options,
       ).populate([{path:"sent_to",select:'socket_id'},{path:"sent_by", select:'socket_id'}]).exec()
+      if(!connections)  throw  Error("Connection not found")
+      console.log("connection==>", connections)
       return connections;
     } catch (err) {
       throw err;
@@ -409,6 +459,7 @@ export class ChatService {
     else if(sent_to){
       socket_ids = [connection.sent_by.socket_id, connection.sent_to.socket_id]
     }
+    console.log("socket_ids==>", socket_ids)
     return socket_ids
   }
 
@@ -675,10 +726,10 @@ export class ChatService {
         let query = { group_id: connection.group_id, user_id: user_id }
         let member = await this.membersModel.deleteMany(query)
       }else{
-        let query = { sent_to: user_id, connection_id: connection_id }
+        let query = { sent_to: new Types.ObjectId(user_id) , connection_id: connection_id }
         let deleted = await this.connectionModel.findOneAndUpdate(query, {sent_to: null }, {new:true })
         if(!deleted){
-          let query1 =  { sent_by: user_id, connection_id: connection_id }
+          let query1 =  { sent_by: new Types.ObjectId(user_id), connection_id: connection_id }
            await this.connectionModel.findOneAndUpdate(query, {sent_by: null }, { new:true })
         }
         
@@ -695,8 +746,8 @@ export class ChatService {
       let projection = { __v: 0 };
       let options = { lean: true };
       let populate_to = [
-        { path: "sent_to", select: 'first_name last name profile_pic' },
-        { path: "sent_by", select: 'first_name last name profile_pic' },
+        { path: "sent_to", select: 'first_name last_name profile_pic chat_active email phone temp_mail temp_phone last_seen' },
+        { path: "sent_by", select: 'first_name last_name profile_pic chat_active email phone temp_mail temp_phone last_seen' },
         { path: "group_id", select: 'name image' }
       ]
       let connections :any= await this.connectionModel.findOne(
@@ -704,18 +755,32 @@ export class ChatService {
         projection,
         options,
       ).populate(populate_to).exec()
-     let members:any
-     let count = 2
+     let members:any= null;
+     let member_count:number = 2
+     let group_data:any= null;
+     let other_user:any = null;
       if(connections.group_id){
+         group_data = await this.groupsModel.findOne({_id:connections.group_id},{__v:0},{lean:true})
         let membersQuery = { group_id : connections.group_id}
         let projection = { _id:0 , created_at:0, group_id:0, __v:0, }
-        members = await this.membersModel.find(membersQuery, projection, options).populate(   { path: "user_id", select: 'first_name last_name profile_pic' },).exec()
-        count = members.length
+        members = await this.membersModel.find(membersQuery, projection, {lean:true , limit:5 }).populate(   { path: "user_id", select: 'first_name last_name profile_pic' },).exec()
+        member_count = await this.membersModel.countDocuments(membersQuery)
+      }else if(connections?.sent_by){
+         if(connections.sent_by._id == user_id){
+          other_user = connections.sent_to
+         }else {
+           other_user = connections.sent_by
+         }
       }
-      connections.members_count = count
-      connections.members = members
-   
-      return connections;
+      return {
+        _id: connections._id,
+        other_user_id:other_user?._id?? null,
+        other_user:other_user,
+        group_id: group_data?._id?? null,
+        group: group_data,
+        group_member:members,
+        member_count
+      };
     } catch (err) {
       throw err;
     }

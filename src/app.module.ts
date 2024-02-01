@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { MongooseModule } from '@nestjs/mongoose';
@@ -16,9 +16,13 @@ import { FaqsModule } from './faqs/faqs.module';
 import { PagesModule } from './pages/pages.module';
 import { QuotesModule } from './quotes/quotes.module';
 import { StaffModule } from './staff/staff.module';
+import { StripeModule } from './stripe/stripe.module';
 import { ChatModule } from './chat/chat.module';
 
+
+
 config()
+@Global()
 @Module({
     imports: [
         ConfigModule.forRoot({ isGlobal: true, }),
@@ -36,7 +40,7 @@ config()
         JwtModule.register({
             global: true,
             secret: jwtConstants.secret,
-            signOptions: { expiresIn: '86400s' },
+            signOptions: { expiresIn: '30d' },  ///one months
         }),
         MailerModule.forRoot({
             transport: {
@@ -56,7 +60,9 @@ config()
         PagesModule,
         QuotesModule,
         StaffModule,
-        ChatModule
+        StripeModule,
+        ChatModule,
+      
     ],
     controllers: [AppController],
     providers: [AppService],

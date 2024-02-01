@@ -3,6 +3,8 @@ import { AdminService } from './admin.service';
 import { AdminController } from './admin.controller';
 import { CommonModule } from 'src/common/common.module';
 import { UsersModule } from 'src/users/users.module';
+import { StripeService } from 'src/stripe/stripe.service';
+import { StripeModule } from 'nestjs-stripe';
 
 @Module({
   imports: [
@@ -10,7 +12,7 @@ import { UsersModule } from 'src/users/users.module';
     UsersModule
   ],
   controllers: [AdminController],
-  providers: [AdminService],
+  providers: [AdminService,StripeService],
   exports: [AdminService]
 })
 export class AdminModule {}

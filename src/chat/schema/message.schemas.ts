@@ -49,6 +49,9 @@ export class Message {
 
   @Prop({ default: +new Date() })
   created_at: number;
+
+  @Prop({ default: 0 })
+  updated_at: number;
 }
 
 export const messageSchema = SchemaFactory.createForClass(Message);

@@ -14,7 +14,7 @@ import axios from 'axios';
 import { CommonService } from 'src/common/common.service';
 import { jwtConstants } from 'src/auth/constant';
 import { LoginType } from './role/user.role';
-
+import { StripeService } from 'src/stripe/stripe.service';
 const positiveIntegerRegex = /^\d+$/;
 
 @Injectable()
@@ -25,6 +25,7 @@ export class UsersService {
         @InjectStripe() private stripe: Stripe,
         private jwtService: JwtService,
         private common: CommonService,
+        private readonly StripeService:StripeService 
     ) { }
     async signUp(body: SignUpDto) {
         try {
@@ -34,14 +35,10 @@ export class UsersService {
             }
             let otp = await this.common.generateOtp()
             let hash = await this.common.encriptPass(body.password)
-            // let customer = await this.stripe.customers.create({
-            //     email: body.email,
-            //     name: body.first_name
-            // })
+            let customer = await this.StripeService.createCustomer(body)
             const isPositiveInteger = positiveIntegerRegex.test(body.phone);
             if (!isPositiveInteger) {
                 throw new HttpException('please enter a valid phone number', HttpStatus.BAD_REQUEST);
- 
             }
             let data = {
                 first_name: body.first_name,
@@ -50,9 +47,8 @@ export class UsersService {
                 temp_country_code: body.country_code,
                 temp_phone: body.phone,
                 password: hash,
-                custumer_id: '',
-                email_otp: otp,
-                phone_otp: 1234,
+                custumer_id: customer.id,
+                otp: otp,
                 created_at: moment().utc().valueOf()
             }
 
@@ -504,7 +500,7 @@ export class UsersService {
     async getById(id: string) {
         try {
             return await this.users.findById({ _id: new Types.ObjectId(id) },
-                'first_name last_name email temp_mail country_code phone temp_phone temp_country_code',
+                'first_name last_name email temp_mail country_code phone temp_phone temp_country_code last_seen chat_active',
                 { lean: true })
         } catch (error) {
             throw error
@@ -603,7 +599,6 @@ export class UsersService {
     async getUserData(query:any, projection:any, options:any){
         try {
             let data=  await this.users.findOne(query, projection, options)
-            console.log("🚀 ~ file: users.service.ts:407 ~ UsersService ~ getUserData ~ data:", data)
             return data
         } catch (error) {
             throw error
@@ -612,11 +607,7 @@ export class UsersService {
 
     async findupdateUser( query:any , update:any, options:any){
         try {
-            console.log("query",query)
-            console.log("update",update)
            let data =  await this.users.findOneAndUpdate(query, update, options)
-           console.log("🚀 ~ file: users.service.ts:419 ~ UsersService ~ findupdateUser ~ data:", data)
-          
             return data
         } catch (error) { 
             throw error
