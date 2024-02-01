@@ -204,14 +204,13 @@ export class UsersService {
             }
             let user = await this.users.findOne({ email: response?.email, is_deleted: false })
             let payload: any
-            let newUser: any
             let access_token: string
             if (user == null) {
-                newUser = await this.users.create(data)
-                payload = { id: newUser?._id, email: response?.email }
+                user = await this.users.create(data)
+                payload = { id: user?._id, email: response?.email }
                 access_token = await this.generateToken(payload)
-                await this.createSession(newUser?._id, access_token, body.fcm_token, newUser.user_type)
-                return { access_token, newUser }
+                await this.createSession(user?._id, access_token, body.fcm_token, user.user_type)
+                return { access_token, user }
             }
             payload = { id: user?._id, email: response?.email }
             access_token = await this.generateToken(payload)
