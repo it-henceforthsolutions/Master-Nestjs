@@ -12,19 +12,19 @@ import { sortBy } from './dto/chat2';
 import { Member, member_role } from './schema/member.schema';
 import { JwtService } from '@nestjs/jwt';
 import { jwtConstants } from 'src/auth/constant';
-import { Connection, connectionSchema } from './schema/connection.schemas';
+import { Connection } from './schema/connection.schemas';
 import { Message } from './schema/message.schemas';
 import { Group } from './schema/group.schema';
 import { message_deleted_type } from 'utils';
+import { ModelService } from 'src/model/model.service';
 
 @Injectable()
 export class ChatService {
   constructor(
     @InjectModel(Connection.name) private connectionModel: Model<any>,
     @InjectModel(Message.name) private messageModel: Model<any>,
-    @InjectModel(Member.name) private membersModel: Model<any>,
-    @InjectModel(Group.name) private groupsModel: Model<any>,
     private userservices: UsersService,
+    private model: ModelService,
     private jwtService: JwtService,
   ) {}
 
@@ -153,7 +153,7 @@ export class ChatService {
         if (group_id) {
           query2 = { _id: new Types.ObjectId(group_id) };
           let projection = { __v: 0 };
-          let group = await this.groupsModel.findOne( query2, projection, options );
+          let group = await this.model.GroupModel.findOne( query2, projection, options );
           //console.log("🚀 ~ file: chat.service.ts:156 ~ create_connection_response= ~ group:", group)
           connection[0].group_data = group;
         } else {
@@ -337,7 +337,7 @@ export class ChatService {
       let query1 = { user_id: new Types.ObjectId(user_id) };
       let projection = { group_id: 1 };
       let options = { lean: true };
-      let gruop = await this.membersModel.find(query1, projection, options).exec();
+      let gruop = await this.model.MemberModel.find(query1, projection, options).exec();
       let options2 = await this.set_options(pagin?.pagination, pagin?.limit)
       let pagin_status:boolean=false
       if(pagin?.pagination || pagin?.limit){
@@ -466,7 +466,7 @@ export class ChatService {
   async getGroupSocketids(group_id: string) {
     try {
       let query = { group_id: new Types.ObjectId(group_id)}
-      let users = await this.membersModel.find(query).populate({path:"user_id",select:"socket_id"}).exec()
+      let users = await this.model.MemberModel.find(query).populate({path:"user_id",select:"socket_id"}).exec()
       //console.log('socket_ids of users:', users);
       let socket_ids = users.map((res) => res.user_id.socket_id);
       return socket_ids;
@@ -490,7 +490,7 @@ export class ChatService {
   async createGroup(req: any, body: dto.CreateGroupDto) {
     try {
       let user_id = req.user.id;
-      let check_group = await this.groupsModel.findOne({created_by:new Types.ObjectId(user_id), name: body.name })
+      let check_group = await this.model.GroupModel.findOne({created_by:new Types.ObjectId(user_id), name: body.name })
       if(check_group){
         throw new BadRequestException("You have already created the group with same name")
       }
@@ -500,14 +500,14 @@ export class ChatService {
         description: body?.description,
         created_by: user_id,
       };
-      let saved_data:any = await this.groupsModel.create(data_to_save);
+      let saved_data:any = await this.model.GroupModel.create(data_to_save);
       let data_to_save2 = {
         group_id: saved_data._id,
         user_id: user_id,
         role: member_role.ADMIN,
         created_at: moment().utc().valueOf()
       }
-      let member = await this.membersModel.create(data_to_save2);
+      let member = await this.model.MemberModel.create(data_to_save2);
       //console.log("mbmer",member)
       let group_data ={ group_id: saved_data._id}
       let create_connection = await this.createConnection(user_id, group_data)
@@ -533,7 +533,7 @@ export class ChatService {
         user_id: new Types.ObjectId(user_id),
         role: member_role.ADMIN,
       };
-      let check_admin = await this.membersModel.findOne(
+      let check_admin = await this.model.MemberModel.findOne(
         admin_query ,
         { __v: 0 },
         {lean:true},
@@ -551,12 +551,12 @@ export class ChatService {
       let new_members_to_save:any =[]
       for(let member of members_to_save){
         let query ={ group_id: member.group_id, user_id: member.user_id }
-        let check_member = await this.membersModel.findOne(query)
+        let check_member = await this.model.MemberModel.findOne(query)
         if(!check_member){
           new_members_to_save.push(member)
         }
       }
-      let saved_data = await this.membersModel.insertMany(new_members_to_save);
+      let saved_data = await this.model.MemberModel.insertMany(new_members_to_save);
       return saved_data;
     } catch (error) {
       throw error;
@@ -589,7 +589,7 @@ export class ChatService {
         await aggregate2.sortData(options.sort),
         await aggregate2.facetData(options.skip, options.limit),
       ];
-      let data = await this.groupsModel.aggregate(query);
+      let data = await this.model.GroupModel.aggregate(query);
       //console.log('getGroups', data);
       return {
         count: data[0].metadata[0]?.count ? data[0].metadata[0]?.count : 0,
@@ -664,11 +664,11 @@ export class ChatService {
       let populate = [
         { path: 'user_id', select: 'first_name last_name profile_pic' },
       ];
-      let data = await this.membersModel
+      let data = await this.model.MemberModel
         .find(query, projection, options)
         .populate(populate)
         .exec();
-      let count = await this.membersModel.countDocuments(query)
+      let count = await this.model.MemberModel.countDocuments(query)
       return {
         count:count,
         data:data
@@ -724,7 +724,7 @@ export class ChatService {
       let connection = await this.get_connection(connection_id)
       if(connection.group_id != null){
         let query = { group_id: connection.group_id, user_id: user_id }
-        let member = await this.membersModel.deleteMany(query)
+        let member = await this.model.MemberModel.deleteMany(query)
       }else{
         let query = { sent_to: new Types.ObjectId(user_id) , connection_id: connection_id }
         let deleted = await this.connectionModel.findOneAndUpdate(query, {sent_to: null }, {new:true })
@@ -760,11 +760,11 @@ export class ChatService {
      let group_data:any= null;
      let other_user:any = null;
       if(connections.group_id){
-         group_data = await this.groupsModel.findOne({_id:connections.group_id},{__v:0},{lean:true})
+         group_data = await this.model.GroupModel.findOne({_id:connections.group_id},{__v:0},{lean:true})
         let membersQuery = { group_id : connections.group_id}
         let projection = { _id:0 , created_at:0, group_id:0, __v:0, }
-        members = await this.membersModel.find(membersQuery, projection, {lean:true , limit:5 }).populate(   { path: "user_id", select: 'first_name last_name profile_pic' },).exec()
-        member_count = await this.membersModel.countDocuments(membersQuery)
+        members = await this.model.MemberModel.find(membersQuery, projection, {lean:true , limit:5 }).populate(   { path: "user_id", select: 'first_name last_name profile_pic' },).exec()
+        member_count = await this.model.MemberModel.countDocuments(membersQuery)
       }else if(connections?.sent_by){
          if(connections.sent_by._id == user_id){
           other_user = connections.sent_to

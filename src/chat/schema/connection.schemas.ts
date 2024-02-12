@@ -28,7 +28,7 @@ export class Connection {
   created_at: number;
 }
 
-export const connectionSchema = SchemaFactory.createForClass(Connection);
+export const connectionModel = SchemaFactory.createForClass(Connection);
 
 
 

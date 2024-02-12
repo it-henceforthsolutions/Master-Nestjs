@@ -19,6 +19,7 @@ import { StaffModule } from './staff/staff.module';
 import { StripeModule } from './stripe/stripe.module';
 import { ChatModule } from './chat/chat.module';
 import { NotificationModule } from './notification/notification.module';
+import { ModelModule } from './model/model.module';
 
 
 
@@ -64,6 +65,7 @@ config()
         StripeModule,
         ChatModule,
         NotificationModule,
+        ModelModule,
       
     ],
     controllers: [AppController],

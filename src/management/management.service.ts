@@ -4,21 +4,22 @@ import { UpdateManagementDto } from './dto/update-management.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { Managements } from './schema/management.schema';
 import { Model } from 'mongoose';
+import { ModelService } from 'src/model/model.service';
 
 @Injectable()
 export class ManagementService {
 
     constructor(
-        @InjectModel(Managements.name) private management: Model<Managements>
+        private model: ModelService,
     ) { }
 
     async create(body: CreateManagementDto) {
         try {
-                let page = await this.management.findOne({ type: 'HOME' })
+                let page = await this.model.ManagementsModel.findOne({ type: 'HOME' })
                 if (page) {
-                    return await this.management.findOneAndUpdate({ _id: page._id, type: 'HOME' }, body, { new: true })
+                    return await this.model.ManagementsModel.findOneAndUpdate({ _id: page._id, type: 'HOME' }, body, { new: true })
                 } else {
-                    return await this.management.create(body)
+                    return await this.model.ManagementsModel.create(body)
                 }
             }
         catch (error) {
@@ -28,8 +29,8 @@ export class ManagementService {
 
     async findAll() {
         try {
-            let data = await this.management.find();
-            let count = await this.management.countDocuments({ type: 'HOME' })
+            let data = await this.model.ManagementsModel.find();
+            let count = await this.model.ManagementsModel.countDocuments({ type: 'HOME' })
             return { data: data, count: count }
         }
         catch (error) {
@@ -39,7 +40,7 @@ export class ManagementService {
 
     findOne(id: string) {
         try {
-            return this.management.findOne({ _id: id });
+            return this.model.ManagementsModel.findOne({ _id: id });
         }
         catch (error) {
             throw error
@@ -48,7 +49,7 @@ export class ManagementService {
 
     async findHome() {
         try {
-            return this.management.findOne({ type: 'HOME' })
+            return this.model.ManagementsModel.findOne({ type: 'HOME' })
         }
         catch (error) {
             throw error
