@@ -19,6 +19,7 @@ import { StaffModule } from './staff/staff.module';
 import { StripeModule } from './stripe/stripe.module';
 import { ChatModule } from './chat/chat.module';
 import { NotificationModule } from './notification/notification.module';
+import { AgoraModule } from './agora/agora.module';
 
 
 
@@ -64,6 +65,7 @@ config()
         StripeModule,
         ChatModule,
         NotificationModule,
+        AgoraModule,
       
     ],
     controllers: [AppController],
