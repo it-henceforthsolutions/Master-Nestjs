@@ -1,6 +1,6 @@
 import { Types } from 'mongoose';
 import { asyncScheduler } from 'rxjs';
-import { Group } from './schema/group.schema';
+import { Groups } from './schema/group.schema';
 
 export class aggregate {
   static match = async (user_id: string, ids: Array<string>) => {

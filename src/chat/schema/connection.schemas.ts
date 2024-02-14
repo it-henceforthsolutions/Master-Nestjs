@@ -3,20 +3,20 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, SchemaTypes } from 'mongoose';
 import { Users } from 'src/users/schema/users.schema'; // Assuming you have a User schema
-import { Group } from './group.schema';
+import { Groups } from './group.schema';
 
-export type ConnectionDocument = Connection & Document;
+export type ConnectionDocument = Connections & Document;
 
 @Schema()
-export class Connection {
+export class Connections {
   @Prop({ type: SchemaTypes.ObjectId, ref: Users.name, default: null })
   sent_to: Users;
 
   @Prop({ type: SchemaTypes.ObjectId, ref: Users.name, default: null })
   sent_by: Users;
 
-  @Prop({ type: SchemaTypes.ObjectId, ref: Group.name, default: null })
-  group_id: Group;
+  @Prop({ type: SchemaTypes.ObjectId, ref: Groups.name, default: null })
+  group_id: Groups;
 
   @Prop({ default: null })
   last_message: string;
@@ -28,7 +28,7 @@ export class Connection {
   created_at: number;
 }
 
-export const connectionSchema = SchemaFactory.createForClass(Connection);
+export const connectionModel = SchemaFactory.createForClass(Connections);
 
 
 

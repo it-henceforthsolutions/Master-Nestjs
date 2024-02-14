@@ -4,10 +4,10 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, SchemaTypes } from 'mongoose';
 import { Users } from 'src/users/schema/users.schema'; // Assuming you have a User schema
 
-export type GroupDocument = Group & Document;
+export type GroupDocument = Groups & Document;
 
 @Schema()
-export class Group {
+export class Groups {
   @Prop({ default: null })
   name: string;
 
@@ -27,7 +27,7 @@ export class Group {
   created_at: number;
 }
 
-export const groupSchema = SchemaFactory.createForClass(Group);
+export const groupSchema = SchemaFactory.createForClass(Groups);
 
 
 

@@ -6,17 +6,18 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Pages } from './schema/pages.schema';
 import { Model, Types } from 'mongoose';
 import * as moment from 'moment';
+import { ModelService } from 'src/model/model.service';
 
 @Injectable()
 export class PagesService {
     constructor(
-        @InjectModel(Pages.name) private pages: Model<Pages>,
+        private model: ModelService,
         private readonly commonService: CommonService
     ) { }
 
     async create(createPageDto: CreatePageDto) {
         try {
-            let pagesResponse = await this.pages.create({...createPageDto,created_at:moment().utc().valueOf()});
+            let pagesResponse = await this.model.PagesModel.create({...createPageDto,created_at:moment().utc().valueOf()});
             return pagesResponse
         }
         catch (error) {
@@ -46,8 +47,8 @@ export class PagesService {
                 is_deleted: false,
             }
             let options = await this.commonService.set_options(paginationQuery.pagination, paginationQuery.limit)
-            let data = await this.pages.find(query, {}, options);
-            let count = await this.pages.countDocuments(query)
+            let data = await this.model.PagesModel.find(query, {}, options);
+            let count = await this.model.PagesModel.countDocuments(query)
             return { data, count }
         }
         catch (error) {
@@ -57,7 +58,7 @@ export class PagesService {
 
     async findOne(slug: string) {
         try {
-            return await this.pages.findOne({ slug, is_deleted: false });
+            return await this.model.PagesModel.findOne({ slug, is_deleted: false });
         }
         catch (error) {
             throw new NotFoundException('Page Record Not Found')
@@ -66,7 +67,7 @@ export class PagesService {
 
     async update(id: string, updatePageDto: UpdatePageDto) {
         try {
-            return await this.pages.findByIdAndUpdate(
+            return await this.model.PagesModel.findByIdAndUpdate(
                 { _id: new Types.ObjectId(id) },
                 { updated_at: moment().utc().valueOf(), ...updatePageDto },
                 { new: true }
@@ -79,7 +80,7 @@ export class PagesService {
 
     async remove(id: string) {
         try {
-            await this.pages.findOneAndUpdate(
+            await this.model.PagesModel.findOneAndUpdate(
                 { _id: new Types.ObjectId(id), is_deleted: false },
                 { is_deleted: true },
                 { new: true }

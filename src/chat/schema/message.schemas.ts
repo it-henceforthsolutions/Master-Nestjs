@@ -1,18 +1,18 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, SchemaTypes } from 'mongoose';
-import { Connection } from './connection.schemas'; // Assuming you have a Connection schema
-import { Group } from './group.schema'; // Assuming you have a Group schema
+import { Connections } from './connection.schemas'; // Assuming you have a Connection schema
+import { Groups } from './group.schema'; // Assuming you have a Group schema
 import { Users } from 'src/users/schema/users.schema';  // Assuming you have a User schema
 
 const message_type = [null, 'TEXT', 'IMAGE', 'VIDEO', 'AUDIO', 'DOCUMENT', 'SEND_COINS', 'GROUP_LINK'];
 const type = [null, 'NORMAL', 'REPLY', 'FORWARDED', 'DELETED'];
 
-export type MessageDocument = Message & Document;
+export type MessageDocument = Messages & Document;
 
 @Schema()
-export class Message {
-  @Prop({ type: SchemaTypes.ObjectId, ref: Connection.name, default: null })
-  connection_id: Connection;
+export class Messages {
+  @Prop({ type: SchemaTypes.ObjectId, ref: Connections.name, default: null })
+  connection_id: Connections;
   
   @Prop({ type: SchemaTypes.ObjectId, ref: Users.name, default: null })
   sent_by: Users;
@@ -20,8 +20,8 @@ export class Message {
   @Prop({ type: SchemaTypes.ObjectId, ref: Users.name, default: null })
   sent_to: Users;
 
-  @Prop({ type: SchemaTypes.ObjectId, ref: Group.name, default: null })
-  group_id: Group;
+  @Prop({ type: SchemaTypes.ObjectId, ref: Groups.name, default: null })
+  group_id: Groups;
 
   @Prop({ default: null, enum: type })
   type: string;
@@ -54,7 +54,7 @@ export class Message {
   updated_at: number;
 }
 
-export const messageSchema = SchemaFactory.createForClass(Message);
+export const messageSchema = SchemaFactory.createForClass(Messages);
 
 
 
