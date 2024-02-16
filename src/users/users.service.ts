@@ -48,7 +48,7 @@ export class UsersService {
                 temp_phone: body.phone,
                 password: hash,
                 custumer_id: customer.id,
-                otp: otp,
+                email_otp: otp,
                 created_at: moment().utc().valueOf()
             }
 
