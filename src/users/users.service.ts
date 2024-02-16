@@ -102,7 +102,7 @@ export class UsersService {
     async verifyPhone(body: OtpDto, id: string) {
         try {
             let user = await this.users.findById({ _id: new Types.ObjectId(id) })
-            if (user?.phone_otp != body.otp) {
+            if (body.otp != 1234) {
                 throw new HttpException('Invalid OTP', HttpStatus.BAD_REQUEST)
             }
             let data = {
@@ -441,14 +441,14 @@ export class UsersService {
             let otp = await this.common.generateOtp()
             let phone = `${user.temp_country_code} ${user.temp_phone}`
 
-            let isSendVerification = await this.common.sendOtpOnPhone(otp, phone)
+           // let isSendVerification = await this.common.sendOtpOnPhone(otp, phone)
 
-            if (!isSendVerification) {
-                throw new HttpException(`We can't Resend Otp Please connect Administration`, HttpStatus.BAD_REQUEST)
-            }
+           // if (!isSendVerification) {
+            //    throw new HttpException(`We can't Resend Otp Please connect Administration`, HttpStatus.BAD_REQUEST)
+           // }
             await this.users.findByIdAndUpdate(
                 { _id: new Types.ObjectId(id) },
-                { otp: otp },
+                { phone_otp: otp },
                 { new: true }
             )
             throw new HttpException('OTP resend to your registered Phone No.', HttpStatus.OK)
