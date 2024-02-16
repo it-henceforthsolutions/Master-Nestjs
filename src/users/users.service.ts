@@ -472,7 +472,7 @@ export class UsersService {
             }
             await this.users.findByIdAndUpdate(
                 { _id: user?._id },
-                { otp: otp },
+                { email_otp: otp },
                 { new: true }
             )
             throw new HttpException('OTP resend to your registered email address.', HttpStatus.OK)
