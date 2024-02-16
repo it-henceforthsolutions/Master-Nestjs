@@ -259,7 +259,7 @@ export class UsersService {
             await this.common.verification(mail, otp)
             await this.users.findOneAndUpdate(
                 { _id: user._id },
-                { otp: otp, unique_id: uniqueId },
+                { email_otp: otp, unique_id: uniqueId },
                 { new: true }
             )
             return { message: 'Check Your Registered Mail', uniqueId }
