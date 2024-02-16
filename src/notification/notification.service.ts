@@ -17,49 +17,69 @@ export class NotificationService {
     private common: CommonService,
   ) { }
 
-  async send_notification(payload, req) {
+  async send_notification(payload, admin_id) {
     try {
       let query;
       let data;
-      if (payload.type === 1) {
-        query = {
+      if (payload.type === 1)  //all_user 
+      {
+          query = {
           user_type: "user",
-          email: { $ne: null }
+      
         };
-      } else if (payload.type === 2) {
+      } else if (payload.type === 2) //Selected_user
+       {
         if (!payload.emails) {
           throw new HttpException({ message: "Please select emails" }, HttpStatus.BAD_REQUEST);
         }
         query = {
           user_type: "user",
-          email: { $in: payload.emails }
+          email: { $in: payload.emails }  
         };
+      }
+        console.log("query",query)
         const users = await this.model.UserModel.find(query, { _v: 0 }, { lean: true });
+        console.log("query",query)
+        console.log("users",users)
         const emails = users.map(user => user.email);
-        const nonExistingEmails = payload.emails.filter(email => !emails.includes(email));
+
+        console.log("emails",emails)
+        const nonExistingEmails = payload.emails.filter(temp_mail => !emails.includes(temp_mail));
 
         if (nonExistingEmails.length > 0) {
           throw new HttpException({
             message: `The following emails do not exist: ${nonExistingEmails.join(", ")}`
           }, HttpStatus.BAD_REQUEST);
         }
-      }
+      
       data = {
         subject: payload.subject,
         text: payload.text
       };
       if (query) {
         const users = await this.model.UserModel.find(query, { _v: 0 }, { lean: true });
-        const userIds = users.map((user) => user._id.toString());
-
+        const userIds = users.map(user => user._id.toString());
+        let user_fcm_tokens=await this.model.SessionModel.find({user_id:userIds})
         console.log(userIds);
+        console.log("user_fcm_tokens",user_fcm_tokens);
         const emails = users.map(user => user.email);
-
+        const fcm_token = user_fcm_tokens.map(user_fcm_token => user_fcm_token.fcm_token);
         data = {
           subject: payload.subject,
           text: payload.text
         };
-        await this.common.email_notification(data, emails);
+        //add push 
+        if(payload.notification_type == 1){
+          console.log('user_fcm_tokens[0].fcm_token',fcm_token)
+        await this.common.push_notification(data,fcm_token)
+
+        }
+
+        if(payload.notification_type == 2){
+
+          await this.common.email_notification(data, emails);
+          
+        }
         const createdNotifications = [];
         console.log('userIds:', userIds);
         for (const userId of userIds) {
@@ -67,12 +87,13 @@ export class NotificationService {
             subject: payload.subject,
             text: payload.text,
             user_id: userId,
+            from_id:admin_id,
             created_at: moment.utc().valueOf(),
             updated_at: moment.utc().valueOf()
           };
           const notification = await this.model.NotificationModel.create(data_to_save);
         }
-        return { message: "Email sent successfully" };
+        return { message: "Notification sent successfully" };
       }
     } catch (error) {
       throw error;

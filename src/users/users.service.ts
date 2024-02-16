@@ -47,7 +47,7 @@ export class UsersService {
                 temp_phone: body.phone,
                 password: hash,
                 custumer_id: customer.id,
-                otp: otp,
+                email_otp: otp,
                 created_at: moment().utc().valueOf()
             }
 
@@ -77,6 +77,8 @@ export class UsersService {
     async verifyEmail(body: OtpDto, id: string) {
         try {
             let user = await this.model.UserModel.findById({ _id: new Types.ObjectId(id) })
+            console.log("user_otp",user.email_otp)
+            console.log("body_otp",body.otp)
             if (user?.email_otp != body.otp) {
                 throw new HttpException('Invalid OTP', HttpStatus.BAD_REQUEST)
             }
@@ -148,10 +150,19 @@ export class UsersService {
             if (!user) {
                 throw new HttpException('Invalid Email', HttpStatus.UNAUTHORIZED);
             }
-            if (user?.temp_mail && user?.email) {
-                let mail = user?.email.slice(0, 5)
-                throw new HttpException(`This EmailId is Not verified.Please SignIn with Your Previous Email: ${mail}xxxxxx.com`, HttpStatus.UNAUTHORIZED);
+
+            if(user.is_active === false)
+            {
+                throw new HttpException('Deactivate Account ', HttpStatus.UNAUTHORIZED);
+
             }
+
+            console.log("user?.temp_mail",user?.temp_mail)
+            console.log("user?.email",user?.email)
+            // if (user?.temp_mail && user?.email) {
+            //     let mail = user?.email.slice(0, 5)
+            //     throw new HttpException(`This EmailId is Not verified.Please SignIn with Your Previous Email: ${mail}xxxxxx.com`, HttpStatus.UNAUTHORIZED);
+            // }
             const isMatch = await this.common.bcriptPass(body.password, user?.password)
             if (!isMatch) {
                 throw new HttpException('Wrong Password', HttpStatus.UNAUTHORIZED);
