@@ -2,10 +2,10 @@
 
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, SchemaTypes } from 'mongoose';
-import { Group } from './group.schema'; // Assuming you have a Group schema
+import { Groups } from './group.schema'; // Assuming you have a Group schema
 import { Users } from 'src/users/schema/users.schema';  // Assuming you have a User schema
 
-export type MemberDocument = Member & Document;
+export type MemberDocument = Members & Document;
 
 export enum member_role {
    USER= "USER", 
@@ -13,9 +13,9 @@ export enum member_role {
 }
 
 @Schema()
-export class Member {
-  @Prop({ type: SchemaTypes.ObjectId, ref: Group.name, default: null })
-  group_id: Group;
+export class Members {
+  @Prop({ type: SchemaTypes.ObjectId, ref: Groups.name, default: null })
+  group_id: Groups;
 
   @Prop({ type: SchemaTypes.ObjectId, ref: Users.name, default: null })
   user_id: Users;
@@ -27,7 +27,7 @@ export class Member {
   created_at: number;
 }
 
-export const memberSchema = SchemaFactory.createForClass(Member);
+export const memberSchema = SchemaFactory.createForClass(Members);
 
 
 

@@ -24,7 +24,7 @@ export class NotificationController {
   @ApiOperation({ summary: 'send notification', description: '1 ->all users , 2 ->selected users' })
   @ApiResponse({ status: 201, description: 'OK' })
   async send_notification(@Body() payload: CreateNotificationDto, @Request() req) {
-    return await this.notificationService.send_notification(payload, req);
+    return await this.notificationService.send_notification(payload, req.user.id);
   }
 
   @Get('emails')

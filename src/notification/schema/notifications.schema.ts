@@ -15,8 +15,13 @@ export class Notifications {
     @Prop()
     user_id: string
 
+    @Prop()
+    from_id: string
+
     @Prop({ type:String,enum:NotificationType,default:NotificationType.unread})
     notification_type: string;
+
+
 
     @Prop({ default: moment.utc().valueOf() })
     created_at: number

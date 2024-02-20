@@ -5,18 +5,20 @@ import * as  moment from 'moment';
 import { InjectModel } from '@nestjs/mongoose';
 import { Quotes } from './schema/quotes.schema';
 import { Model, Types } from 'mongoose';
+import { ModelService } from 'src/model/model.service';
 
 @Injectable()
 export class QuotesService {
 
     constructor(
-        @InjectModel(Quotes.name) private quotes: Model<Quotes>,
+        private model: ModelService,
+        
         private readonly commonService: CommonService
     ) { }
 
     async create(createQuoteDto: CreateQuoteDto) {
         try {
-            let quote = await this.quotes.create(createQuoteDto)
+            let quote = await this.model.QuotesModel.create(createQuoteDto)
             return quote
         }
         catch (error) {
@@ -58,8 +60,8 @@ export class QuotesService {
                 }
             }
             let options = await this.commonService.set_options(searchQuery.pagination, searchQuery.limit)
-            let data = await this.quotes.find(query, project, options);
-            let count = await this.quotes.countDocuments(query)
+            let data = await this.model.QuotesModel.find(query, project, options);
+            let count = await this.model.QuotesModel.countDocuments(query)
             return {
                 data: data,
                 count: count
@@ -72,7 +74,7 @@ export class QuotesService {
 
     async findOne(id: string) {
         try {
-            let data = await this.quotes.findOne({ _id: new Types.ObjectId(id), is_deleted: false });
+            let data = await this.model.QuotesModel.findOne({ _id: new Types.ObjectId(id), is_deleted: false });
             if(!data){
                 throw new HttpException('Deleted Quote',HttpStatus.BAD_REQUEST)
             }
@@ -87,10 +89,10 @@ export class QuotesService {
         try {
             let quote = await this.findOne(id)
             if (quote.is_resolved == true) {
-                await this.quotes.findByIdAndUpdate({ _id: id }, { is_resolved: false }, { new: true });
+                await this.model.QuotesModel.findByIdAndUpdate({ _id: id }, { is_resolved: false }, { new: true });
                 throw new HttpException('Pending!!', HttpStatus.OK)
             }
-            await this.quotes.findByIdAndUpdate({ _id: id }, { is_resolved: true }, { new: true });
+            await this.model.QuotesModel.findByIdAndUpdate({ _id: id }, { is_resolved: true }, { new: true });
             throw new HttpException('Resolved!!', HttpStatus.OK)
         }
         catch (error) {
@@ -101,7 +103,7 @@ export class QuotesService {
 
     async remove(id: string) {
         try {
-            await this.quotes.findOneAndUpdate(
+            await this.model.QuotesModel.findOneAndUpdate(
                 { is_deleted: false, _id: new Types.ObjectId(id) },
                 { is_deleted: true },
                 { new: true }

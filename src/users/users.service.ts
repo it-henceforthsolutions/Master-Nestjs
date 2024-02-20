@@ -15,21 +15,20 @@ import { CommonService } from 'src/common/common.service';
 import { jwtConstants } from 'src/auth/constant';
 import { LoginType } from './role/user.role';
 import { StripeService } from 'src/stripe/stripe.service';
+import { ModelService } from 'src/model/model.service';
 const positiveIntegerRegex = /^\d+$/;
 
 @Injectable()
 export class UsersService {
     constructor(
-        @InjectModel(Users.name) public users: Model<Users>,
-        @InjectModel(Sessions.name) private sessions: Model<Sessions>,
-        @InjectStripe() private stripe: Stripe,
+        private model: ModelService,
         private jwtService: JwtService,
         private common: CommonService,
         private readonly StripeService: StripeService
     ) { }
     async signUp(body: SignUpDto) {
         try {
-            let existMail = await this.users.findOne({ email: body.email, }, 'email temp_mail')
+            let existMail = await this.model.UserModel.findOne({ email: body.email, }, 'email temp_mail')
             if (existMail) {
                 throw new HttpException('This Email is Already Exist! Please Use another Email Address', HttpStatus.BAD_REQUEST);
             }
@@ -52,16 +51,16 @@ export class UsersService {
                 created_at: moment().utc().valueOf()
             }
 
-            let user = await this.users.create(data)
+            let user = await this.model.UserModel.create(data)
             await this.common.verification(user.temp_mail, otp)
             let payload = { id: user._id, email: user.temp_mail }
             let access_token = await this.jwtService.signAsync(payload)
-            await this.sessions.create({
+            await this.model.SessionModel.create({
                 user_id: user?._id,
                 access_token: access_token,
                 user_type: user?.user_type
             })
-            user = await this.users.findOne({ _id: user?._id }, {
+            user = await this.model.UserModel.findOne({ _id: user?._id }, {
                 first_name: 1, last_name: 1, temp_mail: 1, temp_phone: 1, country_code: 1, temp_country_code: 1, email: 1
             }).lean(true)
             return { access_token, ...user }
@@ -77,7 +76,9 @@ export class UsersService {
 
     async verifyEmail(body: OtpDto, id: string) {
         try {
-            let user = await this.users.findById({ _id: new Types.ObjectId(id) })
+            let user = await this.model.UserModel.findById({ _id: new Types.ObjectId(id) })
+            console.log("user_otp",user.email_otp)
+            console.log("body_otp",body.otp)
             if (user?.email_otp != body.otp) {
                 throw new HttpException('Invalid OTP', HttpStatus.BAD_REQUEST)
             }
@@ -87,12 +88,12 @@ export class UsersService {
                 temp_mail: null,
                 email_otp: null
             }
-            await this.users.findOneAndUpdate(
+            await this.model.UserModel.findOneAndUpdate(
                 { _id: new Types.ObjectId(id) },
                 data,
                 { new: true }
             )
-            let temp_destroy = await this.users.deleteMany({ temp_mail: user?.temp_mail, is_email_verify: false })
+            let temp_destroy = await this.model.UserModel.deleteMany({ temp_mail: user?.temp_mail, is_email_verify: false })
             if (temp_destroy) { throw new HttpException('OTP Verified', HttpStatus.OK) }
         } catch (error) {
             throw error
@@ -101,8 +102,8 @@ export class UsersService {
 
     async verifyPhone(body: OtpDto, id: string) {
         try {
-            let user = await this.users.findById({ _id: new Types.ObjectId(id) })
-            if (body.otp != 1234) {
+            let user = await this.model.UserModel.findById({ _id: new Types.ObjectId(id) })
+            if (user?.phone_otp != body.otp) {
                 throw new HttpException('Invalid OTP', HttpStatus.BAD_REQUEST)
             }
             let data = {
@@ -113,7 +114,7 @@ export class UsersService {
                 temp_phone: null,
                 phone_otp: null
             }
-            await this.users.findByIdAndUpdate(
+            await this.model.UserModel.findByIdAndUpdate(
                 { _id: new Types.ObjectId(id) },
                 data,
                 { new: true }
@@ -126,7 +127,7 @@ export class UsersService {
 
     async verifyOtp(body: NewPassOtpDto) {
         try {
-            let user = await this.users.findOne({ unique_id: body.unique_id })
+            let user = await this.model.UserModel.findOne({ unique_id: body.unique_id })
             if (user?.email_otp != body.otp) {
                 throw new HttpException('Invalid OTP', HttpStatus.BAD_REQUEST)
             }
@@ -138,28 +139,37 @@ export class UsersService {
 
     async signIn(body: SignInDto) {
         try {
-            let user = await this.users.findOne({ email: body.email })
+            let user = await this.model.UserModel.findOne({ email: body.email })
             let payload = { id: user?._id, email: user?.email }
 
             if (!user) {
 
-                user = await this.users.findOne({ temp_mail: body.email })
+                user = await this.model.UserModel.findOne({ temp_mail: body.email })
                 payload = { id: user?._id, email: user?.temp_mail }
             }
             if (!user) {
                 throw new HttpException('Invalid Email', HttpStatus.UNAUTHORIZED);
             }
-            if (user?.temp_mail && user?.email) {
-                let mail = user?.email.slice(0, 5)
-                throw new HttpException(`This EmailId is Not verified.Please SignIn with Your Previous Email: ${mail}xxxxxx.com`, HttpStatus.UNAUTHORIZED);
+
+            if(user.is_active === false)
+            {
+                throw new HttpException('Deactivate Account ', HttpStatus.UNAUTHORIZED);
+
             }
+
+            console.log("user?.temp_mail",user?.temp_mail)
+            console.log("user?.email",user?.email)
+            // if (user?.temp_mail && user?.email) {
+            //     let mail = user?.email.slice(0, 5)
+            //     throw new HttpException(`This EmailId is Not verified.Please SignIn with Your Previous Email: ${mail}xxxxxx.com`, HttpStatus.UNAUTHORIZED);
+            // }
             const isMatch = await this.common.bcriptPass(body.password, user?.password)
             if (!isMatch) {
                 throw new HttpException('Wrong Password', HttpStatus.UNAUTHORIZED);
             }
             let access_token = await this.generateToken(payload)
             await this.createSession(user._id, access_token, body.fcm_token, user.user_type)
-            user = await this.users.findOne({ _id: user?._id }, {
+            user = await this.model.UserModel.findOne({ _id: user?._id }, {
                 first_name: 1, last_name: 1, temp_mail: 1, temp_phone: 1, country_code: 1, temp_country_code: 1, email: 1
             }).lean(true)
             return { access_token, ...user }
@@ -198,11 +208,11 @@ export class UsersService {
             } else {
                 throw new HttpException('Invalid Request', HttpStatus.BAD_REQUEST)
             }
-            let user = await this.users.findOne({ email: response?.email, is_deleted: false })
+            let user = await this.model.UserModel.findOne({ email: response?.email, is_deleted: false })
             let payload: any
             let access_token: string
             if (user == null) {
-                user = await this.users.create(data)
+                user = await this.model.UserModel.create(data)
                 payload = { id: user?._id, email: response?.email }
                 access_token = await this.generateToken(payload)
                 await this.createSession(user?._id, access_token, body.fcm_token, user.user_type)
@@ -229,7 +239,7 @@ export class UsersService {
 
     async createSession(user_id: any, access_token: string, fcm_token: string, user_type: string) {
         try {
-            return await this.sessions.create({
+            return await this.model.SessionModel.create({
                 user_id: user_id,
                 access_token: access_token,
                 fcm_token: fcm_token,
@@ -242,10 +252,10 @@ export class UsersService {
 
     async forgetPassword(body: ForgetPassDto) {
         try {
-            let user = await this.users.findOne({ email: body.email })
+            let user = await this.model.UserModel.findOne({ email: body.email })
             let mail = user?.email
             if (!user) {
-                user = await this.users.findOne({ temp_mail: body.email })
+                user = await this.model.UserModel.findOne({ temp_mail: body.email })
                 mail = user?.temp_mail
             }
             if (!user) {
@@ -257,7 +267,7 @@ export class UsersService {
                 charset: 'alphanumeric'
             })
             await this.common.verification(mail, otp)
-            await this.users.findOneAndUpdate(
+            await this.model.UserModel.findOneAndUpdate(
                 { _id: user._id },
                 { email_otp: otp, unique_id: uniqueId },
                 { new: true }
@@ -272,7 +282,7 @@ export class UsersService {
         try {
             let pass = await this.common.encriptPass(body.new_password)
 
-            let data = await this.users.findOneAndUpdate(
+            let data = await this.model.UserModel.findOneAndUpdate(
                 { unique_id: body.unique_id },
                 { password: pass },
                 { new: true }
@@ -285,13 +295,13 @@ export class UsersService {
 
     async changePassward(body: ChangePassDto, id: string) {
         try {
-            let user = await this.users.findById({ _id: new Types.ObjectId(id) })
+            let user = await this.model.UserModel.findById({ _id: new Types.ObjectId(id) })
             const isMatch = this.common.bcriptPass(body.old_password, user?.password)
             if (!isMatch) {
                 throw new HttpException('Wrong Password', HttpStatus.BAD_REQUEST)
             }
             let newPass = await this.common.encriptPass(body.new_password)
-            let updated = await this.users.findByIdAndUpdate(
+            let updated = await this.model.UserModel.findByIdAndUpdate(
                 { _id: new Types.ObjectId(id) },
                 { password: newPass },
                 { new: true }
@@ -308,7 +318,7 @@ export class UsersService {
 
     async logOut(id: string) {
         try {
-            let endSession = await this.sessions.deleteMany({ user_id: id })
+            let endSession = await this.model.SessionModel.deleteMany({ user_id: id })
             if (!endSession) {
                 throw new HttpException('No Session Exist', HttpStatus.OK)
             }
@@ -321,7 +331,7 @@ export class UsersService {
     async update(id: string, body: any) {
         try {
             let data = { updated_at: moment().utc().valueOf(), ...body }
-            let updatedUser = await this.users.findByIdAndUpdate(
+            let updatedUser = await this.model.UserModel.findByIdAndUpdate(
                 { _id: new Types.ObjectId(id) },
                 data,
                 { new: true }
@@ -335,7 +345,7 @@ export class UsersService {
     async updateEmail(id: string, body: UpdateEmailDto) {
         try {
             let otp = await this.common.generateOtp()
-            let userModel = await this.users.findOne({email: body.email})
+            let userModel = await this.model.UserModel.findOne({email: body.email})
             if(userModel){
                 throw new HttpException('This Email is Already Exist! Please Use another Email Address', HttpStatus.BAD_REQUEST);
             }
@@ -350,7 +360,7 @@ export class UsersService {
                 updated_at: moment().utc().valueOf(),
             }
             await this.common.verification(body.email, otp)
-            let updatedMail = await this.users.findByIdAndUpdate(
+            let updatedMail = await this.model.UserModel.findByIdAndUpdate(
                 { _id: new Types.ObjectId(id) },
                 data,
                 { new: true }
@@ -372,7 +382,7 @@ export class UsersService {
                 updated_at: moment().utc().valueOf(),
             }
             
-            let userModel = await this.users.findOne({country_code: body.country_code,phone: body.phone})
+            let userModel = await this.model.UserModel.findOne({country_code: body.country_code,phone: body.phone})
             if(userModel){
                 throw new HttpException('This Phone Number is Already Exist! Please Use another Email Address', HttpStatus.BAD_REQUEST);
             }
@@ -381,7 +391,7 @@ export class UsersService {
             // if (response.status == "failed") {
             //     throw new HttpException('OTP not sent', HttpStatus.EXPECTATION_FAILED)
             // }
-            let updatedPhone = await this.users.findByIdAndUpdate(
+            let updatedPhone = await this.model.UserModel.findByIdAndUpdate(
                 { _id: new Types.ObjectId(id) },
                 data,
                 { new: true }
@@ -394,7 +404,7 @@ export class UsersService {
 
     async findOne(query) {
         try {
-            return await this.users.findOne(query)
+            return await this.model.UserModel.findOne(query)
         } catch (error) {
             throw error
         }
@@ -402,7 +412,7 @@ export class UsersService {
 
     async createAdmin(data: any) {
         try {
-            return await this.users.create(data)
+            return await this.model.UserModel.create(data)
         } catch (error) {
             throw error
         }
@@ -410,7 +420,7 @@ export class UsersService {
 
     async findUser(id: string) {
         try {
-            return await this.users.findById({ _id: new Types.ObjectId(id) })
+            return await this.model.UserModel.findById({ _id: new Types.ObjectId(id) })
         } catch (error) {
             throw error
         }
@@ -418,7 +428,7 @@ export class UsersService {
 
     async resendEmailOtp(id: string) {
         try {
-            let user = await this.users.findOne({ _id: new Types.ObjectId(id) })
+            let user = await this.model.UserModel.findOne({ _id: new Types.ObjectId(id) })
 
             if (user?.is_email_verify == true) {
                 throw new HttpException(`Your Email is Already Verified`, HttpStatus.BAD_REQUEST)
@@ -429,7 +439,7 @@ export class UsersService {
             if (!isSendVerification) {
                 throw new HttpException(`We can't Resend Otp Please connect Administration`, HttpStatus.OK)
             }
-            await this.users.findByIdAndUpdate(
+            await this.model.UserModel.findByIdAndUpdate(
                 { _id: new Types.ObjectId(id) },
                 { otp: otp },
                 { new: true }
@@ -442,7 +452,7 @@ export class UsersService {
 
     async resendPhoneOtp(id: string) {
         try {
-            let user = await this.users.findOne({ _id: new Types.ObjectId(id) })
+            let user = await this.model.UserModel.findOne({ _id: new Types.ObjectId(id) })
 
             if (user?.is_phone_verify == true) {
                 throw new HttpException(`Your Phone no. is Already Verified`, HttpStatus.BAD_REQUEST)
@@ -455,7 +465,7 @@ export class UsersService {
            // if (!isSendVerification) {
             //    throw new HttpException(`We can't Resend Otp Please connect Administration`, HttpStatus.BAD_REQUEST)
            // }
-            await this.users.findByIdAndUpdate(
+            await this.model.UserModel.findByIdAndUpdate(
                 { _id: new Types.ObjectId(id) },
                 { phone_otp: otp },
                 { new: true }
@@ -468,18 +478,18 @@ export class UsersService {
 
     async resendOtp(body: UpdateEmailDto) {
         try {
-            let user = await this.users.findOne({ temp_mail: body.email })
+            let user = await this.model.UserModel.findOne({ temp_mail: body.email })
             let otp = await this.common.generateOtp()
             let mail = user?.temp_mail
             if (!user) {
-                user = await this.users.findOne({ email: body.email })
+                user = await this.model.UserModel.findOne({ email: body.email })
                 mail = user?.email
             }
             let isSendVerification = await this.common.verification(mail, otp)
             if (!isSendVerification) {
                 throw new HttpException(`We can't Resend Otp Please connect Administration`, HttpStatus.OK)
             }
-            await this.users.findByIdAndUpdate(
+            await this.model.UserModel.findByIdAndUpdate(
                 { _id: user?._id },
                 { email_otp: otp },
                 { new: true }
@@ -492,7 +502,7 @@ export class UsersService {
 
     async getAll() {
         try {
-            let allUsers = await this.users.find(
+            let allUsers = await this.model.UserModel.find(
                 { is_deleted: false, user_type: 'user' },
                 'first_name last_name email temp_mail country_code phone temp_phone temp_country_code',
                 { lean: true }
@@ -508,7 +518,7 @@ export class UsersService {
 
     async getById(id: string) {
         try {
-            return await this.users.findById({ _id: new Types.ObjectId(id) },
+            return await this.model.UserModel.findById({ _id: new Types.ObjectId(id) },
                 'first_name last_name email temp_mail country_code phone temp_phone temp_country_code last_seen chat_active',
                 { lean: true })
         } catch (error) {
@@ -518,7 +528,7 @@ export class UsersService {
 
     async getUsersCount() {
         try {
-            return await this.users.countDocuments({ is_active: true })
+            return await this.model.UserModel.countDocuments({ is_active: true })
         } catch (error) {
             throw error
         }
@@ -526,21 +536,21 @@ export class UsersService {
 
     async block(id: string) {
         try {
-            let user = await this.users.findById({ _id: new Types.ObjectId(id) })
+            let user = await this.model.UserModel.findById({ _id: new Types.ObjectId(id) })
             if (user?.is_blocked == true) {
-                await this.users.findByIdAndUpdate(
+                await this.model.UserModel.findByIdAndUpdate(
                     { _id: new Types.ObjectId(id) },
                     { is_blocked: false, updated_at: moment().utc().valueOf() },
                     { new: true }
                 )
                 throw new HttpException('Unblocked', HttpStatus.OK)
             }
-            await this.users.findByIdAndUpdate(
+            await this.model.UserModel.findByIdAndUpdate(
                 { _id: new Types.ObjectId(id) },
                 { is_blocked: true, updated_at: moment().utc().valueOf() },
                 { new: true }
             )
-            await this.sessions.deleteMany({ user_id: id })
+            await this.model.SessionModel.deleteMany({ user_id: id })
             throw new HttpException('Blocked', HttpStatus.OK)
         } catch (error) {
             throw error
@@ -549,7 +559,7 @@ export class UsersService {
 
     async delete(id: string) {
         try {
-            let isDeleted = await this.users.findOneAndUpdate(
+            let isDeleted = await this.model.UserModel.findOneAndUpdate(
                 { _id: new Types.ObjectId(id), is_deleted: false },
                 { is_deleted: true, updated_at: moment().utc().valueOf() },
                 { new: true }
@@ -558,7 +568,7 @@ export class UsersService {
                 throw new HttpException('Already Deleted', HttpStatus.OK)
 
             }
-            await this.sessions.deleteMany({ user_id: id })
+            await this.model.SessionModel.deleteMany({ user_id: id })
             throw new HttpException('Deleted', HttpStatus.OK)
         } catch (error) {
             throw error
@@ -567,21 +577,21 @@ export class UsersService {
 
     async deactivate(id: string) {
         try {
-            let user = await this.users.findById({ _id: new Types.ObjectId(id) })
+            let user = await this.model.UserModel.findById({ _id: new Types.ObjectId(id) })
             if (user?.is_active == false) {
-                await this.users.findByIdAndUpdate(
+                await this.model.UserModel.findByIdAndUpdate(
                     { _id: new Types.ObjectId(id) },
                     { is_active: true, updated_at: moment().utc().valueOf() },
                     { new: true }
                 )
                 throw new HttpException('Activated', HttpStatus.OK)
             }
-            await this.users.findByIdAndUpdate(
+            await this.model.UserModel.findByIdAndUpdate(
                 { _id: new Types.ObjectId(id) },
                 { is_active: false, updated_at: moment().utc().valueOf() },
                 { new: true }
             )
-            await this.sessions.deleteMany({ user_id: id })
+            await this.model.SessionModel.deleteMany({ user_id: id })
             throw new HttpException('Deactivated', HttpStatus.OK)
         } catch (error) {
             throw error
@@ -590,7 +600,7 @@ export class UsersService {
 
     async profile(id: string) {
         try {
-            let data = await this.users.findOne(
+            let data = await this.model.UserModel.findOne(
                 { _id: new Types.ObjectId(id), is_deleted: false, is_active: true, is_blocked: false },
                 { first_name: 1, last_name: 1, temp_mail: 1, temp_phone: 1, country_code: 1, temp_country_code: 1, email: 1, is_email_verify: 1, is_phone_verify: 1, profile_pic: 1 }
             ).lean(true)
@@ -607,7 +617,7 @@ export class UsersService {
 
     async getUserData(query: any, projection: any, options: any) {
         try {
-            let data = await this.users.findOne(query, projection, options)
+            let data = await this.model.UserModel.findOne(query, projection, options)
             return data
         } catch (error) {
             throw error
@@ -616,7 +626,7 @@ export class UsersService {
 
     async findupdateUser(query: any, update: any, options: any) {
         try {
-            let data = await this.users.findOneAndUpdate(query, update, options)
+            let data = await this.model.UserModel.findOneAndUpdate(query, update, options)
             return data
         } catch (error) {
             throw error
@@ -625,7 +635,7 @@ export class UsersService {
 
     async getUsers(query: any, projection: any, options: any) {
         try {
-            let data = await this.users.find(query, projection, options)
+            let data = await this.model.UserModel.find(query, projection, options)
             return data
         } catch (error) {
             throw error

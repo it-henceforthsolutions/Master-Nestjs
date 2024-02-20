@@ -2,7 +2,7 @@ import { MailerService } from "@nestjs-modules/mailer";
 import { Injectable } from "@nestjs/common";
 import { TwilioService } from "nestjs-twilio";
 import * as bcrypt from 'bcrypt';
-
+import * as FCM from 'fcm-push';  
 
 @Injectable()
 export class CommonService {
@@ -127,4 +127,38 @@ export class CommonService {
             throw error
         }
     }
+
+
+    push_notification = async (pushData: any, fcm_tokens: any) => {
+        try {
+          // FCM server key for authentication
+         
+            const server_key = process.env.FCM_SERVER_KEY
+          
+            // Create a new instance of FCM using the server key
+          const fcm = new FCM(server_key);
+    console.log("token",fcm_tokens)
+          const payload = {
+            to: fcm_tokens,
+            // data:data,
+            notification: {
+              title: pushData.subject,
+              body: pushData.text,
+              sound: 'default',
+              badge: 0,
+              priority: 'high',
+              content_available: true,
+              foreground: true,
+              show_in_foreground: true,
+            },
+          };
+   
+       // Send the push notification using FCM
+          const response = await fcm.send(payload);
+          console.log('Notification sent successfully:', response);
+        } catch (error) {
+          console.error('Error sending notification:', error);
+          // Handle the error appropriately
+        }
+      };
 }

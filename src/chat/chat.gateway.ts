@@ -6,6 +6,7 @@ import * as dto from "./dto"
 import { ChatService } from './chat.service';
 import { UsersService } from 'src/users/users.service';
 import { Types, set } from 'mongoose';
+import { ModelService } from 'src/model/model.service';
 
 
 
@@ -24,7 +25,7 @@ interface CustomSocket extends Socket {
 @UseGuards(SocketGuard)
 export class ChatServiceGateway implements OnGatewayConnection, OnGatewayDisconnect {
     // private connectedClients: Set<string> = new Set<string>(); 
-    constructor(private readonly chatservice: ChatService,
+    constructor(public readonly chatservice: ChatService,
         private userservices: UsersService) { }
     @WebSocketServer()
     server: Server;
@@ -145,7 +146,6 @@ export class ChatServiceGateway implements OnGatewayConnection, OnGatewayDisconn
             response.data = data
             console.log("🚀 ~ ChatServiceGateway ~ handleReadSendMessage ~ response:", response)
             let socket_ids = await this.chatservice.get_socket_id_by_connection(connection_id)
-            console.log("")
             this.server.to(socket_ids).emit('read_message', response)
         } catch (error) {
             this.server.to(socket.id).emit('error', error.message)

@@ -7,16 +7,17 @@ import { Model, Types } from 'mongoose';
 import { CommonService } from 'src/common/common.service';
 import * as moment from 'moment';
 import { UsersType } from 'src/users/role/user.role';
+import { ModelService } from 'src/model/model.service';
 
 @Injectable()
 export class StaffService {
     constructor(
-        @InjectModel(Users.name) private staff: Model<Users>,
+        private model: ModelService,
         private common: CommonService
     ){}
     async create(body: CreateStaffDto) {
         try {
-            let existMail = await this.staff.findOne({ email: body.email, }, 'email temp_mail')
+            let existMail = await this.model.UserModel.findOne({ email: body.email, }, 'email temp_mail')
             if (existMail) {
                 throw new HttpException('This Email is Already Exist! Please Use another Email Address', HttpStatus.BAD_REQUEST);
             }
@@ -31,7 +32,7 @@ export class StaffService {
                 user_type: UsersType.staff,
                 created_at: moment().utc().valueOf()
             }
-            return await this.staff.create(data)
+            return await this.model.UserModel.create(data)
         } catch (error) {
             throw error
         }
@@ -50,7 +51,7 @@ export class StaffService {
                 is_deleted: false,
                 user_type: UsersType.staff
             }
-            let data = await this.staff.find(query)
+            let data = await this.model.UserModel.find(query)
             return data
         } catch (error) {
             throw error
@@ -59,7 +60,7 @@ export class StaffService {
 
     async findOne(id: string) {
         try {
-            let data= await this.staff.findOne(
+            let data= await this.model.UserModel.findOne(
                 {_id: new Types.ObjectId(id),is_deleted: false,is_active:true,is_blocked:false},
                 {first_name:1,last_name:1,email:1,temp_mail:1,phone:1,temp_phone:1,temp_country_code:1}
             )
@@ -74,7 +75,7 @@ export class StaffService {
 
     async update(id: string, body: UpdateStaffDto) {
         try {
-            return await this.staff.findOneAndUpdate(
+            return await this.model.UserModel.findOneAndUpdate(
                 {_id: new Types.ObjectId(id),is_deleted:false},
                 {updated_at: moment().utc().valueOf(),...body},
                 {new: true}
@@ -86,7 +87,7 @@ export class StaffService {
 
     async remove(id: string) {
         try {
-            await this.staff.findOneAndUpdate({_id: new Types.ObjectId(id),is_deleted: false},
+            await this.model.UserModel.findOneAndUpdate({_id: new Types.ObjectId(id),is_deleted: false},
             {is_deleted: true},{new:true})
             throw new HttpException('Deleted!!',HttpStatus.OK)
         } catch (error) {
