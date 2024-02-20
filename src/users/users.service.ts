@@ -335,7 +335,7 @@ export class UsersService {
     async updateEmail(id: string, body: UpdateEmailDto) {
         try {
             let otp = await this.common.generateOtp()
-            let userModel = await this.model.UserModel.findOne({email: body.email})
+            let userModel = await this.users.findOne({email: body.email})
             if(userModel){
                 throw new HttpException('This Email is Already Exist! Please Use another Email Address', HttpStatus.BAD_REQUEST);
             }
@@ -372,7 +372,7 @@ export class UsersService {
                 updated_at: moment().utc().valueOf(),
             }
             
-            let userModel = await this.model.UserModel.findOne({country_code: body.country_code,phone: body.phone})
+            let userModel = await this.users.findOne({country_code: body.country_code,phone: body.phone})
             if(userModel){
                 throw new HttpException('This Phone Number is Already Exist! Please Use another Email Address', HttpStatus.BAD_REQUEST);
             }
