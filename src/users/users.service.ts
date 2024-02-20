@@ -269,7 +269,7 @@ export class UsersService {
             await this.common.verification(mail, otp)
             await this.model.UserModel.findOneAndUpdate(
                 { _id: user._id },
-                { otp: otp, unique_id: uniqueId },
+                { email_otp: otp, unique_id: uniqueId },
                 { new: true }
             )
             return { message: 'Check Your Registered Mail', uniqueId }
@@ -345,6 +345,10 @@ export class UsersService {
     async updateEmail(id: string, body: UpdateEmailDto) {
         try {
             let otp = await this.common.generateOtp()
+            let userModel = await this.model.UserModel.findOne({email: body.email})
+            if(userModel){
+                throw new HttpException('This Email is Already Exist! Please Use another Email Address', HttpStatus.BAD_REQUEST);
+            }
             let check = await this.findUser(id)
             if (check.email == body.email) {
                 throw new HttpException('This Email is Already Exist! Please Use another Email Address', HttpStatus.BAD_REQUEST);
@@ -376,6 +380,11 @@ export class UsersService {
                 otp: 1234,
                 is_phone_verify: false,
                 updated_at: moment().utc().valueOf(),
+            }
+            
+            let userModel = await this.model.UserModel.findOne({country_code: body.country_code,phone: body.phone})
+            if(userModel){
+                throw new HttpException('This Phone Number is Already Exist! Please Use another Email Address', HttpStatus.BAD_REQUEST);
             }
             let phoneNumber = `${body.country_code}${body.phone}`
             // let response = await this.common.sendOtpOnPhone(otp, phoneNumber)
@@ -451,14 +460,14 @@ export class UsersService {
             let otp = await this.common.generateOtp()
             let phone = `${user.temp_country_code} ${user.temp_phone}`
 
-            let isSendVerification = await this.common.sendOtpOnPhone(otp, phone)
+           // let isSendVerification = await this.common.sendOtpOnPhone(otp, phone)
 
-            if (!isSendVerification) {
-                throw new HttpException(`We can't Resend Otp Please connect Administration`, HttpStatus.BAD_REQUEST)
-            }
+           // if (!isSendVerification) {
+            //    throw new HttpException(`We can't Resend Otp Please connect Administration`, HttpStatus.BAD_REQUEST)
+           // }
             await this.model.UserModel.findByIdAndUpdate(
                 { _id: new Types.ObjectId(id) },
-                { otp: otp },
+                { phone_otp: otp },
                 { new: true }
             )
             throw new HttpException('OTP resend to your registered Phone No.', HttpStatus.OK)
@@ -482,7 +491,7 @@ export class UsersService {
             }
             await this.model.UserModel.findByIdAndUpdate(
                 { _id: user?._id },
-                { otp: otp },
+                { email_otp: otp },
                 { new: true }
             )
             throw new HttpException('OTP resend to your registered email address.', HttpStatus.OK)
