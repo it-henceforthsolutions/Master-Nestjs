@@ -48,64 +48,64 @@ export class AuthGuard implements CanActivate {
 
 
 
-@Injectable()
-export class SocketGuard implements CanActivate {
-    constructor(
-        private readonly userservices: UsersService,
-        // private readonly model : UsersService,
-        private jwtService: JwtService,
-    ) { }
+    @Injectable()
+    export class SocketGuard implements CanActivate {
+        constructor(
+            private readonly userservices: UsersService,
+            // private readonly model : UsersService,
+            private jwtService: JwtService,
+        ) { }
 
-    canActivate = async (context: ExecutionContext): Promise<boolean> => {
-      console.log("socket running")
-        const socket = context.switchToWs().getClient();
-        const token = socket.handshake.headers.token;
-        if (!token) {
-            throw new UnauthorizedException()
-        }
-        else {
-            try {
-                const token = socket.handshake.headers.token.split(' ')[1];
-                if (!token) {
-                  throw new UnauthorizedException();
-                }
-                try {
-                  const payload = await this.jwtService.verifyAsync(token, {
-                    secret: jwtConstants.secret,
-                  });
-                  socket['user'] = payload;
-                } catch {
-                  throw new UnauthorizedException();
-                }
-                return true;
-                // let projection = { _v: 0 }
-                // let options = { lean: true }
-                // const payload = await this.jwtservice.verifyAsync(token, { secret: 'admin_super_seckret_key' });
-                // console.log("payload", payload);
-                // let { scope } = payload;
-                // if (scope == "user") {
-                //     let data = await this.verifyToken(payload);
-                //     if (data) {
-                //         let { _id } = payload;
-                //         let query = { _id: _id }
-                //         let fetch_user:any = await this.userservices.getUserData(query)
-                //         if (fetch_user) {
-                //             fetch_user.session_id = data._id
-                //             socket.user_data = fetch_user
-                //             return socket.user_data
-                //         }
-                //     }
-                //     else {
-                //         throw new NotFoundException("user not found")
-                //     }
-                // }
-            } catch {
-                throw new UnauthorizedException();
+        canActivate = async (context: ExecutionContext): Promise<boolean> => {
+          console.log("socket running")
+            const socket = context.switchToWs().getClient();
+            const token = socket.handshake.headers.token;
+            if (!token) {
+                throw new UnauthorizedException()
             }
-        }
+            else {
+                try {
+                    const token = socket.handshake.headers.token.split(' ')[1];
+                    if (!token) {
+                      throw new UnauthorizedException();
+                    }
+                    try {
+                      const payload = await this.jwtService.verifyAsync(token, {
+                        secret: jwtConstants.secret,
+                      });
+                      socket['user'] = payload;
+                    } catch {
+                      throw new UnauthorizedException();
+                    }
+                    return true;
+                    // let projection = { _v: 0 }
+                    // let options = { lean: true }
+                    // const payload = await this.jwtservice.verifyAsync(token, { secret: 'admin_super_seckret_key' });
+                    // console.log("payload", payload);
+                    // let { scope } = payload;
+                    // if (scope == "user") {
+                    //     let data = await this.verifyToken(payload);
+                    //     if (data) {
+                    //         let { _id } = payload;
+                    //         let query = { _id: _id }
+                    //         let fetch_user:any = await this.userservices.getUserData(query)
+                    //         if (fetch_user) {
+                    //             fetch_user.session_id = data._id
+                    //             socket.user_data = fetch_user
+                    //             return socket.user_data
+                    //         }
+                    //     }
+                    //     else {
+                    //         throw new NotFoundException("user not found")
+                    //     }
+                    // }
+                } catch {
+                    throw new UnauthorizedException();
+                }
+            }
 
-    }
-  }
+        }
+      }
 
 
 

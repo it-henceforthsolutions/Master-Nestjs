@@ -33,8 +33,8 @@ export class AgoraService {
       console.log('AGORA_APP_CERTIFICATE', this.AGORA_APP_CERTIFICATE);
 
       let token = await RtcTokenBuilder.buildTokenWithUid(
-        this.AGORA_APP_ID,
-        this.AGORA_APP_CERTIFICATE,
+        process.env.AGORA_APP_ID,
+        process.env.AGORA_APP_CERTIFICATE,
         channelName,
         uid,
         role,
