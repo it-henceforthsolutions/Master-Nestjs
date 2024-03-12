@@ -19,7 +19,7 @@ export class AgoraService {
     try {
       const currentTime = Math.floor(Date.now() / 1000);
       const privilegeExpireTime = currentTime + 360000;
-      let channelName = await this.generateChannelName();
+      let channelName = agoraRoleDto.channel_name;
       let role
       if (agoraRoleDto.role == 'PUBLISHER') {
         role = RtcRole.PUBLISHER
@@ -33,8 +33,8 @@ export class AgoraService {
       console.log('AGORA_APP_CERTIFICATE', this.AGORA_APP_CERTIFICATE);
 
       let token = await RtcTokenBuilder.buildTokenWithUid(
-        process.env.AGORA_APP_ID,
-        process.env.AGORA_APP_CERTIFICATE,
+        this.AGORA_APP_ID,
+        this.AGORA_APP_CERTIFICATE,
         channelName,
         uid,
         role,
@@ -48,6 +48,15 @@ export class AgoraService {
     } catch (e) {
       throw e;
     }
+  }
+
+
+
+  async create_channel_name(){
+    let channelName = await this.generateChannelName();
+return {"channel_name":channelName}
+
+
   }
 
   async generateChannelName  ()  {

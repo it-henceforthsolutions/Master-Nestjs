@@ -11,5 +11,8 @@ export class AgoraRoleDto{
     @IsEnum(RoleType)
     role: string
 
+    @ApiProperty()
+    channel_name:string;
+
 
 }
