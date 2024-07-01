@@ -24,7 +24,8 @@ export enum Genders {
 
 export enum UserType {
     USER = "USER",
-    ADMIN = "ADMIN"
+    ADMIN = "ADMIN",
+    STAFF = "STAFF",
 }
 
 export enum StaffRoles {
