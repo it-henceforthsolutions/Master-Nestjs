@@ -17,15 +17,29 @@ import { LoginType } from './role/user.role';
 import { StripeService } from 'src/stripe/stripe.service';
 import { ModelService } from 'src/model/model.service';
 const positiveIntegerRegex = /^\d+$/;
-
+import { ConfigService } from '@nestjs/config';
+import { UsersType } from 'src/users/role/user.role';
 @Injectable()
 export class UsersService {
+    private user_scope
+    private admin_scope
+    private staff_scope
+
     constructor(
         private model: ModelService,
         private jwtService: JwtService,
         private common: CommonService,
-        private readonly StripeService: StripeService
-    ) { }
+        private readonly StripeService: StripeService,
+        private ConfigService: ConfigService
+    ) {
+        this.user_scope = this.ConfigService.get('USER_SCOPE')
+        this.admin_scope = this.ConfigService.get('ADMIN_SCOPE')
+        this.staff_scope = this.ConfigService.get('STAFF_SCOPE')
+
+
+        console.log("user_scope", this.user_scope);
+
+    }
     async signUp(body: SignUpDto) {
         try {
             let existMail = await this.model.UserModel.findOne({ email: body.email, }, 'email temp_mail')
@@ -53,7 +67,7 @@ export class UsersService {
 
             let user = await this.model.UserModel.create(data)
             await this.common.verification(user.temp_mail, otp)
-            let payload = { id: user._id, email: user.temp_mail }
+            let payload = { id: user._id, email: user.temp_mail, scope: this.user_scope }
             let access_token = await this.jwtService.signAsync(payload)
             await this.model.SessionModel.create({
                 user_id: user?._id,
@@ -77,8 +91,8 @@ export class UsersService {
     async verifyEmail(body: OtpDto, id: string) {
         try {
             let user = await this.model.UserModel.findById({ _id: new Types.ObjectId(id) })
-            console.log("user_otp",user.email_otp)
-            console.log("body_otp",body.otp)
+            console.log("user_otp", user.email_otp)
+            console.log("body_otp", body.otp)
             if (user?.email_otp != body.otp) {
                 throw new HttpException('Invalid OTP', HttpStatus.BAD_REQUEST)
             }
@@ -140,25 +154,32 @@ export class UsersService {
     async signIn(body: SignInDto) {
         try {
             let user = await this.model.UserModel.findOne({ email: body.email })
-            let payload = { id: user?._id, email: user?.email }
+            let payload: any = { id: user?._id, email: user?.email, scope: this.user_scope }
 
             if (!user) {
 
                 user = await this.model.UserModel.findOne({ temp_mail: body.email })
-                payload = { id: user?._id, email: user?.temp_mail }
+                payload = { id: user?._id, email: user?.temp_mail, scope: this.user_scope }
             }
             if (!user) {
                 throw new HttpException('Invalid Email', HttpStatus.UNAUTHORIZED);
             }
 
-            if(user.is_active === false)
-            {
+            if (user.is_active === false) {
                 throw new HttpException('Deactivate Account ', HttpStatus.UNAUTHORIZED);
 
             }
+            if (user.user_type == UsersType.admin) {
+                payload = { id: user?._id, email: user?.temp_mail, scope: this.admin_scope }
 
-            console.log("user?.temp_mail",user?.temp_mail)
-            console.log("user?.email",user?.email)
+            }
+            if (user.user_type == UsersType.staff) {
+                payload = { id: user?._id, email: user?.temp_mail, scope: this.staff_scope }
+
+            }
+
+            console.log("user?.temp_mail", user?.temp_mail)
+            console.log("user?.email", user?.email)
             // if (user?.temp_mail && user?.email) {
             //     let mail = user?.email.slice(0, 5)
             //     throw new HttpException(`This EmailId is Not verified.Please SignIn with Your Previous Email: ${mail}xxxxxx.com`, HttpStatus.UNAUTHORIZED);
@@ -213,12 +234,12 @@ export class UsersService {
             let access_token: string
             if (user == null) {
                 user = await this.model.UserModel.create(data)
-                payload = { id: user?._id, email: response?.email }
+                payload = { id: user?._id, email: response?.email, scope: this.user_scope }
                 access_token = await this.generateToken(payload)
                 await this.createSession(user?._id, access_token, body.fcm_token, user.user_type)
                 return { access_token, user }
             }
-            payload = { id: user?._id, email: response?.email }
+            payload = { id: user?._id, email: response?.email, scope: this.user_scope }
             access_token = await this.generateToken(payload)
             await this.createSession(user?._id, access_token, body.fcm_token, user.user_type)
             return { access_token, user }
@@ -345,8 +366,8 @@ export class UsersService {
     async updateEmail(id: string, body: UpdateEmailDto) {
         try {
             let otp = await this.common.generateOtp()
-            let userModel = await this.model.UserModel.findOne({email: body.email})
-            if(userModel){
+            let userModel = await this.model.UserModel.findOne({ email: body.email })
+            if (userModel) {
                 throw new HttpException('This Email is Already Exist! Please Use another Email Address', HttpStatus.BAD_REQUEST);
             }
             let check = await this.findUser(id)
@@ -381,9 +402,9 @@ export class UsersService {
                 is_phone_verify: false,
                 updated_at: moment().utc().valueOf(),
             }
-            
-            let userModel = await this.model.UserModel.findOne({country_code: body.country_code,phone: body.phone})
-            if(userModel){
+
+            let userModel = await this.model.UserModel.findOne({ country_code: body.country_code, phone: body.phone })
+            if (userModel) {
                 throw new HttpException('This Phone Number is Already Exist! Please Use another Email Address', HttpStatus.BAD_REQUEST);
             }
             let phoneNumber = `${body.country_code}${body.phone}`
@@ -460,11 +481,11 @@ export class UsersService {
             let otp = await this.common.generateOtp()
             let phone = `${user.temp_country_code} ${user.temp_phone}`
 
-           // let isSendVerification = await this.common.sendOtpOnPhone(otp, phone)
+            // let isSendVerification = await this.common.sendOtpOnPhone(otp, phone)
 
-           // if (!isSendVerification) {
+            // if (!isSendVerification) {
             //    throw new HttpException(`We can't Resend Otp Please connect Administration`, HttpStatus.BAD_REQUEST)
-           // }
+            // }
             await this.model.UserModel.findByIdAndUpdate(
                 { _id: new Types.ObjectId(id) },
                 { phone_otp: otp },

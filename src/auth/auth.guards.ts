@@ -7,10 +7,29 @@ import { Request } from "express";
 import { Types } from "mongoose";
 import { UsersService } from "src/users/users.service";
 import * as dto from "./dto/token.dto"
+import { UsersType } from 'src/users/role/user.role';
+import { PERMISSION_KEY, ROLES_KEY } from "./role.decorator";
+import { ConfigService } from "@nestjs/config";
+import { ModelService } from "src/model/model.service";
+import { Role } from 'src/staff/role/staff.role';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
-  constructor(private jwtService: JwtService, private reflector: Reflector) {}
+  private user_scope
+  private admin_scope
+  private staff_scope
+
+  constructor(
+    private ConfigService:ConfigService,
+    private Model: ModelService,
+
+    private jwtService: JwtService, private reflector: Reflector) {
+      
+      this.user_scope = this.ConfigService.get<string>('USER_SCOPE')
+      this.admin_scope = this.ConfigService.get<string>('ADMIN_SCOPE')
+      this.staff_scope = this.ConfigService.get<string>('STAFF_SCOPE')
+
+    }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
@@ -20,6 +39,15 @@ export class AuthGuard implements CanActivate {
     if (isPublic) {
       return true;
     }
+    const requiredRoles = this.reflector.getAllAndOverride<UsersType[]>(ROLES_KEY, [
+      context.getHandler(),
+      context.getClass(),
+  ]);
+
+  const requiredPermissions = this.reflector.getAllAndOverride<Role[]>(PERMISSION_KEY, [
+    context.getHandler(),
+    context.getClass(),
+]);
 
     const request = context.switchToHttp().getRequest();
     const token = this.extractTokenFromHeader(request);
@@ -27,10 +55,74 @@ export class AuthGuard implements CanActivate {
       throw new UnauthorizedException();
     }
     try {
-      const payload = await this.jwtService.verifyAsync(token, {
-        secret: jwtConstants.secret,
-      });
-      request['user'] = payload;
+      const payload = await this.jwtService.verifyAsync(token)
+      let { scope } = payload
+      if (scope == this.admin_scope && requiredRoles.includes(UsersType.admin) ) {
+        let data: any = await this.verifyToken(payload)
+        if (data) {
+            let { id } = payload;
+            let query = { _id: id, type: { $in:[ UsersType.admin] } }
+            let fetch_admin: any = await this.Model.UserModel.find(query)
+            // console.log("-=--=-=-==-fetchadminAdmin Data=-=-=----",fetch_user)
+            if (fetch_admin.length) {
+            //     let { roles, super_admin } = fetch_admin[0];
+            //     let split_api_path = api_path.split('/');
+            //     let new_path = split_api_path[2];
+            //     let second_new_path = new_path.split('?')[0]
+            //     let type = second_new_path.toUpperCase();
+            //     if (super_admin != true && type != "PROFILE" && type != "COMMENT") {
+            //         let check_roles = roles.includes(type);
+            //         if (check_roles != true) {
+            //             throw new UnauthorizedException();
+            //         }
+            //     }
+            // }
+            request.admin_data = fetch_admin;
+            return request.admin_data;
+        }
+        else {
+            throw new HttpException("admin not found", HttpStatus.UNAUTHORIZED)
+        }
+    }else if(scope == this.staff_scope && requiredRoles.includes(UsersType.staff)){
+      let data: any = await this.verifyToken(payload)
+      if (data) {
+          let { id } = payload;
+          let query = { _id: id, type: { $in:[ UsersType.staff] } }
+          let fetch_admin: any = await this.Model.UserModel.find(query)
+          // console.log("-=--=-=-==-fetchadminAdmin Data=-=-=----",fetch_user)
+          if (fetch_admin.length) {
+          //     let { roles, super_admin } = fetch_admin[0];
+          //     let split_api_path = api_path.split('/');
+          //     let new_path = split_api_path[2];
+          //     let second_new_path = new_path.split('?')[0]
+          //     let type = second_new_path.toUpperCase();
+          //     if (super_admin != true && type != "PROFILE" && type != "COMMENT") {
+          //         let check_roles = roles.includes(type);
+          //         if (check_roles != true) {
+          //             throw new UnauthorizedException();
+          //         }
+          //     }
+          }
+          request.admin_data = fetch_admin;
+          return request.admin_data;
+      }
+      else {
+          throw new HttpException("admin not found", HttpStatus.UNAUTHORIZED)
+      }
+    }else if(payload.scope === this.user_scope && requiredRoles.includes(UsersType.user)){
+      let data: any = await this.verifyToken(payload)
+      if (data.length) {
+          let { id } = payload;
+          let query = { _id: id }
+          let fetch_user: any = await this.Model.UserModel.findOne(query)
+          request.user_data = fetch_user;
+          return request.user_data;
+      }
+      else {
+          throw new HttpException("user not found", HttpStatus.UNAUTHORIZED)
+      }
+    }
+  }
     } catch {
       throw new UnauthorizedException();
     }
@@ -41,6 +133,49 @@ export class AuthGuard implements CanActivate {
     const [type, token] = request.headers.authorization?.split(' ') ?? [];
     return type === 'Bearer' ? token : undefined;
   }
+
+  async verifyToken(payload: any) {
+    let { scope } = payload;
+    let query: any;
+    if (scope == this.admin_scope) {
+        let { id: admin_id, token_gen_at } = payload;
+        query = {
+          user_id: admin_id,
+            access_token: { $ne: null },
+            user_type:UsersType.admin
+            // token_gen_at: token_gen_at
+        }
+    }
+    if (scope == this.staff_scope) {
+      let { id: admin_id, token_gen_at } = payload;
+      query = {
+        user_id: admin_id,
+          access_token: { $ne: null },
+          user_type:UsersType.staff
+          // token_gen_at: token_gen_at
+      }
+  }
+    if (scope == this.user_scope) {
+        let { id: user_id } = payload;
+        query = {
+          user_id: new Types.ObjectId(user_id),
+            user_type:UsersType.user,
+            access_token: { $ne: null },
+            // token_gen_at: token_gen_at
+        }
+    }
+    let projection = { __v: 0 }
+    let option = { lean: true }
+
+    let fetch_data: any = await this.Model.SessionModel.find(query, projection, option)
+    if (fetch_data.length) {
+        return fetch_data
+    }
+    else {
+        throw new UnauthorizedException("Wrong scope")
+    }
+}
+
 }
 
 
