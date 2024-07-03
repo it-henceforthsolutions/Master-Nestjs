@@ -1,8 +1,7 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request } from '@nestjs/common';
 import { AdminService } from './admin.service';
-import { CreateAdminDto } from './dto/create-admin.dto';
 import { UpdateAdminDto } from './dto/update-admin.dto';
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from 'src/auth/auth.guards';
 // import { RolesGuard } from 'src/auth/role.guard';
 import { Permission, Roles } from 'src/auth/role.decorator';
@@ -10,13 +9,14 @@ import { UsersType } from 'src/users/role/user.role';
 import { UsersService } from 'src/users/users.service';
 import { Role } from 'src/staff/role/staff.role';
 import { StripeService } from 'src/stripe/stripe.service';
+import { SignInDto } from './dto/create-admin.dto';
 
 @ApiTags('admin')
 @Controller('admin')
 export class AdminController {
     constructor(
         private readonly adminService: AdminService,
-        private  StripeService: StripeService,
+        private StripeService: StripeService,
         private userService: UsersService
     ) { }
 
@@ -31,6 +31,18 @@ export class AdminController {
         return this.adminService.dashboard();
     }
 
+    @ApiOperation({ summary: 'sign in' })
+    @ApiResponse({ status: 201, description: 'OK' })
+    @ApiConsumes('application/json', 'application/x-www-form-urlencoded')
+    @Post('signin')
+    async signIn(@Body() body: SignInDto) {
+        try {
+            return await this.adminService.signIn(body);
+
+        } catch (error) {
+            throw error
+        }
+    }
 
 
     // @UseGuards(AuthGuard)
