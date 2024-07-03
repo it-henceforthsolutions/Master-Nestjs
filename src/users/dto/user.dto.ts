@@ -1,5 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsEmail, IsStrongPassword } from "class-validator";
+import { IsEmail, IsString, IsStrongPassword } from "class-validator";
 import { DeviceType, LoginType } from "../role/user.role";
 
 export class SignUpDto {
@@ -63,6 +63,10 @@ export class SocialSignInDto{
 export class OtpDto{
     @ApiProperty()
     otp: number
+
+    @ApiProperty()
+    @IsString()
+    fcm_token:string
 }
 
 export class ForgetPassDto{

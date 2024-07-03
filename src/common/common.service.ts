@@ -2,13 +2,17 @@ import { MailerService } from "@nestjs-modules/mailer";
 import { Injectable } from "@nestjs/common";
 import { TwilioService } from "nestjs-twilio";
 import * as bcrypt from 'bcrypt';
-import * as FCM from 'fcm-push';  
-
+import * as FCM from 'fcm-push';
+import { JwtService } from "@nestjs/jwt";
+import { ModelService } from "src/model/model.service";
+import * as mongoose from 'mongoose'
 @Injectable()
 export class CommonService {
     constructor(
         private mailerService: MailerService,
-        private twilio: TwilioService
+        private twilio: TwilioService,
+        private jwtService: JwtService,
+        private model: ModelService,
     ) {
         const accountSid = process.env.TWILIO_SID
         const auth = process.env.TWILIO_AUTH_TOKEN
@@ -128,37 +132,64 @@ export class CommonService {
         }
     }
 
-
+    async generateToken(payload: any) {
+        try {
+            return await this.jwtService.signAsync(payload)
+        } catch (error) {
+            throw error
+        }
+    }
+    async createSession(user_id: any, access_token: string, fcm_token: string, user_type: string) {
+        try {
+            return await this.model.SessionModel.create({
+                user_id: new mongoose.Types.ObjectId(user_id),
+                access_token: access_token,
+                fcm_token: fcm_token,
+                user_type: user_type
+            })
+        } catch (error) {
+            throw error
+        }
+    }
+    async delete_session(user_id: any) {
+        try {
+            return await this.model.SessionModel.deleteMany({
+                user_id: new mongoose.Types.ObjectId(user_id)
+            })
+        } catch (error) {
+            throw error
+        }
+    }
     push_notification = async (pushData: any, fcm_tokens: any) => {
         try {
-          // FCM server key for authentication
-         
+            // FCM server key for authentication
+
             const server_key = process.env.FCM_SERVER_KEY
-          
+
             // Create a new instance of FCM using the server key
-          const fcm = new FCM(server_key);
-    console.log("token",fcm_tokens)
-          const payload = {
-            to: fcm_tokens,
-            // data:data,
-            notification: {
-              title: pushData.subject,
-              body: pushData.text,
-              sound: 'default',
-              badge: 0,
-              priority: 'high',
-              content_available: true,
-              foreground: true,
-              show_in_foreground: true,
-            },
-          };
-   
-       // Send the push notification using FCM
-          const response = await fcm.send(payload);
-          console.log('Notification sent successfully:', response);
+            const fcm = new FCM(server_key);
+            console.log("token", fcm_tokens)
+            const payload = {
+                to: fcm_tokens,
+                // data:data,
+                notification: {
+                    title: pushData.subject,
+                    body: pushData.text,
+                    sound: 'default',
+                    badge: 0,
+                    priority: 'high',
+                    content_available: true,
+                    foreground: true,
+                    show_in_foreground: true,
+                },
+            };
+
+            // Send the push notification using FCM
+            const response = await fcm.send(payload);
+            console.log('Notification sent successfully:', response);
         } catch (error) {
-          console.error('Error sending notification:', error);
-          // Handle the error appropriately
+            console.error('Error sending notification:', error);
+            // Handle the error appropriately
         }
-      };
+    };
 }

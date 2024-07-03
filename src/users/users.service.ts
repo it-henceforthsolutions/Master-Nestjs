@@ -1,7 +1,7 @@
 import { BadRequestException, HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Users } from './schema/users.schema';
-import { Model, Types } from 'mongoose';
+import mongoose, { Model, Types } from 'mongoose';
 import { ForgetPassDto, NewPassOtpDto, OtpDto, SignInDto, SignUpDto, SocialSignInDto } from './dto/user.dto';
 import * as moment from 'moment';
 import { InjectStripe } from 'nestjs-stripe';
@@ -42,8 +42,8 @@ export class UsersService {
     }
     async signUp(body: SignUpDto) {
         try {
-            let existMail = await this.model.UserModel.findOne({ email: body.email, }, 'email temp_mail')
-            if (existMail) {
+            let existMail = await this.model.UserModel.find({ email: body.email.toLowerCase() })
+            if (existMail.length) {
                 throw new HttpException('This Email is Already Exist! Please Use another Email Address', HttpStatus.BAD_REQUEST);
             }
             let otp = await this.common.generateOtp()
@@ -56,26 +56,29 @@ export class UsersService {
             let data = {
                 first_name: body.first_name,
                 last_name: body.last_name,
-                temp_mail: body.email,
-                temp_country_code: body.country_code,
-                temp_phone: body.phone,
+                email: body.email,
+                country_code: body.country_code,
+                phone: body.phone,
                 password: hash,
                 custumer_id: customer.id,
                 email_otp: otp,
+                phone_otp: 1234,
                 created_at: moment().utc().valueOf()
             }
 
             let user = await this.model.UserModel.create(data)
-            await this.common.verification(user.temp_mail, otp)
-            let payload = { id: user._id, email: user.temp_mail, scope: this.user_scope }
+            await this.common.verification(user.email, otp)
+            let tok_gen_at = moment().utc().valueOf()
+            let payload = { id: user._id, email: user.email, scope: this.user_scope, tok_gen_at: tok_gen_at }
             let access_token = await this.jwtService.signAsync(payload)
             await this.model.SessionModel.create({
                 user_id: user?._id,
                 access_token: access_token,
-                user_type: user?.user_type
+                user_type: user?.user_type,
+                tok_gen_at: tok_gen_at
             })
             user = await this.model.UserModel.findOne({ _id: user?._id }, {
-                first_name: 1, last_name: 1, temp_mail: 1, temp_phone: 1, country_code: 1, temp_country_code: 1, email: 1
+                first_name: 1, last_name: 1, temp_phone: 1, country_code: 1, temp_country_code: 1, email: 1
             }).lean(true)
             return { access_token, ...user }
         } catch (error) {
@@ -90,7 +93,7 @@ export class UsersService {
 
     async verifyEmail(body: OtpDto, id: string) {
         try {
-            let user = await this.model.UserModel.findById({ _id: new Types.ObjectId(id) })
+            let user = await this.model.UserModel.findById({ _id: new Types.ObjectId(id) }, { email_otp: 0, phone_otp: 0, password: 0 }, { lean: true })
             console.log("user_otp", user.email_otp)
             console.log("body_otp", body.otp)
             if (user?.email_otp != body.otp) {
@@ -98,8 +101,6 @@ export class UsersService {
             }
             let data = {
                 is_email_verify: true,
-                email: user?.temp_mail,
-                temp_mail: null,
                 email_otp: null
             }
             await this.model.UserModel.findOneAndUpdate(
@@ -107,8 +108,17 @@ export class UsersService {
                 data,
                 { new: true }
             )
-            let temp_destroy = await this.model.UserModel.deleteMany({ temp_mail: user?.temp_mail, is_email_verify: false })
-            if (temp_destroy) { throw new HttpException('OTP Verified', HttpStatus.OK) }
+            let token_gen_at = moment().utc().valueOf()
+            let payload = { id: user._id, scope: user.user_type, token_gen_at: token_gen_at }
+            let access_token = await this.generateToken(payload)
+            this.common.delete_session(user._id)
+            await this.createSession(user._id, access_token, body.fcm_token, user.user_type, token_gen_at)
+
+            // let access_token = await this.generateToken(payload)
+            return {
+                access_token,
+                ...user
+            }
         } catch (error) {
             throw error
         }
@@ -122,10 +132,6 @@ export class UsersService {
             }
             let data = {
                 is_phone_verify: true,
-                country_code: user?.temp_country_code,
-                phone: user?.temp_phone,
-                temp_country_code: null,
-                temp_phone: null,
                 phone_otp: null
             }
             await this.model.UserModel.findByIdAndUpdate(
@@ -133,7 +139,17 @@ export class UsersService {
                 data,
                 { new: true }
             )
-            throw new HttpException('OTP Verified', HttpStatus.OK)
+            let token_gen_at = moment().utc().valueOf()
+            let payload = { id: user._id, scope: user.user_type, token_gen_at: token_gen_at }
+            let access_token = await this.generateToken(payload)
+            this.common.delete_session(user._id)
+            await this.createSession(user._id, access_token, body.fcm_token, user.user_type, token_gen_at)
+
+            // let access_token = await this.generateToken(payload)
+            return {
+                access_token,
+                ...user
+            }
         } catch (error) {
             throw error
         }
@@ -157,11 +173,6 @@ export class UsersService {
             let payload: any = { id: user?._id, email: user?.email, scope: this.user_scope }
 
             if (!user) {
-
-                user = await this.model.UserModel.findOne({ temp_mail: body.email })
-                payload = { id: user?._id, email: user?.temp_mail, scope: this.user_scope }
-            }
-            if (!user) {
                 throw new HttpException('Invalid Email', HttpStatus.UNAUTHORIZED);
             }
 
@@ -169,29 +180,31 @@ export class UsersService {
                 throw new HttpException('Deactivate Account ', HttpStatus.UNAUTHORIZED);
 
             }
-            if (user.user_type == UsersType.admin) {
-                payload = { id: user?._id, email: user?.temp_mail, scope: this.admin_scope }
+            // if (user.user_type == UsersType.admin) {
+            //     payload = { id: user?._id, email: user?.temp_mail, scope: this.admin_scope }
 
-            }
-            if (user.user_type == UsersType.staff) {
-                payload = { id: user?._id, email: user?.temp_mail, scope: this.staff_scope }
+            // }
+            // if (user.user_type == UsersType.staff) {
+            //     payload = { id: user?._id, email: user?.temp_mail, scope: this.staff_scope }
 
-            }
+            // }
 
-            console.log("user?.temp_mail", user?.temp_mail)
-            console.log("user?.email", user?.email)
+            // console.log("user?.email", user?.email)
             // if (user?.temp_mail && user?.email) {
             //     let mail = user?.email.slice(0, 5)
             //     throw new HttpException(`This EmailId is Not verified.Please SignIn with Your Previous Email: ${mail}xxxxxx.com`, HttpStatus.UNAUTHORIZED);
             // }
+            let tok_gen_at = moment().utc().valueOf()
+            payload = { id: user?._id, email: user?.email, scope: this.user_scope, tok_gen_at: tok_gen_at }
+            // console.log("user?.temp_mail", user?.temp_mail)
             const isMatch = await this.common.bcriptPass(body.password, user?.password)
             if (!isMatch) {
-                throw new HttpException('Wrong Password', HttpStatus.UNAUTHORIZED);
+                throw new HttpException('Wrong Pasosword', HttpStatus.UNAUTHORIZED);
             }
             let access_token = await this.generateToken(payload)
-            await this.createSession(user._id, access_token, body.fcm_token, user.user_type)
+            await this.createSession(user._id, access_token, body.fcm_token, user.user_type, tok_gen_at)
             user = await this.model.UserModel.findOne({ _id: user?._id }, {
-                first_name: 1, last_name: 1, temp_mail: 1, temp_phone: 1, country_code: 1, temp_country_code: 1, email: 1
+                email_otp: 0, phone_otp: 0, password: 0
             }).lean(true)
             return { access_token, ...user }
         } catch (error) {
@@ -232,16 +245,17 @@ export class UsersService {
             let user = await this.model.UserModel.findOne({ email: response?.email, is_deleted: false })
             let payload: any
             let access_token: string
+            let tok_gen_at = moment().utc().valueOf()
             if (user == null) {
                 user = await this.model.UserModel.create(data)
                 payload = { id: user?._id, email: response?.email, scope: this.user_scope }
                 access_token = await this.generateToken(payload)
-                await this.createSession(user?._id, access_token, body.fcm_token, user.user_type)
+                await this.createSession(user?._id, access_token, body.fcm_token, user.user_type, tok_gen_at)
                 return { access_token, user }
             }
             payload = { id: user?._id, email: response?.email, scope: this.user_scope }
             access_token = await this.generateToken(payload)
-            await this.createSession(user?._id, access_token, body.fcm_token, user.user_type)
+            await this.createSession(user?._id, access_token, body.fcm_token, user.user_type, tok_gen_at)
             return { access_token, user }
         } catch (error) {
             console.log(error);
@@ -258,13 +272,14 @@ export class UsersService {
         }
     }
 
-    async createSession(user_id: any, access_token: string, fcm_token: string, user_type: string) {
+    async createSession(user_id: any, access_token: string, fcm_token: string, user_type: string, tok_gen_at: any) {
         try {
             return await this.model.SessionModel.create({
-                user_id: user_id,
+                user_id: new mongoose.Types.ObjectId(user_id),
                 access_token: access_token,
                 fcm_token: fcm_token,
-                user_type: user_type
+                user_type: user_type,
+                tok_gen_at: tok_gen_at
             })
         } catch (error) {
             throw error
@@ -275,10 +290,10 @@ export class UsersService {
         try {
             let user = await this.model.UserModel.findOne({ email: body.email })
             let mail = user?.email
-            if (!user) {
-                user = await this.model.UserModel.findOne({ temp_mail: body.email })
-                mail = user?.temp_mail
-            }
+            // if (!user) {
+            //     user = await this.model.UserModel.findOne({ temp_mail: body.email })
+            //     mail = user?.temp_mail
+            // }
             if (!user) {
                 throw new HttpException('This User is no Exist', HttpStatus.BAD_REQUEST)
             }
@@ -375,7 +390,7 @@ export class UsersService {
                 throw new HttpException('This Email is Already Exist! Please Use another Email Address', HttpStatus.BAD_REQUEST);
             }
             let data = {
-                temp_mail: body.email,
+                email: body.email,
                 otp: otp,
                 is_email_verify: false,
                 updated_at: moment().utc().valueOf(),
@@ -396,8 +411,8 @@ export class UsersService {
         try {
             // let otp = await this.common.generateOtp();
             let data = {
-                temp_country_code: body.country_code,
-                temp_phone: body.phone,
+                country_code: body.country_code,
+                phone: body.phone,
                 otp: 1234,
                 is_phone_verify: false,
                 updated_at: moment().utc().valueOf(),
@@ -456,7 +471,7 @@ export class UsersService {
             }
             let otp = await this.common.generateOtp()
 
-            let isSendVerification = await this.common.verification(user.temp_mail, otp)
+            let isSendVerification = await this.common.verification(user.email, otp)
             if (!isSendVerification) {
                 throw new HttpException(`We can't Resend Otp Please connect Administration`, HttpStatus.OK)
             }
@@ -479,7 +494,7 @@ export class UsersService {
                 throw new HttpException(`Your Phone no. is Already Verified`, HttpStatus.BAD_REQUEST)
             }
             let otp = await this.common.generateOtp()
-            let phone = `${user.temp_country_code} ${user.temp_phone}`
+            let phone = `${user.country_code} ${user.phone}`
 
             // let isSendVerification = await this.common.sendOtpOnPhone(otp, phone)
 
@@ -499,13 +514,10 @@ export class UsersService {
 
     async resendOtp(body: UpdateEmailDto) {
         try {
-            let user = await this.model.UserModel.findOne({ temp_mail: body.email })
+            let user = await this.model.UserModel.findOne({ email: body.email })
             let otp = await this.common.generateOtp()
-            let mail = user?.temp_mail
-            if (!user) {
-                user = await this.model.UserModel.findOne({ email: body.email })
-                mail = user?.email
-            }
+            let mail = user?.email
+
             let isSendVerification = await this.common.verification(mail, otp)
             if (!isSendVerification) {
                 throw new HttpException(`We can't Resend Otp Please connect Administration`, HttpStatus.OK)
@@ -623,7 +635,7 @@ export class UsersService {
         try {
             let data = await this.model.UserModel.findOne(
                 { _id: new Types.ObjectId(id), is_deleted: false, is_active: true, is_blocked: false },
-                { first_name: 1, last_name: 1, temp_mail: 1, temp_phone: 1, country_code: 1, temp_country_code: 1, email: 1, is_email_verify: 1, is_phone_verify: 1, profile_pic: 1 }
+                { first_name: 1, last_name: 1, country_code: 1, email: 1, is_email_verify: 1, is_phone_verify: 1, profile_pic: 1 }
             ).lean(true)
             if (!data) {
                 throw new HttpException('You May be deactivated', HttpStatus.BAD_REQUEST)

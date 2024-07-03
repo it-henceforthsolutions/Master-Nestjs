@@ -16,18 +16,18 @@ export class Users {
     @Prop()
     email: string
 
-    @IsEmail()
-    @Prop()
-    temp_mail: string
+    // @IsEmail()
+    // @Prop()
+    // temp_mail: string
 
-    @Prop({default:null})
-    temp_phone:string
+    // @Prop({default:null})
+    // temp_phone:string
 
     @Prop({ type: String, default: null, trim: true })
     country_code: string
 
-    @Prop({ type: String, default: null, trim: true })
-    temp_country_code: string
+    // @Prop({ type: String, default: null, trim: true })
+    // temp_country_code: string
 
     @Prop({required:false})
     phone: string
@@ -38,10 +38,10 @@ export class Users {
     @Prop({type:String,enum:UsersType,default:UsersType.user})
     user_type: string
 
-    @Prop({default:null})
+    @Prop({default:0})
     email_otp: number
 
-    @Prop({default:null})
+    @Prop({default:0})
     phone_otp: number
 
     @Prop({default:null})
