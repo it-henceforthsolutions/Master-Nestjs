@@ -4,7 +4,7 @@ import { CreateManagementDto } from './dto/create-management.dto';
 import { UpdateManagementDto } from './dto/update-management.dto';
 import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from 'src/auth/auth.guards';
-import { RolesGuard } from 'src/auth/role.guard';
+// import { RolesGuard } from 'src/auth/role.guard';
 import { UsersType } from 'src/users/role/user.role';
 import { Permission, Roles } from 'src/auth/role.decorator';
 import { Role } from 'src/staff/role/staff.role';
@@ -16,7 +16,7 @@ export class ManagementController {
     constructor(private readonly managementService: ManagementService) { }
 
     @ApiBearerAuth('authentication')
-    @UseGuards(AuthGuard, RolesGuard)
+    @UseGuards(AuthGuard)
     @Roles(UsersType.admin,UsersType.staff)
     @Permission(Role.manage)
     @ApiConsumes('application/json','application/x-www-form-urlencoded')

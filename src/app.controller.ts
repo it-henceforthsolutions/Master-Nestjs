@@ -6,7 +6,10 @@ import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiResponse } from '@nestjs/s
 import { AuthGuard } from './auth/auth.guards';
 import { ChangePassDto, ResetPassDto, UpdateEmailDto, UpdatePhoneDto, UpdateUserDto } from './users/dto/update-user.dto';
 import { AdminService } from './admin/admin.service';
+import { UsersType } from './users/role/user.role';
+import { Roles } from './auth/role.decorator';
 
+@Roles(UsersType.user)
 @Controller()
 export class AppController {
     constructor(
@@ -50,7 +53,7 @@ export class AppController {
     @ApiConsumes('application/json', 'application/x-www-form-urlencoded')
     @Put('verify-email')
     verifyEmail(@Body() body: OtpDto, @Req() req) {
-        return this.userService.verifyEmail(body, req.user.id)
+        return this.userService.verifyEmail(body, req.user_data._id)
     }
 
     @UseGuards(AuthGuard)
@@ -60,7 +63,7 @@ export class AppController {
     @ApiResponse({ status: 201, description: 'OK' })
     @Put('verify-phone')
     verifyPhone(@Body() body: OtpDto, @Req() req) {
-        return this.userService.verifyPhone(body, req.user.id)
+        return this.userService.verifyPhone(body, req.user_data._id)
     }
 
     @Put('verify-otp')
@@ -77,7 +80,7 @@ export class AppController {
     // @ApiResponse({ status: 201, description: 'OK' })
     // @Put('resend-otp-email')
     // resendEmailOtp(@Request() req) {
-    //     return this.userService.resendEmailOtp(req.user.id)
+    //     return this.userService.resendEmailOtp(req.user_data._id)
     // }
     @UseGuards(AuthGuard)
     @ApiBearerAuth('authentication')
@@ -86,7 +89,7 @@ export class AppController {
     @ApiResponse({ status: 201, description: 'OK' })
     @Put('resend-otp-phone')
     resendPhoneOtp(@Request() req) {
-        return this.userService.resendPhoneOtp(req.user.id)
+        return this.userService.resendPhoneOtp(req.user_data._id)
     }
     
     @ApiOperation({ summary: 'resend otp on email for forget password' })
@@ -118,7 +121,7 @@ export class AppController {
     @ApiResponse({ status: 201, description: 'OK' })
     @Put('change-password')
     changePassward(@Body() body: ChangePassDto, @Request() req) {
-        return this.userService.changePassward(body, req.user.id)
+        return this.userService.changePassward(body, req.user_data._id)
     }
 
     @UseGuards(AuthGuard)
@@ -128,7 +131,7 @@ export class AppController {
     @ApiResponse({ status: 201, description: 'OK' })
     @Patch('profile')
     update(@Body() body: UpdateUserDto, @Req() req) {
-        return this.userService.update(req.user.id, body);
+        return this.userService.update(req.user_data._id, body);
     }
 
     @UseGuards(AuthGuard)
@@ -138,7 +141,7 @@ export class AppController {
     @ApiResponse({ status: 201, description: 'VERIFIED' })
     @Patch('email') 
     updateEmail(@Body() body: UpdateEmailDto, @Req() req) {
-        return this.userService.updateEmail(req.user.id, body);
+        return this.userService.updateEmail(req.user_data._id, body);
     }
 
     @UseGuards(AuthGuard)
@@ -148,7 +151,7 @@ export class AppController {
     @ApiResponse({ status: 201, description: 'VERIFIED' })
     @Patch('phone')
     updatePhone(@Body() body: UpdatePhoneDto, @Req() req) {
-        return this.userService.updatePhone(req.user.id, body);
+        return this.userService.updatePhone(req.user_data._id, body);
     }
 
     @UseGuards(AuthGuard)
@@ -158,7 +161,7 @@ export class AppController {
     @ApiConsumes('application/json', 'application/x-www-form-urlencoded')
     @Delete('/logout')
     logOut(@Request() req) {
-        return this.userService.logOut(req.user.id)
+        return this.userService.logOut(req.user_data._id)
     }
 
 }
