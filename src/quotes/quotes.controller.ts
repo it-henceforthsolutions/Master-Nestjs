@@ -3,7 +3,7 @@ import { QuotesService } from './quotes.service';
 import { CreateQuoteDto, PaginationDto } from './dto/create-quote.dto';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from 'src/auth/auth.guards';
-import { RolesGuard } from 'src/auth/role.guard';
+// import { RolesGuard } from 'src/auth/role.guard';
 import { Permission, Roles } from 'src/auth/role.decorator';
 import { UsersType } from 'src/users/role/user.role';
 import { Role } from 'src/staff/role/staff.role';
@@ -21,7 +21,7 @@ export class QuotesController {
     }
 
     @ApiBearerAuth('authentication')
-    @UseGuards(AuthGuard, RolesGuard)
+    @UseGuards(AuthGuard)
     @Roles(UsersType.admin,UsersType.staff)
     @Permission(Role.readonly)
     @ApiOperation({ summary: 'Get All Contact-us' })
@@ -33,7 +33,7 @@ export class QuotesController {
 
 
     @ApiBearerAuth('authentication')
-    @UseGuards(AuthGuard, RolesGuard)
+    @UseGuards(AuthGuard)
     @Roles(UsersType.admin,UsersType.staff)
     @Permission(Role.manage)
     @ApiOperation({ summary: 'Resolve Contact-us' })
@@ -44,7 +44,7 @@ export class QuotesController {
     }
 
     @ApiBearerAuth('authentication')
-    @UseGuards(AuthGuard, RolesGuard)
+    @UseGuards(AuthGuard)
     @Roles(UsersType.admin,UsersType.staff)
     @Permission(Role.manage)
     @ApiOperation({ summary: 'Delete Contact-us' })
@@ -55,7 +55,7 @@ export class QuotesController {
     }
 
     @ApiBearerAuth('authentication')
-  @UseGuards(AuthGuard, RolesGuard)
+  @UseGuards(AuthGuard)
   @Roles(UsersType.admin,UsersType.staff)
   @Permission(Role.readonly)
     @ApiOperation({ summary: 'Get Contact-us View Details' })

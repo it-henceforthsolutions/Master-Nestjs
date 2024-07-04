@@ -7,7 +7,7 @@ import { AuthGuard } from 'src/auth/auth.guards';
 import { UsersType } from 'src/users/role/user.role';
 import { Permission, Roles } from 'src/auth/role.decorator';
 import { Role } from 'src/staff/role/staff.role';
-import { RolesGuard } from 'src/auth/role.guard';
+// import { RolesGuard } from 'src/auth/role.guard';
 
 
 @ApiTags('Notification')
@@ -18,7 +18,7 @@ export class NotificationController {
   @Post()
   @ApiBearerAuth('authentication')
   @ApiConsumes('application/json', 'application/x-www-form-urlencoded')
-  @UseGuards(AuthGuard, RolesGuard)
+  @UseGuards(AuthGuard)
   @Roles(UsersType.admin, UsersType.staff)
   @Permission(Role.manage)
   @ApiOperation({ summary: 'send notification', description: '1 ->all users , 2 ->selected users' })
@@ -30,7 +30,7 @@ export class NotificationController {
   @Get('emails')
   @ApiBearerAuth('authentication')
   @ApiConsumes('application/json', 'application/x-www-form-urlencoded')
-  @UseGuards(AuthGuard, RolesGuard)
+  @UseGuards(AuthGuard)
   @Roles(UsersType.admin, UsersType.staff)
   @Permission(Role.readonly)
   @ApiOperation({ summary: 'listing emails' })

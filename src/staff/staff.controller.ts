@@ -4,7 +4,7 @@ import { CreateStaffDto, CreateStaffResponseDto, PaginationStaffDto } from './dt
 import { UpdateStaffDto } from './dto/update-staff.dto';
 import { ApiBearerAuth, ApiConsumes, ApiCreatedResponse, ApiOkResponse, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from 'src/auth/auth.guards';
-import { RolesGuard } from 'src/auth/role.guard';
+// import { RolesGuard } from 'src/auth/role.guard';
 import { UsersType } from 'src/users/role/user.role';
 import { Permission, Roles } from 'src/auth/role.decorator';
 import { Role } from './role/staff.role';
@@ -18,7 +18,7 @@ export class StaffController {
   @Post()
   @ApiBearerAuth('authentication')
   @ApiConsumes('application/json', 'application/x-www-form-urlencoded')
-  @UseGuards(AuthGuard, RolesGuard)
+  @UseGuards(AuthGuard)
   @Roles(UsersType.admin,UsersType.staff)
   @Permission(Role.manage)
   @ApiOperation({ summary: 'Add Staff' })
@@ -27,7 +27,7 @@ export class StaffController {
   }
 
   @ApiBearerAuth('authentication')
-  @UseGuards(AuthGuard, RolesGuard)
+  @UseGuards(AuthGuard)
   @Roles(UsersType.admin,UsersType.staff)
   @Permission(Role.readonly)
   @Get()
@@ -36,7 +36,7 @@ export class StaffController {
   }
 
   @ApiBearerAuth('authentication')
-  @UseGuards(AuthGuard, RolesGuard)
+  @UseGuards(AuthGuard)
   @Roles(UsersType.admin,UsersType.staff)
   @Permission(Role.readonly)
   @Get(':id')
@@ -45,7 +45,7 @@ export class StaffController {
   }
 
   @ApiBearerAuth('authentication')
-  @UseGuards(AuthGuard, RolesGuard)
+  @UseGuards(AuthGuard)
   @Roles(UsersType.admin,UsersType.staff)
   @Permission(Role.manage)
   @Patch(':id')
@@ -54,7 +54,7 @@ export class StaffController {
   }
 
   @ApiBearerAuth('authentication')
-  @UseGuards(AuthGuard, RolesGuard)
+  @UseGuards(AuthGuard)
   @Roles(UsersType.admin,UsersType.staff)
   @Permission(Role.manage)
   @Delete(':id')

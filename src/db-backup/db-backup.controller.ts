@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
 import { DbBackupService } from './db-backup.service';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { RolesGuard } from 'src/auth/role.guard';
+// import { RolesGuard } from 'src/auth/role.guard';
 import { AuthGuard } from 'src/auth/auth.guards';
 import { UsersType } from 'src/users/role/user.role';
 import { Permission, Roles } from 'src/auth/role.decorator';
@@ -13,7 +13,7 @@ export class DbBackupController {
     constructor(private readonly dbBackupService: DbBackupService) { }
 
     @ApiBearerAuth('authentication')
-    @UseGuards(AuthGuard, RolesGuard)
+    @UseGuards(AuthGuard)
     @Roles(UsersType.admin,UsersType.staff)
     @Permission(Role.manage)
     @ApiOperation({summary: 'database backup'})

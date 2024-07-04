@@ -4,7 +4,7 @@ import { CreateFaqDto, PaginationDto } from './dto/create-faq.dto';
 import { UpdateFaqDto } from './dto/update-faq.dto';
 import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from 'src/auth/auth.guards';
-import { RolesGuard } from 'src/auth/role.guard';
+// import { RolesGuard } from 'src/auth/role.guard';
 import { Permission, Roles } from 'src/auth/role.decorator';
 import { UsersType } from 'src/users/role/user.role';
 import { Role } from 'src/staff/role/staff.role';
@@ -16,7 +16,7 @@ export class FaqsController {
     constructor(private readonly faqsService: FaqsService) { }
 
     @ApiBearerAuth('authentication')
-    @UseGuards(AuthGuard, RolesGuard)
+    @UseGuards(AuthGuard)
     @Roles(UsersType.admin,UsersType.staff)
     @Permission(Role.manage)
     @ApiOperation({summary: 'create FAQs'})
@@ -34,7 +34,7 @@ export class FaqsController {
     }
 
     @ApiBearerAuth('authentication')
-    @UseGuards(AuthGuard, RolesGuard)
+    @UseGuards(AuthGuard)
     @Roles(UsersType.admin,UsersType.staff)
     @Permission(Role.readonly)
     @ApiOperation({summary: 'Find FAQs By Id'})
@@ -44,7 +44,7 @@ export class FaqsController {
     }
 
     @ApiBearerAuth('authentication')
-    @UseGuards(AuthGuard, RolesGuard)
+    @UseGuards(AuthGuard)
     @Roles(UsersType.admin,UsersType.staff)
     @Permission(Role.manage)
     @ApiResponse({ status: 201, description: 'OK' })
@@ -55,7 +55,7 @@ export class FaqsController {
     }
 
     @ApiBearerAuth('authentication')
-    @UseGuards(AuthGuard, RolesGuard)
+    @UseGuards(AuthGuard)
     @Roles(UsersType.admin,UsersType.staff)
     @Permission(Role.manage)
     @ApiResponse({ status: 201, description: 'DELETED!!' })

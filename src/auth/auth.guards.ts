@@ -56,7 +56,14 @@ export class AuthGuard implements CanActivate {
     }
     try {
       const payload = await this.jwtService.verifyAsync(token)
+      console.log('payload',payload);
+      
       let { scope } = payload
+    console.log("requiredRoles",requiredRoles);
+    console.log("requiredRoles.includes(UsersType.user)",requiredRoles.includes(UsersType.user));
+    console.log(payload.scope === this.user_scope && requiredRoles.includes(UsersType.user),"payload.scope === this.user_scope && requiredRoles.includes(UsersType.user)");
+    
+       
       if (scope == this.admin_scope && requiredRoles.includes(UsersType.admin) ) {
         let data: any = await this.verifyToken(payload)
         if (data) {
@@ -83,7 +90,8 @@ export class AuthGuard implements CanActivate {
         else {
             throw new HttpException("admin not found", HttpStatus.UNAUTHORIZED)
         }
-    }else if(scope == this.staff_scope && requiredRoles.includes(UsersType.staff)){
+      }
+     }else if(scope == this.staff_scope && requiredRoles.includes(UsersType.staff)){
       let data: any = await this.verifyToken(payload)
       if (data) {
           let { id } = payload;
@@ -109,9 +117,15 @@ export class AuthGuard implements CanActivate {
       else {
           throw new HttpException("admin not found", HttpStatus.UNAUTHORIZED)
       }
-    }else if(payload.scope === this.user_scope && requiredRoles.includes(UsersType.user)){
+     }else if(payload.scope === this.user_scope && requiredRoles.includes(UsersType.user)){
+      console.log("abfiabsfjbasfosbn");
+      
       let data: any = await this.verifyToken(payload)
+      console.log("data",data);
+      
       if (data.length) {
+        console.log("new payload",);
+        
           let { id } = payload;
           let query = { _id: id }
           let fetch_user: any = await this.Model.UserModel.findOne(query)
@@ -122,11 +136,17 @@ export class AuthGuard implements CanActivate {
           throw new HttpException("user not found", HttpStatus.UNAUTHORIZED)
       }
     }
-  }
+     console.log('payload',payload);
+
+    
     } catch {
+      console.log('UnauthorizedException');
+
       throw new UnauthorizedException();
     }
-    return true;
+    console.log("return");
+    
+    // return true;
   }
 
   private extractTokenFromHeader(request: Request): string | undefined {
@@ -156,6 +176,8 @@ export class AuthGuard implements CanActivate {
       }
   }
     if (scope == this.user_scope) {
+      console.log("payload",payload);
+      
         let { id: user_id } = payload;
         query = {
           user_id: new Types.ObjectId(user_id),

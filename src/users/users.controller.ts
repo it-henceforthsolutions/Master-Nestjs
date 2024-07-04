@@ -2,7 +2,12 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req, Put,
 import { UsersService } from './users.service';
 import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from 'src/auth/auth.guards';
+// import { Role } from 'src/staff/role/staff.role';
+import { Roles } from 'src/auth/role.decorator';
+import { UsersType } from './role/user.role';
 
+@Roles(UsersType.user)
+// @Permission(Role.manage)
 @ApiTags('users')
 @Controller('users')
 export class UsersController {

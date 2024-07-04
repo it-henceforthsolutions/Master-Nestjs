@@ -4,7 +4,7 @@ import { CreatePageDto, PaginationDto } from './dto/create-page.dto';
 import { UpdatePageDto } from './dto/update-page.dto';
 import { ApiBearerAuth, ApiConsumes, ApiCreatedResponse, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from 'src/auth/auth.guards';
-import { RolesGuard } from 'src/auth/role.guard';
+// import { RolesGuard } from 'src/auth/role.guard';
 import { Permission, Roles } from 'src/auth/role.decorator';
 import { UsersType } from 'src/users/role/user.role';
 import { Role } from 'src/staff/role/staff.role';
@@ -17,7 +17,7 @@ export class PagesController {
     @Post()
     @ApiBearerAuth('authentication')
     @ApiConsumes('application/json', 'application/x-www-form-urlencoded')
-    @UseGuards(AuthGuard, RolesGuard)
+    @UseGuards(AuthGuard)
     @Roles(UsersType.admin,UsersType.staff)
     @Permission(Role.manage)
     @ApiOperation({ summary: 'Add Page' })
@@ -42,7 +42,7 @@ export class PagesController {
 
     @ApiOperation({ summary: 'update page' })
     @ApiBearerAuth('authentication')
-    @UseGuards(AuthGuard, RolesGuard)
+    @UseGuards(AuthGuard)
     @Roles(UsersType.admin,UsersType.staff)
     @Permission(Role.manage)
     @Patch(':id')
@@ -53,7 +53,7 @@ export class PagesController {
     }
 
     @ApiBearerAuth('authentication')
-    @UseGuards(AuthGuard, RolesGuard)
+    @UseGuards(AuthGuard)
     @Roles(UsersType.admin,UsersType.staff)
     @Permission(Role.manage)
     @ApiOperation({ summary: 'delete page' })

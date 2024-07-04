@@ -93,7 +93,7 @@ export class UsersService {
 
     async verifyEmail(body: OtpDto, id: string) {
         try {
-            let user = await this.model.UserModel.findById({ _id: new Types.ObjectId(id) }, { email_otp: 0, phone_otp: 0, password: 0 }, { lean: true })
+            let user = await this.model.UserModel.findById({ _id: new Types.ObjectId(id) }, { email_otp: 1, phone_otp: 1 }, { lean: true })
             console.log("user_otp", user.email_otp)
             console.log("body_otp", body.otp)
             if (user?.email_otp != body.otp) {
@@ -109,12 +109,25 @@ export class UsersService {
                 { new: true }
             )
             let token_gen_at = moment().utc().valueOf()
-            let payload = { id: user._id, scope: user.user_type, token_gen_at: token_gen_at }
+            let payload = { id: user._id, scope: this.user_scope, token_gen_at: token_gen_at }
             let access_token = await this.generateToken(payload)
             this.common.delete_session(user._id)
             await this.createSession(user._id, access_token, body.fcm_token, user.user_type, token_gen_at)
 
             // let access_token = await this.generateToken(payload)
+            let response= this.user_response(id, access_token)
+            return response
+        } catch (error) {
+            throw error
+        }
+    }
+    
+
+    async user_response(user_id:string, access_token: string) {
+        try {
+            let user = await this.model.UserModel.findById({ _id: new Types.ObjectId(user_id) }, 
+            { email_otp: 0, phone_otp: 0 , password:0}, { lean: true })
+          
             return {
                 access_token,
                 ...user
@@ -123,6 +136,7 @@ export class UsersService {
             throw error
         }
     }
+    
 
     async verifyPhone(body: OtpDto, id: string) {
         try {
@@ -140,16 +154,13 @@ export class UsersService {
                 { new: true }
             )
             let token_gen_at = moment().utc().valueOf()
-            let payload = { id: user._id, scope: user.user_type, token_gen_at: token_gen_at }
+            let payload = { id: user._id, scope: this.user_scope, token_gen_at: token_gen_at }
             let access_token = await this.generateToken(payload)
             this.common.delete_session(user._id)
             await this.createSession(user._id, access_token, body.fcm_token, user.user_type, token_gen_at)
 
-            // let access_token = await this.generateToken(payload)
-            return {
-                access_token,
-                ...user
-            }
+            let response= this.user_response(id, access_token)
+            return response
         } catch (error) {
             throw error
         }
