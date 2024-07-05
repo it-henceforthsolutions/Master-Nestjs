@@ -67,7 +67,7 @@ export class UsersService {
             }
 
             let user = await this.model.UserModel.create(data)
-            await this.common.verification(user.email, otp)
+            this.common.verification(user.email, otp)
             let tok_gen_at = moment().utc().valueOf()
             let payload = { id: user._id, email: user.email, scope: this.user_scope, tok_gen_at: tok_gen_at }
             let access_token = await this.jwtService.signAsync(payload)
@@ -111,7 +111,7 @@ export class UsersService {
             let token_gen_at = moment().utc().valueOf()
             let payload = { id: user._id, scope: this.user_scope, token_gen_at: token_gen_at }
             let access_token = await this.generateToken(payload)
-            this.common.delete_session(user._id)
+            await this.common.delete_session(user._id)
             await this.createSession(user._id, access_token, body.fcm_token, user.user_type, token_gen_at)
 
             // let access_token = await this.generateToken(payload)
