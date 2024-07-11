@@ -146,7 +146,7 @@ export class UsersService {
             }
             let data = {
                 is_phone_verify: true,
-                phone_otp: null
+                phone_otp: 1234
             }
             await this.model.UserModel.findByIdAndUpdate(
                 { _id: new Types.ObjectId(id) },
