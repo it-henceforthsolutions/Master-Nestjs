@@ -18,7 +18,7 @@ export class UsersController {
     @Get('profile')
     @ApiOperation({summary: 'get your profile'})
     profile(@Request() req) {
-        return this.usersService.profile(req.user.id)
+        return this.usersService.profile(req.user_data._id)
     }
 
     @UseGuards(AuthGuard)

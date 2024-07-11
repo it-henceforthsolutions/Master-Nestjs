@@ -65,7 +65,7 @@ export class AuthGuard implements CanActivate {
     
        
       if (scope == this.admin_scope && requiredRoles.includes(UsersType.admin) ) {
-        let data: any = await this.verifyToken(payload)
+        let data: any = await this.verifyToken(payload, token)
         if (data) {
             let { id } = payload;
             let query = { _id: id, type: { $in:[ UsersType.admin] } }
@@ -92,7 +92,7 @@ export class AuthGuard implements CanActivate {
         }
       }
      }else if(scope == this.staff_scope && requiredRoles.includes(UsersType.staff)){
-      let data: any = await this.verifyToken(payload)
+      let data: any = await this.verifyToken(payload, token)
       if (data) {
           let { id } = payload;
           let query = { _id: id, type: { $in:[ UsersType.staff] } }
@@ -120,7 +120,7 @@ export class AuthGuard implements CanActivate {
      }else if(payload.scope === this.user_scope && requiredRoles.includes(UsersType.user)){
       console.log("abfiabsfjbasfosbn");
       
-      let data: any = await this.verifyToken(payload)
+      let data: any = await this.verifyToken(payload, token)
       console.log("data",data);
       
       if (data.length) {
@@ -154,7 +154,7 @@ export class AuthGuard implements CanActivate {
     return type === 'Bearer' ? token : undefined;
   }
 
-  async verifyToken(payload: any) {
+  async verifyToken(payload: any, token: any) {
     let { scope } = payload;
     let query: any;
     if (scope == this.admin_scope) {
@@ -178,12 +178,12 @@ export class AuthGuard implements CanActivate {
     if (scope == this.user_scope) {
       console.log("payload",payload);
       
-        let { id: user_id } = payload;
+        let { id: user_id, token_gen_at} = payload;
         query = {
           user_id: new Types.ObjectId(user_id),
             user_type:UsersType.user,
-            access_token: { $ne: null },
-            // token_gen_at: token_gen_at
+            // access_token: { $ne: null },
+            access_token: token
         }
     }
     let projection = { __v: 0 }
