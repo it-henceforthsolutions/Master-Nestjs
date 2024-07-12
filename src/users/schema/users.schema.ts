@@ -88,6 +88,12 @@ export class Users {
 
     @Prop({default: 0})
     last_seen: number
+
+    @Prop({default: null})
+    deactivate_reason: string
+
+    @Prop({default: null})
+    deactivate_reason_summary: string
 }
 
 export type UsersDocument = HydratedDocument<Users>

@@ -5,6 +5,7 @@ import { AuthGuard } from 'src/auth/auth.guards';
 // import { Role } from 'src/staff/role/staff.role';
 import { Roles } from 'src/auth/role.decorator';
 import { UsersType } from './role/user.role';
+import { DeactivateDto } from './dto/user.dto';
 
 @Roles(UsersType.user)
 // @Permission(Role.manage)
@@ -56,6 +57,15 @@ export class UsersController {
         return this.usersService.getAll()
     }
     
+    @UseGuards(AuthGuard)
+    @ApiBearerAuth('authentication')
+    @Delete(':id/deactivateUser')
+    @ApiResponse({ status: 201, description: 'DEACTIVE' })
+    @ApiOperation({summary: 'deactivate your account'})
+    deactivateUser(@Param('id') id: string,@Body() body:DeactivateDto) {
+        return this.usersService.deactivateUser(id,body)
+    }
+
     @UseGuards(AuthGuard)
     @ApiBearerAuth('authentication')
     @ApiResponse({ status: 201, description: 'DELETED' })
