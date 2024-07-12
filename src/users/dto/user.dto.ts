@@ -83,3 +83,11 @@ export class NewPassOtpDto{
     @ApiProperty()
     otp: number
 }
+
+export class DeactivateDto{
+    @ApiProperty()
+    deactivate_reason: string
+
+    @ApiProperty()
+    deactivate_reason_summary: string
+}

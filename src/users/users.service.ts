@@ -2,7 +2,7 @@ import { BadRequestException, HttpException, HttpStatus, Injectable } from '@nes
 import { InjectModel } from '@nestjs/mongoose';
 import { Users } from './schema/users.schema';
 import mongoose, { Model, Types } from 'mongoose';
-import { ForgetPassDto, NewPassOtpDto, OtpDto, SignInDto, SignUpDto, SocialSignInDto } from './dto/user.dto';
+import { DeactivateDto, ForgetPassDto, NewPassOtpDto, OtpDto, SignInDto, SignUpDto, SocialSignInDto } from './dto/user.dto';
 import * as moment from 'moment';
 import { InjectStripe } from 'nestjs-stripe';
 import Stripe from 'stripe';
@@ -343,7 +343,9 @@ export class UsersService {
     async changePassward(body: ChangePassDto, id: string) {
         try {
             let user = await this.model.UserModel.findById({ _id: new Types.ObjectId(id) })
-            const isMatch = this.common.bcriptPass(body.old_password, user?.password)
+            console.log("user=----------->",user)
+            const isMatch =await this.common.bcriptPass(body.old_password, user?.password)
+            console.log("isMatch--------------->",isMatch)
             if (!isMatch) {
                 throw new HttpException('Wrong Password', HttpStatus.BAD_REQUEST)
             }
@@ -514,7 +516,7 @@ export class UsersService {
             // }
             await this.model.UserModel.findByIdAndUpdate(
                 { _id: new Types.ObjectId(id) },
-                { phone_otp: otp },
+                { phone_otp: 1234 },
                 { new: true }
             )
             throw new HttpException('OTP resend to your registered Phone No.', HttpStatus.OK)
@@ -681,6 +683,20 @@ export class UsersService {
         try {
             let data = await this.model.UserModel.find(query, projection, options)
             return data
+        } catch (error) {
+            throw error
+        }
+    }
+
+    async deactivateUser(id: string,body:DeactivateDto) {
+        try {
+            await this.model.UserModel.findByIdAndUpdate(
+                { _id: new Types.ObjectId(id) },
+                { is_active: false, updated_at: moment().utc().valueOf(),...body },
+                { new: true }
+            )
+            await this.model.SessionModel.deleteMany({ user_id: id })
+            throw new HttpException('Deactivated', HttpStatus.OK)
         } catch (error) {
             throw error
         }
