@@ -191,6 +191,16 @@ export class UsersService {
                 throw new HttpException('Deactivate Account ', HttpStatus.UNAUTHORIZED);
 
             }
+
+            if(user.is_email_verify == false){
+                let otp = await this.common.generateOtp()
+                this.common.verification(user.email, otp)
+                await this.model.UserModel.findOneAndUpdate({email: body.email},{email_otp:otp},{new:true});
+            }
+
+            if(user.is_phone_verify==false){
+                await this.model.UserModel.findOneAndUpdate({email: body.email},{phone_otp:1234},{new:true});
+            }
             // if (user.user_type == UsersType.admin) {
             //     payload = { id: user?._id, email: user?.temp_mail, scope: this.admin_scope }
 
