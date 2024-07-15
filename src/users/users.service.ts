@@ -44,14 +44,14 @@ export class UsersService {
         try {
             let existMail = await this.model.UserModel.find({ email: body.email.toLowerCase() })
             if (existMail.length) {
-                throw new HttpException('This Email is Already Exist! Please Use another Email Address', HttpStatus.BAD_REQUEST);
+                throw new HttpException('Email already exist! Please use another email address', HttpStatus.BAD_REQUEST);
             }
             let otp = await this.common.generateOtp()
             let hash = await this.common.encriptPass(body.password)
             let customer = await this.StripeService.createCustomer(body)
             const isPositiveInteger = positiveIntegerRegex.test(body.phone);
             if (!isPositiveInteger) {
-                throw new HttpException('please enter a valid phone number', HttpStatus.BAD_REQUEST);
+                throw new HttpException('Please enter a valid phone number', HttpStatus.BAD_REQUEST);
             }
             let data = {
                 first_name: body.first_name,
@@ -184,11 +184,11 @@ export class UsersService {
             let payload: any = { id: user?._id, email: user?.email, scope: this.user_scope }
 
             if (!user) {
-                throw new HttpException('Invalid Email', HttpStatus.UNAUTHORIZED);
+                throw new HttpException('Invalid login credentials', HttpStatus.UNAUTHORIZED);
             }
 
             if (user.is_active === false) {
-                throw new HttpException('Deactivate Account ', HttpStatus.UNAUTHORIZED);
+                throw new HttpException('Account deactivated', HttpStatus.UNAUTHORIZED);
 
             }
 
@@ -220,7 +220,7 @@ export class UsersService {
             // console.log("user?.temp_mail", user?.temp_mail)
             const isMatch = await this.common.bcriptPass(body.password, user?.password)
             if (!isMatch) {
-                throw new HttpException('Wrong Pasosword', HttpStatus.UNAUTHORIZED);
+                throw new HttpException('Invalid login credentials', HttpStatus.UNAUTHORIZED);
             }
             let access_token = await this.generateToken(payload)
             await this.createSession(user._id, access_token, body.fcm_token, user.user_type, tok_gen_at)
@@ -316,7 +316,7 @@ export class UsersService {
             //     mail = user?.temp_mail
             // }
             if (!user) {
-                throw new HttpException('This User is no Exist', HttpStatus.BAD_REQUEST)
+                throw new HttpException('Email does not exist', HttpStatus.BAD_REQUEST)
             }
             let otp = Math.floor(1000 + Math.random() * 9000);
             let uniqueId = randomString.generate({
@@ -329,7 +329,7 @@ export class UsersService {
                 { email_otp: otp, unique_id: uniqueId },
                 { new: true }
             )
-            return { message: 'Check Your Registered Mail', uniqueId }
+            return { message: 'Check your registered email', uniqueId }
         } catch (error) {
             throw error
         }
@@ -357,7 +357,7 @@ export class UsersService {
             const isMatch =await this.common.bcriptPass(body.old_password, user?.password)
             console.log("isMatch--------------->",isMatch)
             if (!isMatch) {
-                throw new HttpException('Wrong Password', HttpStatus.BAD_REQUEST)
+                throw new HttpException('Current password is wrong', HttpStatus.BAD_REQUEST)
             }
             let newPass = await this.common.encriptPass(body.new_password)
             let updated = await this.model.UserModel.findByIdAndUpdate(
@@ -368,7 +368,7 @@ export class UsersService {
             if (!updated) {
                 throw new HttpException('Something Went Wrong', HttpStatus.BAD_REQUEST)
             }
-            throw new HttpException('Password Changed Successfully', HttpStatus.OK)
+            throw new HttpException('Password changed successfully', HttpStatus.OK)
 
         } catch (error) {
             throw error
@@ -490,7 +490,7 @@ export class UsersService {
             let user = await this.model.UserModel.findOne({ _id: new Types.ObjectId(id) })
 
             if (user?.is_email_verify == true) {
-                throw new HttpException(`Your Email is Already Verified`, HttpStatus.BAD_REQUEST)
+                throw new HttpException(`Email already verified`, HttpStatus.BAD_REQUEST)
             }
             let otp = await this.common.generateOtp()
 
@@ -514,7 +514,7 @@ export class UsersService {
             let user = await this.model.UserModel.findOne({ _id: new Types.ObjectId(id) })
 
             if (user?.is_phone_verify == true) {
-                throw new HttpException(`Your Phone no. is Already Verified`, HttpStatus.BAD_REQUEST)
+                throw new HttpException(`Phone no. already verified`, HttpStatus.BAD_REQUEST)
             }
             let otp = await this.common.generateOtp()
             let phone = `${user.country_code} ${user.phone}`
@@ -529,7 +529,7 @@ export class UsersService {
                 { phone_otp: 1234 },
                 { new: true }
             )
-            throw new HttpException('OTP resend to your registered Phone No.', HttpStatus.OK)
+            throw new HttpException('OTP resend to your registered Phone no.', HttpStatus.OK)
         } catch (error) {
             throw error
         }
