@@ -5,7 +5,10 @@ import { StripeService } from './stripe.service';
 import { WebhooksService } from './webhooks.service';
 import * as dto from './dto/index'
 import { MakePaymentDto } from './dto/stripe.dto';
+import { Roles } from 'src/auth/role.decorator';
+import { UsersType } from 'src/users/role/user.role';
 
+@Roles(UsersType.user)
 @ApiTags('stripe')
 @Controller('stripe')
 export class StripeController {
