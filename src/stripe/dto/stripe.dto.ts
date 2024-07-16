@@ -38,3 +38,9 @@ export class checkoutSession {
     total_price: number;
 
 }
+
+export class MakePaymentDto {
+    @ApiProperty({ required: false })
+    booking: string
+
+}
