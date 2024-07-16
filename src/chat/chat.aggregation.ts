@@ -89,6 +89,31 @@ export class aggregate {
                 },
               },
             },
+            {
+              $lookup: {
+                from: 'blocked',
+                let: { user_id: '$_id' },
+                pipeline: [
+                  {
+                    $match: {
+                      $expr: {
+                        $or: [
+                          { $eq: ['$block_by', '$$user_id']},
+                          { $eq: ['$block_to', '$$user_id']}
+                        ]
+                      },
+                    },
+                  },
+                ],
+                as: 'blocked',
+              }
+            },
+            {
+              $unwind: {
+                path: '$blocked',
+                preserveNullAndEmptyArrays: true,
+              },
+            }
           ],
           as: 'fetch_user',
         },
@@ -158,6 +183,41 @@ export class aggregate {
     }
   };
 
+  static search= async (search:any)=>{
+      return{
+          $redact: {
+              $cond: {
+                if: {
+                  $and:[
+                    {
+                      $or: [
+                        { $eq: [search, undefined] },
+                        {
+                          $regexMatch: {
+                            input: "$fetch_user.first_name",
+                            regex: search,
+                            options: "i",
+                          },
+                        },
+                        {
+                          $regexMatch: {
+                            input: "$fetch_user.last_name",
+                            regex: search,
+                            options: "i",
+                          },
+                        }
+                      ],
+                    },
+                  ]
+                  
+                },
+                then: "$$KEEP",
+                else: "$$PRUNE",
+              },
+            },
+      }
+  }
+
   static group_data = async (user_id: any) => {
     try { 
       return {
@@ -172,7 +232,15 @@ export class aggregate {
           updated_at: { $first: '$updated_at' },
           created_at: { $first: '$created_at' },
           group_id: { $first: '$group_id' },
-          unread_messages : { $first: '$unread_messages'},
+          unread_messages: { $first: '$unread_messages' },
+          is_blocked: { $first: {
+            $cond: { 
+          if: { $ne: ['$fetch_user.blocked', null] }, 
+          then: true, 
+          else: false 
+          }
+        }
+        }
         },
       };
     } catch (error) {

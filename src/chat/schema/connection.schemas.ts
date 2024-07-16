@@ -21,6 +21,12 @@ export class Connections {
   @Prop({ default: null })
   last_message: string;
 
+  @Prop({ default:0 })
+  sender_mute: number;
+
+  @Prop({ default:0 })
+  reciever_mute: number;
+
   @Prop({ default: +new Date() })
   updated_at: number;
 

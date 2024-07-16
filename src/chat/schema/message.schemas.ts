@@ -4,7 +4,7 @@ import { Connections } from './connection.schemas'; // Assuming you have a Conne
 import { Groups } from './group.schema'; // Assuming you have a Group schema
 import { Users } from 'src/users/schema/users.schema';  // Assuming you have a User schema
 
-const message_type = [null, 'TEXT', 'IMAGE', 'VIDEO', 'AUDIO', 'DOCUMENT', 'SEND_COINS', 'GROUP_LINK'];
+const message_type = [null, 'TEXT', 'IMAGE', 'VIDEO', 'AUDIO', 'DOCUMENT', 'GROUP_LINK'];
 const type = [null, 'NORMAL', 'REPLY', 'FORWARDED', 'DELETED'];
 
 export type MessageDocument = Messages & Document;
@@ -19,6 +19,9 @@ export class Messages {
 
   @Prop({ type: SchemaTypes.ObjectId, ref: Users.name, default: null })
   sent_to: Users;
+
+  @Prop({ type: SchemaTypes.ObjectId, ref: Messages.name, default: null })
+  message_id: Messages;
 
   @Prop({ type: SchemaTypes.ObjectId, ref: Groups.name, default: null })
   group_id: Groups;
@@ -39,7 +42,13 @@ export class Messages {
   media_url: string;
 
   @Prop({ type: [{ type: SchemaTypes.ObjectId, ref:  "users", default: null }] })
+  delivered_to: Users[];
+
+  @Prop({ type: [{ type: SchemaTypes.ObjectId, ref:  "users", default: null }] })
   read_by: Users[];
+
+  @Prop({ type: Number ,default: 0 })
+  read_state: number
 
   @Prop({ default: null })
   deleted_type: number;

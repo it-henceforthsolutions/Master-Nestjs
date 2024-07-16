@@ -8,10 +8,9 @@ import * as stripe from 'nestjs-stripe';
 import { MongooseModule } from '@nestjs/mongoose';
 // import { StripeService } from './stripe.service';
 import { PlansModel, Plan } from './schema/plan';
-import { ModelModule } from 'src/model/model.module';
 
 @Module({
-  imports: [ModelModule,
+  imports: [//ModelModule,
     MongooseModule.forFeature([
     // { name: Product.name, schema: ProductModel },
     { name: Plan.name, schema: PlansModel}
