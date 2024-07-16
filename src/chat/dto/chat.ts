@@ -1,6 +1,6 @@
 import { Types } from 'mongoose';
 import { ApiProperty } from "@nestjs/swagger";
-import { IsArray, IsNumber, IsString } from "class-validator";
+import { IsArray, IsNumber, IsOptional, IsString } from "class-validator";
 
 export class create_connection {
   sent_to: string;
@@ -14,11 +14,17 @@ export class join_connection {
 export class sendMessage {
   group_id:string
   connection_id: string;
+  message_id: string;
   sent_to: string;
   message: string;
   media_url:string;
   message_type:string;
   type:string
+}
+
+export class deliver_message {
+  connection_id: string;
+  message_id: string
 }
 
 
@@ -34,22 +40,24 @@ export class deleteMessage {
 }
 
 
-export class list_connection {
-  @ApiProperty({ required: false })
-  @IsNumber()
-  pagination: Number;
 
-  @ApiProperty({ required: false })
-  @IsNumber()
-  limit: Number;
-
-  //  @ApiProperty({required:false})
-  //  @IsString()
-  //  search :string;
-}
 
 export class addGroupMember{
   connection_id:string;
   group_id:string;
   members:string[];
+}
+
+export class mute_connection_skt{
+  mute_upto: number;
+  connection_id: string;
+}
+
+export class add_pin_items {
+  connection_id: string;
+  message_id: string;
+}
+
+export class call_detail {
+  call_id: string;
 }
