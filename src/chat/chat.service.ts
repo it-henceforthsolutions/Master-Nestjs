@@ -1174,7 +1174,8 @@ export class ChatService {
       let data = await this.BlockedModel.find(query, { __v: 0 }, option)
         .populate(populate_to)
         .exec();
-      return data;
+        let count = await this.BlockedModel.countDocuments(query)
+        return { data , count};
     } catch (error) {
       throw error;
     }
