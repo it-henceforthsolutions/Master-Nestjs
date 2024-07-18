@@ -143,7 +143,7 @@ export class StripeService {
         // automatic_payment_methods: {
         //   enabled: true,
         // },
-        payment_method_types: ['card', 'paypal'],
+        payment_method_types: ['card'],
         customer:user?.custumer_id
       });
 

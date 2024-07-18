@@ -21,6 +21,7 @@ import { ChatModule } from './chat/chat.module';
 import { NotificationModule } from './notification/notification.module';
 import { AgoraModule } from './agora/agora.module';
 import { ModelModule } from './model/model.module';
+import { PaypalModule } from './paypal/paypal.module';
 
 
 
@@ -67,7 +68,8 @@ config()
         ChatModule,
         NotificationModule,
         AgoraModule,
-        ModelModule
+        ModelModule,
+        PaypalModule
     ],
     controllers: [AppController],
     providers: [AppService],
