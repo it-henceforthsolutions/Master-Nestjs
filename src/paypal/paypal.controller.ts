@@ -28,6 +28,8 @@ export class PaypalController {
     return this.paypalService.capturePayment(req, body);
   }
 
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth('authentication')
   @Post('refund-payment')
   async refundPayment(@Body() body: refundDto, @Req() req) {
     const refund = await this.paypalService.refundPayment(req, body);
