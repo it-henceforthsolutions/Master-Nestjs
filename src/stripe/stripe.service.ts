@@ -140,9 +140,10 @@ export class StripeService {
       const paymentIntent = await this.stripeClient.paymentIntents.create({
         amount: 2000,   // set according to your need 
         currency: 'usd',
-        automatic_payment_methods: {
-          enabled: true,
-        },
+        // automatic_payment_methods: {
+        //   enabled: true,
+        // },
+        payment_method_types: ['card', 'paypal'],
         customer:user?.custumer_id
       });
 
