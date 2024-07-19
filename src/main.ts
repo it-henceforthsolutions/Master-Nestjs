@@ -29,8 +29,8 @@ async function bootstrap() {
     .setVersion('1.0')
     .addTag('Default')
     .addBearerAuth({ type: 'http', name: 'token', in: 'header' }, 'authentication')
-    .addServer("http://192.168.29.26:3003",'local server')
     .addServer(`http://localhost:3003/`, "localserver1")
+    .addServer("http://192.168.29.26:3003",'local server')
     .addServer(`https://master.project.henceforthsolutions.com:3000/`, "liveServer")
     .build();
   const document = SwaggerModule.createDocument(app, config);

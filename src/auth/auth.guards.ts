@@ -59,18 +59,21 @@ export class AuthGuard implements CanActivate {
       console.log('payload',payload);
       
       let { scope } = payload
+      console.log("scope", scope)
     console.log("requiredRoles",requiredRoles);
     console.log("requiredRoles.includes(UsersType.user)",requiredRoles.includes(UsersType.user));
     console.log(payload.scope === this.user_scope && requiredRoles.includes(UsersType.user),"payload.scope === this.user_scope && requiredRoles.includes(UsersType.user)");
     
        
-      if (scope == this.admin_scope && requiredRoles.includes(UsersType.admin) ) {
-        let data: any = await this.verifyToken(payload, token)
+      if (scope == this.admin_scope && requiredRoles.includes(UsersType.admin)) {
+     //   console.log('admin scope');
+        
+        let data: any = await this.verifyToken(payload, token);
         if (data) {
             let { id } = payload;
-            let query = { _id: id, type: { $in:[ UsersType.admin] } }
+            let query = { _id: id, user_type: { $in:[ UsersType.admin] } }
             let fetch_admin: any = await this.Model.UserModel.find(query)
-            // console.log("-=--=-=-==-fetchadminAdmin Data=-=-=----",fetch_user)
+             //console.log("-=--=-=-==-fetchadminAdmin Data=-=-=----",fetch_admin)
             if (fetch_admin.length) {
             //     let { roles, super_admin } = fetch_admin[0];
             //     let split_api_path = api_path.split('/');
@@ -95,7 +98,7 @@ export class AuthGuard implements CanActivate {
       let data: any = await this.verifyToken(payload, token)
       if (data) {
           let { id } = payload;
-          let query = { _id: id, type: { $in:[ UsersType.staff] } }
+          let query = { _id: id, user_type: { $in:[ UsersType.staff] } }
           let fetch_admin: any = await this.Model.UserModel.find(query)
           // console.log("-=--=-=-==-fetchadminAdmin Data=-=-=----",fetch_user)
           if (fetch_admin.length) {
