@@ -384,6 +384,8 @@ export class ChatServiceGateway
     }
   }
 
+
+
   @UseGuards(SocketGuard)
   @SubscribeMessage('start_call')
   async start_call(socket: CustomSocket, payload: dto.start_call) {
@@ -453,6 +455,66 @@ export class ChatServiceGateway
        throw error
     }
   }
+
+  @UseGuards(SocketGuard)
+  @SubscribeMessage('create_stream')
+  async create_stream(socket: CustomSocket) {
+    try {
+      const user_id = socket.user.id;
+      let data:any  = await this.chatservice.create_stream(
+        user_id
+      );
+      response.data = data;
+      socket.emit('create_stream', response)
+    } catch (error) {
+      socket.emit('error', error.message)
+       throw error
+    }
+  }
+
+  @UseGuards(SocketGuard)
+  @SubscribeMessage('join_stream')
+  async start_stream(socket: CustomSocket, payload: dto.join_stream) {
+    try {
+      const user_id = socket.user.id;
+      let { stream_id  } = payload;
+ 
+      let data:any  = await this.chatservice.join_stream(
+        user_id, payload
+      );
+      let user_list = await this.chatservice.list_joined_user(data.joined_by)
+      response.data = user_list;
+      let socket_ids = await this.chatservice.getUsersSocketIds(data.joined_by)
+      this.server.to(socket_ids).emit('join_stream', response);
+      socket.emit('join_stream', response)
+    } catch (error) {
+      socket.emit('error', error.message)
+       throw error
+    }
+  }
+
+  @UseGuards(SocketGuard)
+  @SubscribeMessage('leave_stream')
+  async leave_stream(socket: CustomSocket, payload: dto.leave_stream) {
+    try {
+      const user_id = socket.user.id;
+      let { stream_id } = payload;
+ 
+      let data:any  = await this.chatservice.leave_stream(
+        user_id, payload
+      );
+      let user_list = await this.chatservice.list_joined_user(data.joined_by)
+      response.data = user_list;
+      let socket_ids = await this.chatservice.getUsersSocketIds(data.joined_by)
+      this.server.to(socket_ids).emit('leave_stream', response);
+      socket.emit('leave_stream', response)
+    } catch (error) {
+      socket.emit('error', error.message)
+       throw error
+    }
+  }
+
+  
 
 
 }

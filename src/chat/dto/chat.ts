@@ -61,3 +61,11 @@ export class add_pin_items {
 export class call_detail {
   call_id: string;
 }
+
+export class join_stream {
+  stream_id: string; 
+}
+
+export class leave_stream {
+  stream_id: string; 
+}

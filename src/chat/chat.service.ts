@@ -27,6 +27,7 @@ import { SocketGateway } from './socket.gateway';
 import { Call } from './schema/call.schemas';
 import { Pins } from './schema/pinitems.schemas';
 import { ChatSetting } from './schema/chatsetting.schemas';
+import { LiveStreaming } from './schema/liveStream.schemas';
 
 let options = { lean: true };
 let option_new = { new: true };
@@ -42,6 +43,7 @@ export class ChatService {
     @InjectModel(Members.name) private MemberModel: Model<any>,
     @InjectModel(Pins.name) private PinsModel: Model<any>,
     @InjectModel(ChatSetting.name) private ChatSettingModel: Model<any>,
+    @InjectModel(LiveStreaming.name) private LiveStreamModel: Model<any>,
     private userservices: UsersService,
     private model: ModelService,
     private jwtService: JwtService,
@@ -1510,4 +1512,85 @@ export class ChatService {
   async socketEmit(ids: any, event: string, response: any) {
     await this.socketGateway.socket_to(ids, event, response);
   }
+
+  async create_stream( user_id: any ) {
+    let data_to_save = {
+      created_by: new Types.ObjectId(user_id),
+      joined_by: [new Types.ObjectId(user_id)],
+      created_at: moment().utc().valueOf()
+  }
+  let create = await this.LiveStreamModel.create(data_to_save);
+  return create;
+  }
+
+  async join_stream(user_id: string, payload: any) {
+    try {
+      let { steam_id } = payload;
+      let query = { _id: new Types.ObjectId(steam_id) }
+      let update = {
+        $addToSet : {
+          joined_by: new Types.ObjectId(user_id)
+        },
+        updated_at : moment().utc().valueOf()
+      }
+      let updated_data = await this.LiveStreamModel.findOneAndUpdate(query, update, { new: true })
+      return updated_data;
+    } catch (error) {
+       throw error
+    }
+  }
+
+  async leave_stream(user_id: string, payload: any) {
+    try {
+      let { stream_id } = payload;
+      let query = { _id: new Types.ObjectId(stream_id) }
+      let update = {
+        $pull: {
+          joined_by: {
+              $in: [new Types.ObjectId(user_id)]
+          }
+        }
+      }
+      let updated_data = await this.LiveStreamModel.findOneAndUpdate(query, update, { new: true })
+      return updated_data;
+    } catch (error) {
+       throw error
+    }
+  }
+
+  async list_joined_user(joined_by: any) {
+    try {
+      let query = { _id: { $in: joined_by } }
+            let projection = {
+              first_name: 1,
+              last_name: 1,
+              profile_pic:1
+            }
+            let options = { lean: true }
+            let find = await this.model.UserModel.find(query, projection, options)
+            return find;
+    } catch (error) {
+       throw error
+    }
+  }
+
+  async getUsersSocketIds(joined_by:any) {
+    try {
+      let query = { _id: { $in: joined_by } }
+      let projection = {
+        socket_id: 1
+      }
+      let options = { lean: true }
+      let find = await this.model.UserModel.find(query, projection, options)
+      let socket_ids = []
+      for (let i = 0; i < find.length; i++){
+         socket_ids.push(find[i].socket_id) 
+      }
+      return socket_ids;
+    } catch (error) {
+       throw error
+    }
+  }
+
+
 }
