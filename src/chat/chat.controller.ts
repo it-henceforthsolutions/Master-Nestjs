@@ -164,6 +164,11 @@ export class ChatController {
     return await this.chatservice.call_detail(req.user.id, _id);
   }
 
+  @ApiOperation({ summary: "list streams" })
+  @Get('stream')
+  async Streamslist(@Req() req, @Query() query: dto.paginationsortsearch) {
+    return await this.chatservice.list_stream(query);
+  }
 
 
 }

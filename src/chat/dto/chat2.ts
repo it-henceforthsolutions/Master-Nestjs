@@ -150,3 +150,17 @@ export class list_connection {
   @IsOptional()
   search :string;
 }
+
+export class create_stream {
+  @ApiProperty({ required: false , description:"stream name"})
+  @IsOptional()
+  name: string;
+
+  @ApiProperty({ required: false , description:"stream name"})
+  @IsOptional()
+  channel_name: string;
+
+  @ApiProperty({ required: false , description:"stream name"})
+  @IsOptional()
+  agora_token: string;
+}
