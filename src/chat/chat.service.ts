@@ -27,6 +27,9 @@ import { SocketGateway } from './socket.gateway';
 import { Call } from './schema/call.schemas';
 import { Pins } from './schema/pinitems.schemas';
 import { ChatSetting } from './schema/chatsetting.schemas';
+import { LiveStreaming } from './schema/liveStream.schemas';
+import { channel } from 'diagnostics_channel';
+import { first } from 'rxjs';
 
 let options = { lean: true };
 let option_new = { new: true };
@@ -42,6 +45,7 @@ export class ChatService {
     @InjectModel(Members.name) private MemberModel: Model<any>,
     @InjectModel(Pins.name) private PinsModel: Model<any>,
     @InjectModel(ChatSetting.name) private ChatSettingModel: Model<any>,
+    @InjectModel(LiveStreaming.name) private LiveStreamModel: Model<any>,
     private userservices: UsersService,
     private model: ModelService,
     private jwtService: JwtService,
@@ -53,9 +57,11 @@ export class ChatService {
   async updateUserSocketid(token: any, socket_id: string, is_connect: boolean) {
     console.log('update running');
     try {
+      console.log('token------>>>>>>>', token)
       const payload = await this.jwtService.verifyAsync(token, {
         secret: jwtConstants.secret,
       });
+      console.log("payload--", payload)
       console.log('token', token);
       let { id: user_id } = payload;
       let query = { _id: new Types.ObjectId(user_id) };
@@ -1510,4 +1516,165 @@ export class ChatService {
   async socketEmit(ids: any, event: string, response: any) {
     await this.socketGateway.socket_to(ids, event, response);
   }
+
+  async create_stream(user_id: any, body: dto.create_stream) {
+    try {
+      let query = { name: body.name, created_by: new Types.ObjectId(user_id) }
+      let check_exists = await this.LiveStreamModel.find(query, { __v: 0 }, { lean: true });
+      if (check_exists.length > 0) {
+        return check_exists[0];
+      }
+      let check_joinned:any = await this.check_joined_stream(user_id);
+      if (check_joinned) {
+        await this.leave_stream( user_id, { stream_id: check_joinned?._id })
+      }
+      let data_to_save = {
+        channel_name: body?.channel_name,
+        agora_token: body?.agora_token,
+        name: body.name,
+        is_live: true,
+        created_by: new Types.ObjectId(user_id),
+        joined_by: [new Types.ObjectId(user_id)],
+        created_at: moment().utc().valueOf()
+      }
+      console.log("data_to_save", data_to_save)
+      let create = await this.LiveStreamModel.create(data_to_save);
+      return create;
+    } catch (error) {
+       throw error
+    }
+   
+  }
+
+  async join_stream(user_id: string, payload: dto.join_stream) {
+    try {
+      let { stream_id } = payload;
+      let check_joinned:any = await this.check_joined_stream(user_id);
+      if (check_joinned) {
+        if (check_joinned._id != stream_id) {
+          console.log("condition not match")
+          await this.leave_stream( user_id, { stream_id: check_joinned?._id })
+        }
+      }
+      let query = { _id: new Types.ObjectId(stream_id) }
+      let update = {
+        $addToSet : {
+          joined_by: new Types.ObjectId(user_id)
+        },
+        updated_at : moment().utc().valueOf()
+      }
+      let updated_data = await this.LiveStreamModel.findOneAndUpdate(query, update, { new: true })
+      return updated_data;
+    } catch (error) {
+       throw error
+    }
+  }
+
+  async leave_stream(user_id: string, payload: dto.leave_stream) {
+    try {
+      let { stream_id } = payload;
+      let query = { _id: new Types.ObjectId(stream_id) }
+      let fetch_data:any = await this.LiveStreamModel.findOne(query, { created_by: 1 }, { lean: true })
+      let update:any = {
+        $pull: {
+          joined_by: {
+              $in: [new Types.ObjectId(user_id)]
+          }
+        }
+      }
+      if (fetch_data?.created_by == user_id) {
+        update.is_live = false; 
+      } 
+      let updated_data = await this.LiveStreamModel.findOneAndUpdate(query, update, { new: true })
+      return updated_data;
+    } catch (error) {
+       throw error
+    }
+  }
+
+
+  async list_joined_user(joined_by: any) {
+    try {
+      let query = { _id: { $in: joined_by } }
+            let projection = {
+              first_name: 1,
+              last_name: 1,
+              profile_pic:1
+            }
+            let options = { lean: true }
+            let find = await this.model.UserModel.find(query, projection, options)
+            return find;
+    } catch (error) {
+       throw error
+    }
+  }
+
+  async getUsersSocketIds(joined_by:any) {
+    try {
+      let query = { _id: { $in: joined_by }}
+      let projection = {
+        socket_id: 1
+      }
+      let options = { lean: true }
+      let find = await this.model.UserModel.find(query, projection, options)
+      let socket_ids = []
+      for (let i = 0; i < find.length; i++){
+         socket_ids.push(find[i].socket_id) 
+      }
+      return socket_ids;
+    } catch (error) {
+       throw error
+    }
+  }
+
+  async list_stream(payload: dto.paginationsortsearch) {
+    try {
+      let query = {};
+      let { pagination, limit, search, sort_by } = payload;
+      if (search) {
+        let query =  { name: { $regex: search, $options: 'i' } }
+      }
+      let projection = { __v:0 }
+      let options = await this.set_options(pagination, limit);
+      if (sort_by) {
+        if (sort_by == sortBy.Newest) {
+          options.sort = { _id: -1 };
+        } else if (sort_by == sortBy.Oldest) {
+          options.sort = { _id: 1 };
+        } else if (sort_by == sortBy.Name) {
+          options.sort = { first_name: 1 };
+        }
+      } else {
+        options.sort = { _id: -1 };
+      }
+      let fetch_data = await this.LiveStreamModel.find(query, projection, options);
+      return fetch_data;
+    } catch (error) {
+       throw error
+    }
+  }
+
+  async check_joined_stream(user_id: any) {
+    try {
+      let query = { joined_by: new Types.ObjectId(user_id) };
+      let fetch_data = await this.LiveStreamModel.findOne( query, { __v: 0 }, { lean: true })
+      return fetch_data;
+    } catch (error) {
+       throw error
+    }
+  }
+
+  async get_user_data(user_id: any) {
+    try {
+      let query = { _id: new Types.ObjectId(user_id) };
+      let projection = { first_name: 1, last_name: 1, profile_pic: 1 }
+      let options = { lean: true }
+      let fetch_user = await this.model.UserModel.findOne(query, projection, options);
+      return fetch_user;
+    } catch (error) {
+       throw error
+    }
+  }
+
+
 }

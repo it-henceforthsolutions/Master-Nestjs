@@ -15,6 +15,7 @@ import { SocketGateway } from './socket.gateway';
 import { Pins, PinsSchema } from './schema/pinitems.schemas';
 import { ChatSetting, ChatSettingSchema } from './schema/chatsetting.schemas';
 import { CommonModule } from 'src/common/common.module';
+import { LiveStreaming, LiveStreamingSchema } from './schema/liveStream.schemas';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { CommonModule } from 'src/common/common.module';
       { name: Call.name, schema: CallSchema },
       { name: Pins.name, schema: PinsSchema },
       { name: ChatSetting.name, schema: ChatSettingSchema },
+      { name: LiveStreaming.name, schema: LiveStreamingSchema }
     ]),
     UsersModule,
     AgoraModule,
