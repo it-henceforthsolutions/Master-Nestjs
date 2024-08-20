@@ -22,6 +22,7 @@ import { NotificationModule } from './notification/notification.module';
 import { AgoraModule } from './agora/agora.module';
 import { ModelModule } from './model/model.module';
 import { PaypalModule } from './paypal/paypal.module';
+import { UploadModule } from './upload/upload.module';
 
 
 
@@ -69,7 +70,8 @@ config()
         NotificationModule,
         AgoraModule,
         ModelModule,
-        PaypalModule
+        PaypalModule,
+        UploadModule,
     ],
     controllers: [AppController],
     providers: [AppService],
