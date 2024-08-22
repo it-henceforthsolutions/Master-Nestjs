@@ -56,7 +56,7 @@ export class UsersService {
             let data = {
                 first_name: body.first_name,
                 last_name: body.last_name,
-                email: body.email,
+                email: body.email.toLowerCase(),
                 country_code: body.country_code,
                 phone: body.phone,
                 password: hash,
@@ -78,7 +78,7 @@ export class UsersService {
                 tok_gen_at: tok_gen_at
             })
             user = await this.model.UserModel.findOne({ _id: user?._id }, {
-                first_name: 1, last_name: 1, temp_phone: 1, country_code: 1, temp_country_code: 1, email: 1
+                first_name: 1, last_name: 1, temp_phone: 1, country_code: 1, temp_country_code: 1, phone:1,  email: 1
             }).lean(true)
             return { access_token, ...user }
         } catch (error) {
@@ -424,7 +424,7 @@ export class UsersService {
             let updatedMail = await this.model.UserModel.findByIdAndUpdate(
                 { _id: new Types.ObjectId(id) },
                 data,
-                { new: true }
+                { new: true , projection:{ password:0 ,email_otp:0, phone_otp:0 } }
             )
             return updatedMail
         } catch (error) {
@@ -455,7 +455,7 @@ export class UsersService {
             let updatedPhone = await this.model.UserModel.findByIdAndUpdate(
                 { _id: new Types.ObjectId(id) },
                 data,
-                { new: true }
+                { new: true , projection:{ password:0 ,email_otp:0, phone_otp:0 } }
             )
             return updatedPhone
         } catch (error) {
