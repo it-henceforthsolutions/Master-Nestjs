@@ -192,14 +192,14 @@ export class UsersService {
 
             }
 
-            if(user.is_email_verify == false){
+            if (user.is_email_verify == false) {
                 let otp = await this.common.generateOtp()
                 this.common.verification(user.email, otp)
-                await this.model.UserModel.findOneAndUpdate({email: body.email},{email_otp:otp},{new:true});
+                await this.model.UserModel.findOneAndUpdate({ email: body.email }, { email_otp: otp }, { new: true });
             }
 
-            if(user.is_phone_verify==false){
-                await this.model.UserModel.findOneAndUpdate({email: body.email},{phone_otp:1234},{new:true});
+            if (user.is_phone_verify == false) {
+                await this.model.UserModel.findOneAndUpdate({ email: body.email }, { phone_otp: 1234 }, { new: true });
             }
             // if (user.user_type == UsersType.admin) {
             //     payload = { id: user?._id, email: user?.temp_mail, scope: this.admin_scope }
@@ -246,7 +246,8 @@ export class UsersService {
                     profile_pic: response?.picture,
                     social_id: response?.sub,
                     is_email_verify: true,
-                    is_phone_verify: true
+                    is_phone_verify: true,
+                    login_type: LoginType.google
                 }
             } else if (body.social_type == LoginType.facebook) {
                 response = await axios.get(`https://graph.facebook.com/v2.12/me?fields=name,first_name,last_name,email&access_token=${body.social_token}`);
@@ -258,7 +259,8 @@ export class UsersService {
                     profile_pic: response?.picture,
                     social_id: response?.id,
                     is_email_verify: true,
-                    is_phone_verify: true
+                    is_phone_verify: true,
+                    login_type: LoginType.facebook
                 }
             } else {
                 throw new HttpException('Invalid Request', HttpStatus.BAD_REQUEST)
@@ -353,9 +355,9 @@ export class UsersService {
     async changePassward(body: ChangePassDto, id: string) {
         try {
             let user = await this.model.UserModel.findById({ _id: new Types.ObjectId(id) })
-            console.log("user=----------->",user)
-            const isMatch =await this.common.bcriptPass(body.old_password, user?.password)
-            console.log("isMatch--------------->",isMatch)
+            console.log("user=----------->", user)
+            const isMatch = await this.common.bcriptPass(body.old_password, user?.password)
+            console.log("isMatch--------------->", isMatch)
             if (!isMatch) {
                 throw new HttpException('Current password is wrong', HttpStatus.BAD_REQUEST)
             }
@@ -658,7 +660,7 @@ export class UsersService {
         try {
             let data = await this.model.UserModel.findOne(
                 { _id: new Types.ObjectId(id), is_deleted: false, is_active: true, is_blocked: false },
-                { first_name: 1, last_name: 1, country_code: 1, email: 1, is_email_verify: 1, is_phone_verify: 1, profile_pic: 1, phone:1 }
+                { first_name: 1, last_name: 1, country_code: 1, email: 1, is_email_verify: 1, is_phone_verify: 1, profile_pic: 1, phone: 1, login_type: 1 }
             ).lean(true)
             if (!data) {
                 throw new HttpException('You May be deactivated', HttpStatus.BAD_REQUEST)
@@ -698,11 +700,11 @@ export class UsersService {
         }
     }
 
-    async deactivateUser(id: string,body:DeactivateDto) {
+    async deactivateUser(id: string, body: DeactivateDto) {
         try {
             await this.model.UserModel.findByIdAndUpdate(
                 { _id: new Types.ObjectId(id) },
-                { is_active: false, updated_at: moment().utc().valueOf(),...body },
+                { is_active: false, updated_at: moment().utc().valueOf(), ...body },
                 { new: true }
             )
             await this.model.SessionModel.deleteMany({ user_id: id })
