@@ -86,7 +86,7 @@ export class ChatController {
     return await this.chatservice.get_pin_items(_id, query);
   }
 
-  @ApiOperation({summary:"list messages by connection"})
+  @ApiOperation({summary:"list messages by connection_id"})
   @UseGuards(AuthGuard)
   @ApiBearerAuth('authentication')
   @Get('connections/:_id/message')
@@ -168,6 +168,12 @@ export class ChatController {
   @Get('stream')
   async Streamslist(@Req() req, @Query() query: dto.paginationsortsearch) {
     return await this.chatservice.list_stream(query);
+  }
+
+  @ApiOperation({ summary: "deliver" })
+  @Patch('deliver')
+  async Deliver(@Req() req, @Body() dto: dto.Deliver_message) {
+    return await this.chatservice.deliverMessage(req.user.id, dto);
   }
 
 

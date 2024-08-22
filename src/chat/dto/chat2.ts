@@ -164,3 +164,13 @@ export class create_stream {
   @IsOptional()
   agora_token: string;
 }
+
+export class Deliver_message {
+  @ApiProperty({ required: true , description:"connection_id"})
+  @IsString()
+  connection_id: string;
+
+  @ApiProperty({ required: true , description:"message_id"})
+  @IsString()
+  message_id: string
+}

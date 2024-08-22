@@ -23,11 +23,11 @@ send_message             -   get_message
 list_connection    -       list_connection
 get_all_message    -       get_all_message
 
-read_message       -       read_message
+read_message       -       read_message     -- messages_updated  if(read_state is updated)
 {
     "message_id": string
 }
-deliver_message -  deliver_message
+deliver_message -  deliver_message        -- messages_updated   if(read_state is updated)
 {
     "message_id" -  string
 }

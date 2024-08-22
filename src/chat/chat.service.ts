@@ -57,11 +57,11 @@ export class ChatService {
   async updateUserSocketid(token: any, socket_id: string, is_connect: boolean) {
     console.log('update running');
     try {
-      console.log('token------>>>>>>>', token)
+      console.log('token------>>>>>>>', token);
       const payload = await this.jwtService.verifyAsync(token, {
         secret: jwtConstants.secret,
       });
-      console.log("payload--", payload)
+      console.log('payload--', payload);
       console.log('token', token);
       let { id: user_id } = payload;
       let query = { _id: new Types.ObjectId(user_id) };
@@ -331,47 +331,120 @@ export class ChatService {
   async deliverMessage(user_id: string, payload: dto.readMessage) {
     try {
       let { message_id } = payload;
-      let query:any = {
-        _id:  new Types.ObjectId(message_id),
+      let response: any = await this.model.MessageModel.findOne(
+        { _id: new Types.ObjectId(message_id) },
+        { __v: 0 },
+        { lean: true },
+      );
+
+      let query: any = {
+        connection_id: response.connection_id,
         delivered_to: { $nin: [user_id] },
         sent_by: { $ne: user_id },
         read_state: 0,
-    }
+      };
       let update = {
         $addToSet: { delivered_to: new Types.ObjectId(user_id) },
-          updated_at: moment().utc().valueOf(),
-      }
-      let options = {
-        new: true
+        updated_at: moment().utc().valueOf(),
       };
-      let response:any = await this.messageModel.findOneAndUpdate(query, update, options);
-      console.log("response---", response)
+      await this.messageModel.updateMany(query, update);
+
+      let query_msg = {
+        connection_id: new Types.ObjectId(response.connection_id),
+        read_state: 0,
+      };
+      let update_msg = { read_state: 1 };
+      let updated_state = false;
+
       if (response?.sent_to && response?.delivered_to?.length == +1) {
-          response =  await this.model.MessageModel.findOneAndUpdate({_id: response._id},{read_state: 1},{ new:true })
+        await this.model.MessageModel.updateMany(query_msg, update_msg, {
+          new: true,
+        });
+        updated_state = true;
+      } else if (response?.group_id) {
+        let count_active_member = await this.model.MemberModel.countDocuments({
+          group_id: response.group_id,
+        });
+        if (count_active_member >= response?.delivered_to?.length + 1) {
+          let query = {
+            ...query_msg,
+            created_at: { $lte: response.created_at },
+          };
+          await this.messageModel.updateMany(query, update_msg);
+          updated_state = true;
         }
+      }
+      if (updated_state) {
+        let socket_ids = await this.get_socket_id_by_connection(
+          response.connection_id,
+          user_id,
+        );
+        this.socketEmit(socket_ids, 'messages_updated', {
+          connection_id: response.connection_id,
+        });
+      }
       return response;
     } catch (error) {
-       throw error
+      throw error;
     }
   }
 
   async readMessage(user_id: string, payload: dto.readMessage) {
     try {
       let { message_id } = payload;
-      let query = { _id: new Types.ObjectId(message_id) };
+      let response = await this.messageModel.findOne(
+        { _id: new Types.ObjectId(message_id) },
+        { __v: 0 },
+        options,
+      );
+      let query = {
+        connection_id: response?.connection_id,
+        read_by: { $nin: [user_id] },
+        sent_by: { $ne: user_id },
+        read_state: { $ne: 2 },
+      };
       let update = {
         $addToSet: { read_by: new Types.ObjectId(user_id) },
         updated_at: moment().utc().valueOf(),
       };
-      let options = { new: true };
-      let response = await this.messageModel.findOneAndUpdate(
-        query,
-        update,
-        options,
-      );
+      await this.model.MessageModel.updateMany(query, update);
+
+      let query_msg = {
+        connection_id: new Types.ObjectId(response.connection_id),
+        read_state: { $ne: 2 },
+      };
+      let update_msg = { read_state: 2 };
+      let updated_state = false;
+
       if (response?.sent_to && response?.read_by?.length == +1) {
-        response = await this.model.MessageModel.findOneAndUpdate({_id: response._id},{read_state: 2},{ new:true } )
-     }
+        response = await this.model.MessageModel.updateMany(
+          query_msg,
+          update_msg,
+          { new: true },
+        );
+        updated_state = true;
+      } else if (response?.group_id) {
+        let count_active_member = await this.model.MemberModel.countDocuments({
+          group_id: response.group_id,
+        });
+        if (count_active_member >= response?.read_by?.length + 1) {
+          let query = {
+            ...query_msg,
+            created_at: { $lte: response.created_at },
+          };
+          await this.messageModel.updateMany(query, update_msg);
+          updated_state = true;
+        }
+      }
+      if (updated_state) {
+        let socket_ids = await this.get_socket_id_by_connection(
+          response.connection_id,
+          user_id,
+        );
+        this.socketEmit(socket_ids, 'messages_updated', {
+          connection_id: response.connection_id,
+        });
+      }
       return response;
     } catch (error) {
       throw error;
@@ -385,14 +458,18 @@ export class ChatService {
   ) {
     try {
       let { connection_id } = payload;
-      let connnection = await this.model.ConnectionModel.findOne({ _id: new Types.ObjectId(connection_id) }, { __v: 0 }, { new: true });
+      let connnection = await this.model.ConnectionModel.findOne(
+        { _id: new Types.ObjectId(connection_id) },
+        { __v: 0 },
+        { new: true },
+      );
 
-      let query:any = {
+      let query: any = {
         connection_id: new Types.ObjectId(connection_id),
         deleted_for: { $nin: [new Types.ObjectId(user_id)] },
       };
 
-      let update:any = {
+      let update: any = {
         $addToSet: { read_by: user_id },
         updated_at: moment().utc().valueOf(),
       };
@@ -401,10 +478,14 @@ export class ChatService {
         let query2 = {
           connection_id: new Types.ObjectId(connection_id),
           deleted_for: { $nin: [new Types.ObjectId(user_id)] },
-          sent_to :new Types.ObjectId(user_id)
+          sent_to: new Types.ObjectId(user_id),
         };
-        await this.model.MessageModel.updateMany(query2, { read_state: 2 }, { new: true })
-      } 
+        await this.model.MessageModel.updateMany(
+          query2,
+          { read_state: 2 },
+          { new: true },
+        );
+      }
       await this.messageModel.updateMany(query, update, { new: true });
 
       let projection = {
@@ -444,7 +525,7 @@ export class ChatService {
         .exec();
 
       let count = await this.messageModel.countDocuments(query);
-    
+
       return {
         count: count,
         data: response,
@@ -600,21 +681,27 @@ export class ChatService {
     if (group_id) {
       socket_ids = await this.getGroupSocketids(group_id);
     } else if (sent_to) {
-      let check_block = await this.check_block(connection.sent_to._id, connection.sent_by._id)
+      let check_block = await this.check_block(
+        connection.sent_to._id,
+        connection.sent_by._id,
+      );
       if (!!check_block) {
         if (user_id == connection.sent_by._id.toString()) {
-          socket_ids = [connection.sent_by.socket_id]
+          socket_ids = [connection.sent_by.socket_id];
         } else {
-          socket_ids = [connection.sent_to.socket_id]
+          socket_ids = [connection.sent_to.socket_id];
         }
       } else {
-        socket_ids = [connection.sent_by.socket_id, connection.sent_to.socket_id];
+        socket_ids = [
+          connection.sent_by.socket_id,
+          connection.sent_to.socket_id,
+        ];
       }
     }
     return socket_ids;
   }
 
-  async getGroupSocketids(group_id: string, ) {
+  async getGroupSocketids(group_id: string) {
     try {
       let query = { group_id: new Types.ObjectId(group_id) };
       let users = await this.MemberModel.find(query)
@@ -1146,23 +1233,22 @@ export class ChatService {
   async block_unblock(block_by: string, body: dto.block_unblock) {
     try {
       let { user_id: block_to, status } = body;
-      let message= "unblocked successfully"
+      let message = 'unblocked successfully';
       if (status === 0) {
         await this.BlockedModel.deleteOne({
           block_by: new Types.ObjectId(block_by),
           block_to: new Types.ObjectId(block_to),
         });
-      }
-      else if (status === 1) {
-        let fetchData = await this.BlockedModel.findOne({ block_by, block_to })
+      } else if (status === 1) {
+        let fetchData = await this.BlockedModel.findOne({ block_by, block_to });
         if (!fetchData) {
           await this.BlockedModel.create({ block_by, block_to });
-        } 
-        message= "blocked successfully"
+        }
+        message = 'blocked successfully';
       }
       return {
-        message 
-      }
+        message,
+      };
     } catch (error) {
       throw error;
     }
@@ -1180,8 +1266,8 @@ export class ChatService {
       let data = await this.BlockedModel.find(query, { __v: 0 }, option)
         .populate(populate_to)
         .exec();
-        let count = await this.BlockedModel.countDocuments(query)
-        return { data , count};
+      let count = await this.BlockedModel.countDocuments(query);
+      return { data, count };
     } catch (error) {
       throw error;
     }
@@ -1265,16 +1351,19 @@ export class ChatService {
       let option = this.commonService.set_options(pagination, limit);
       let populate_to = [
         { path: 'user_id', select: 'first_name last_name profile_pic' },
-        { path:"message_id", select: 'message_type message message_url media_url' }
+        {
+          path: 'message_id',
+          select: 'message_type message message_url media_url',
+        },
       ];
       let data = await this.PinsModel.find(query, { __v: 0 }, option)
         .populate(populate_to)
         .exec();
-      let count = await this.PinsModel.countDocuments( query)
+      let count = await this.PinsModel.countDocuments(query);
       return {
-        data, 
-        count
-      }
+        data,
+        count,
+      };
     } catch (error) {
       throw error;
     }
@@ -1519,14 +1608,18 @@ export class ChatService {
 
   async create_stream(user_id: any, body: dto.create_stream) {
     try {
-      let query = { name: body.name, created_by: new Types.ObjectId(user_id) }
-      let check_exists = await this.LiveStreamModel.find(query, { __v: 0 }, { lean: true });
+      let query = { name: body.name, created_by: new Types.ObjectId(user_id) };
+      let check_exists = await this.LiveStreamModel.find(
+        query,
+        { __v: 0 },
+        { lean: true },
+      );
       if (check_exists.length > 0) {
         return check_exists[0];
       }
-      let check_joinned:any = await this.check_joined_stream(user_id);
+      let check_joinned: any = await this.check_joined_stream(user_id);
       if (check_joinned) {
-        await this.leave_stream( user_id, { stream_id: check_joinned?._id })
+        await this.leave_stream(user_id, { stream_id: check_joinned?._id });
       }
       let data_to_save = {
         channel_name: body?.channel_name,
@@ -1535,95 +1628,105 @@ export class ChatService {
         is_live: true,
         created_by: new Types.ObjectId(user_id),
         joined_by: [new Types.ObjectId(user_id)],
-        created_at: moment().utc().valueOf()
-      }
-      console.log("data_to_save", data_to_save)
+        created_at: moment().utc().valueOf(),
+      };
+      console.log('data_to_save', data_to_save);
       let create = await this.LiveStreamModel.create(data_to_save);
       return create;
     } catch (error) {
-       throw error
+      throw error;
     }
-   
   }
 
   async join_stream(user_id: string, payload: dto.join_stream) {
     try {
       let { stream_id } = payload;
-      let check_joinned:any = await this.check_joined_stream(user_id);
+      let check_joinned: any = await this.check_joined_stream(user_id);
       if (check_joinned) {
         if (check_joinned._id != stream_id) {
-          console.log("condition not match")
-          await this.leave_stream( user_id, { stream_id: check_joinned?._id })
+          console.log('condition not match');
+          await this.leave_stream(user_id, { stream_id: check_joinned?._id });
         }
       }
-      let query = { _id: new Types.ObjectId(stream_id) }
+      let query = { _id: new Types.ObjectId(stream_id) };
       let update = {
-        $addToSet : {
-          joined_by: new Types.ObjectId(user_id)
+        $addToSet: {
+          joined_by: new Types.ObjectId(user_id),
         },
-        updated_at : moment().utc().valueOf()
-      }
-      let updated_data = await this.LiveStreamModel.findOneAndUpdate(query, update, { new: true })
+        updated_at: moment().utc().valueOf(),
+      };
+      let updated_data = await this.LiveStreamModel.findOneAndUpdate(
+        query,
+        update,
+        { new: true },
+      );
       return updated_data;
     } catch (error) {
-       throw error
+      throw error;
     }
   }
 
   async leave_stream(user_id: string, payload: dto.leave_stream) {
     try {
       let { stream_id } = payload;
-      let query = { _id: new Types.ObjectId(stream_id) }
-      let fetch_data:any = await this.LiveStreamModel.findOne(query, { created_by: 1 }, { lean: true })
-      let update:any = {
+      let query = { _id: new Types.ObjectId(stream_id) };
+      let fetch_data: any = await this.LiveStreamModel.findOne(
+        query,
+        { created_by: 1 },
+        { lean: true },
+      );
+      let update: any = {
         $pull: {
           joined_by: {
-              $in: [new Types.ObjectId(user_id)]
-          }
-        }
-      }
+            $in: [new Types.ObjectId(user_id)],
+          },
+        },
+      };
       if (fetch_data?.created_by == user_id) {
-        update.is_live = false; 
-      } 
-      let updated_data = await this.LiveStreamModel.findOneAndUpdate(query, update, { new: true })
+        update.is_live = false;
+      }
+      let updated_data = await this.LiveStreamModel.findOneAndUpdate(
+        query,
+        update,
+        { new: true },
+      );
       return updated_data;
     } catch (error) {
-       throw error
+      throw error;
     }
   }
-
 
   async list_joined_user(joined_by: any) {
     try {
-      let query = { _id: { $in: joined_by } }
-            let projection = {
-              first_name: 1,
-              last_name: 1,
-              profile_pic:1
-            }
-            let options = { lean: true }
-            let find = await this.model.UserModel.find(query, projection, options)
-            return find;
+      let query = { _id: { $in: joined_by } };
+      let projection = {
+        first_name: 1,
+        last_name: 1,
+        profile_pic: 1,
+      };
+      let options = { lean: true };
+      let find = await this.model.UserModel.find(query, projection, options);
+      return find;
     } catch (error) {
-       throw error
+      throw error;
     }
   }
 
-  async getUsersSocketIds(joined_by:any) {
+  async getUsersSocketIds(joined_by: any) {
     try {
-      let query = { _id: { $in: joined_by }}
+      let query = { _id: { $in: joined_by } };
       let projection = {
-        socket_id: 1
-      }
-      let options = { lean: true }
-      let find = await this.model.UserModel.find(query, projection, options)
-      let socket_ids = []
-      for (let i = 0; i < find.length; i++){
-         socket_ids.push(find[i].socket_id) 
+        socket_id: 1,
+      };
+      let options = { lean: true };
+      let find = await this.model.UserModel.find(query, projection, options);
+      let socket_ids = [];
+      for (let i = 0; i < find.length; i++) {
+        socket_ids.push(find[i].socket_id);
       }
       return socket_ids;
     } catch (error) {
-       throw error
+      throw error;
     }
   }
 
@@ -1632,9 +1735,9 @@ export class ChatService {
       let query = {};
       let { pagination, limit, search, sort_by } = payload;
       if (search) {
-        let query =  { name: { $regex: search, $options: 'i' } }
+        let query = { name: { $regex: search, $options: 'i' } };
       }
-      let projection = { __v:0 }
+      let projection = { __v: 0 };
       let options = await this.set_options(pagination, limit);
       if (sort_by) {
         if (sort_by == sortBy.Newest) {
@@ -1647,34 +1750,44 @@ export class ChatService {
       } else {
         options.sort = { _id: -1 };
       }
-      let fetch_data = await this.LiveStreamModel.find(query, projection, options);
+      let fetch_data = await this.LiveStreamModel.find(
+        query,
+        projection,
+        options,
+      );
       return fetch_data;
     } catch (error) {
-       throw error
+      throw error;
     }
   }
 
   async check_joined_stream(user_id: any) {
     try {
       let query = { joined_by: new Types.ObjectId(user_id) };
-      let fetch_data = await this.LiveStreamModel.findOne( query, { __v: 0 }, { lean: true })
+      let fetch_data = await this.LiveStreamModel.findOne(
+        query,
+        { __v: 0 },
+        { lean: true },
+      );
       return fetch_data;
     } catch (error) {
-       throw error
+      throw error;
     }
   }
 
   async get_user_data(user_id: any) {
     try {
       let query = { _id: new Types.ObjectId(user_id) };
-      let projection = { first_name: 1, last_name: 1, profile_pic: 1 }
-      let options = { lean: true }
-      let fetch_user = await this.model.UserModel.findOne(query, projection, options);
+      let projection = { first_name: 1, last_name: 1, profile_pic: 1 };
+      let options = { lean: true };
+      let fetch_user = await this.model.UserModel.findOne(
+        query,
+        projection,
+        options,
+      );
       return fetch_user;
     } catch (error) {
-       throw error
+      throw error;
     }
   }
-
-
 }

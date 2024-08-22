@@ -146,14 +146,14 @@ export class ChatServiceGateway
 
   @UseGuards(SocketGuard)
   @SubscribeMessage('get_all_message')
-  async handleAllMessage(socket: CustomSocket, payload: dto.join_connection) {
+  async handleAllMessage(socket: CustomSocket, payload: dto.get_all_message) {
     try {
       console.log('socket called ===>get_all_message', payload);
-      let { connection_id } = payload;
+      let { connection_id, pagination, limit  } = payload;
       const user_id = socket.user.id;
       response.data = await this.chatservice.getAllMessage(
-        payload,
-        null,
+        {connection_id},
+        { pagination ,limit},
         user_id,
       );
       response.connection_id = connection_id;
@@ -174,14 +174,12 @@ export class ChatServiceGateway
     try {
       console.log('socket called ===>deliver_message', payload);
       const user_id = socket.user.id;
-      let { message_id } = payload;
       let data = await this.chatservice.deliverMessage(user_id, payload);
       if (data) {
         let { connection_id } = data;
         response.data = data;
         response.connection_id = connection_id;
-        let socket_ids = await this.chatservice.get_socket_id_by_connection(connection_id, user_id);
-        this.server.to(socket_ids).emit('deliver_message', response);
+        socket.emit('deliver_message', response);
       }
       console.log(data);
     } catch (error) {
@@ -195,22 +193,19 @@ export class ChatServiceGateway
     try {
       console.log('socket called ===>read_message', payload);
       const user_id = socket.user.id;
-      let { message_id } = payload;
       let data = await this.chatservice.readMessage(user_id, payload);
       console.log(data);
       if (data) {
         let { connection_id } = data;
         response.data = data;
         response.connection_id = connection_id;
-        let socket_ids = await this.chatservice.get_socket_id_by_connection(connection_id, user_id);
-       this.server.to(socket_ids).emit('read_message', response);
+        socket.emit('read_message', response)
       }
     } catch (error) {
       socket.emit('error', error.message)
     }
   }
 
-  
 
   @UseGuards(SocketGuard)
   @SubscribeMessage('leave_connection')
