@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { HydratedDocument } from "mongoose";
-import { UsersType } from "../role/user.role";
+import { LoginType, UsersType } from "../role/user.role";
 import { IsEmail } from "class-validator";
 import * as moment from "moment"
 
@@ -55,6 +55,9 @@ export class Users {
 
     @Prop({default:null})
     social_id: string
+
+    @Prop({default:LoginType.normal,enum:LoginType})
+    login_type: string
 
     @Prop()
     custumer_id: string
