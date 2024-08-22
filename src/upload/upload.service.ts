@@ -261,6 +261,7 @@ export class UploadService {
       //console.log("fileur11......",output_path);
 
       let gen_thumb = await this.gen_thumbnail(file_url, output_path);
+      console.log("gen_thumb--", gen_thumb)
       if (gen_thumb === true) {
         let fetch_file = path.resolve(__dirname, `../../public/images/path.png`);
         let mime_type = mime.lookup(fetch_file);
