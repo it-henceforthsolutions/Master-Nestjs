@@ -438,14 +438,14 @@ export class UsersService {
             let data = {
                 country_code: body.country_code,
                 phone: body.phone,
-                otp: 1234,
+                otp: 1234,  // set random otp 
                 is_phone_verify: false,
                 updated_at: moment().utc().valueOf(),
             }
 
             let userModel = await this.model.UserModel.findOne({ country_code: body.country_code, phone: body.phone })
             if (userModel) {
-                throw new HttpException('This Phone Number is Already Exist! Please Use another Email Address', HttpStatus.BAD_REQUEST);
+                throw new HttpException('This Phone Number is Already Exist! Please Use another phone number.', HttpStatus.BAD_REQUEST);
             }
             let phoneNumber = `${body.country_code}${body.phone}`
             // let response = await this.common.sendOtpOnPhone(otp, phoneNumber)
