@@ -13,7 +13,7 @@ export class Users {
     last_name:string
 
     @IsEmail()
-    @Prop()
+    @Prop({lowercase: true})
     email: string
 
     // @IsEmail()
