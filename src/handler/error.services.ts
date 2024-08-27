@@ -1080,3 +1080,15 @@ export class requiredField extends HttpException {
     super('Game not live', HttpStatus.BAD_REQUEST);
   }
 }
+
+export class UserBlockedYou extends HttpException {
+  constructor() {
+    super('You are Blocked by the User', HttpStatus.BAD_REQUEST);
+  }
+}
+
+export class YouBlockedUser extends HttpException {
+  constructor() {
+    super('You Blocked the User', HttpStatus.BAD_REQUEST);
+  }
+}
