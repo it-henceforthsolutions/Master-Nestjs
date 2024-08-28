@@ -26,7 +26,7 @@ export class AuthGuard implements CanActivate {
     private jwtService: JwtService, private reflector: Reflector) {
       
       this.user_scope = this.ConfigService.get<string>('USER_SCOPE')
-      this.admin_scope = this.ConfigService.get<string>('ADMIN_SCOPE')
+      this.admin_scope = this.ConfigService.get<string>('ADMIN_SCOPE') 
       this.staff_scope = this.ConfigService.get<string>('STAFF_SCOPE')
 
     }
@@ -65,7 +65,7 @@ export class AuthGuard implements CanActivate {
     console.log(payload.scope === this.user_scope && requiredRoles.includes(UsersType.user),"payload.scope === this.user_scope && requiredRoles.includes(UsersType.user)");
     
        
-      if (scope == this.admin_scope && requiredRoles.includes(UsersType.admin)) {
+      if (payload.scope == this.admin_scope && requiredRoles.includes(UsersType.admin)) {
        console.log('admin scope');
         
         let data: any = await this.verifyToken(payload, token);
@@ -94,7 +94,7 @@ export class AuthGuard implements CanActivate {
             throw new HttpException("admin not found", HttpStatus.UNAUTHORIZED)
         }
       }
-     }else if(scope == this.staff_scope && requiredRoles.includes(UsersType.staff)){
+     }else if(payload.scope == this.staff_scope && requiredRoles.includes(UsersType.staff)){
       let data: any = await this.verifyToken(payload, token)
       if (data) {
           let { id } = payload;
