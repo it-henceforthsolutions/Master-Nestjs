@@ -735,7 +735,6 @@ export class ChatService {
   
         let update: any = {
           $addToSet: { read_by: user_id },
-          updated_at: moment().utc().valueOf(),
         };
   
         if (connnection.sent_to) {
@@ -1050,10 +1049,8 @@ export class ChatService {
         };
         let update = {
           $addToSet: { delivered_to: new Types.ObjectId(user_id) },
-          updated_at: moment().utc().valueOf(),
         };
         await this.messageModel.updateMany(query, update);
-  
         let query_msg = {
           connection_id: new Types.ObjectId(response.connection_id),
           read_state: 0,
@@ -1107,7 +1104,6 @@ export class ChatService {
         };
         let update = {
           $addToSet: { read_by: new Types.ObjectId(user_id) },
-          updated_at: moment().utc().valueOf(),
         };
         await this.messageModel.updateMany(query, update);
   
