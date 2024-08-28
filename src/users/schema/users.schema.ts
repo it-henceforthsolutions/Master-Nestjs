@@ -6,10 +6,10 @@ import * as moment from "moment"
 
 @Schema()
 export class Users {
-    @Prop()
+    @Prop({ type: String, default: null })
     first_name: string
 
-    @Prop()
+    @Prop({type: String, default: null })
     last_name:string
 
     @IsEmail()
@@ -29,7 +29,7 @@ export class Users {
     // @Prop({ type: String, default: null, trim: true })
     // temp_country_code: string
 
-    @Prop({required:false})
+    @Prop({type: String, default: null, required:false})
     phone: string
 
     @Prop()
@@ -50,7 +50,7 @@ export class Users {
     @Prop({default:null,type:String})
     profile_pic: string
 
-    @Prop()
+    @Prop({type: String, default: null })
     unique_id: string
 
     @Prop({default:null})
@@ -59,10 +59,10 @@ export class Users {
     @Prop({default:LoginType.normal,enum:LoginType})
     login_type: string
 
-    @Prop()
+    @Prop({type: String, default: null })
     custumer_id: string
 
-    @Prop()
+    @Prop({ type: String, default: null })
     created_at: string
 
     @Prop({default: null})

@@ -66,7 +66,7 @@ export class AuthGuard implements CanActivate {
     
        
       if (scope == this.admin_scope && requiredRoles.includes(UsersType.admin)) {
-     //   console.log('admin scope');
+       console.log('admin scope');
         
         let data: any = await this.verifyToken(payload, token);
         if (data) {
