@@ -41,10 +41,9 @@ import {
       }
     }
       
-    async socket_to(socket_ids: any, event: any, response: any) {
-        console.log("socket----", socket_ids)
-        this.server.to(socket_ids).emit(event, response);
-
+    async socket_to(connection_id: any, event: any, response: any) {
+        console.log("socket----", connection_id)
+        this.server.to(connection_id).emit(event, response);
       }
       
   }

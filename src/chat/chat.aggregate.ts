@@ -19,28 +19,28 @@ export class aggregate {
     }
   };
 
-  static lookup_group = async () =>{
-  try {
-    return {
-      $lookup: {
-        from:"groups",
-        let: { group_id: '$group_id' },
-        pipeline: [
-          {
-            $match: {
-              $expr: {
-                $eq: ['$_id', '$$group_id'],
+  static lookup_group = async () => {
+    try {
+      return {
+        $lookup: {
+          from: 'groups',
+          let: { group_id: '$group_id' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $eq: ['$_id', '$$group_id'],
+                },
               },
             },
-          },
-        ],
-        as: 'fetch_group',
-      },
-    };
-  } catch (error) {
-    throw error
-  }
-  }
+          ],
+          as: 'fetch_group',
+        },
+      };
+    } catch (error) {
+      throw error;
+    }
+  };
 
   static unwindGroup = async () => {
     try {
@@ -98,22 +98,22 @@ export class aggregate {
                     $match: {
                       $expr: {
                         $or: [
-                          { $eq: ['$block_by', '$$user_id']},
-                          { $eq: ['$block_to', '$$user_id']}
-                        ]
+                          { $eq: ['$block_by', '$$user_id'] },
+                          { $eq: ['$block_to', '$$user_id'] },
+                        ],
                       },
                     },
                   },
                 ],
                 as: 'blocked',
-              }
+              },
             },
             {
               $unwind: {
                 path: '$blocked',
                 preserveNullAndEmptyArrays: true,
               },
-            }
+            },
           ],
           as: 'fetch_user',
         },
@@ -183,43 +183,42 @@ export class aggregate {
     }
   };
 
-  static search= async (search:any)=>{
-      return{
-          $redact: {
-              $cond: {
-                if: {
-                  $and:[
-                    {
-                      $or: [
-                        { $eq: [search, undefined] },
-                        {
-                          $regexMatch: {
-                            input: "$fetch_user.first_name",
-                            regex: search,
-                            options: "i",
-                          },
-                        },
-                        {
-                          $regexMatch: {
-                            input: "$fetch_user.last_name",
-                            regex: search,
-                            options: "i",
-                          },
-                        }
-                      ],
+  static search = async (search: any) => {
+    return {
+      $redact: {
+        $cond: {
+          if: {
+            $and: [
+              {
+                $or: [
+                  { $eq: [search, undefined] },
+                  {
+                    $regexMatch: {
+                      input: '$fetch_user.first_name',
+                      regex: search,
+                      options: 'i',
                     },
-                  ]
-                  
-                },
-                then: "$$KEEP",
-                else: "$$PRUNE",
+                  },
+                  {
+                    $regexMatch: {
+                      input: '$fetch_user.last_name',
+                      regex: search,
+                      options: 'i',
+                    },
+                  },
+                ],
               },
-            },
-      }
-  }
+            ],
+          },
+          then: '$$KEEP',
+          else: '$$PRUNE',
+        },
+      },
+    };
+  };
 
   static group_data = async (user_id: any) => {
-    try { 
+    try {
       return {
         $group: {
           _id: '$_id',
@@ -227,20 +226,38 @@ export class aggregate {
           user_id: { $first: user_id },
           last_message: { $first: '$last_message' },
           other_user_id: { $first: '$other_user_id' },
-          name: { $first:  { $ifNull: [ {$concat:['$fetch_user.first_name'," ",'$fetch_user.last_name']}, '$fetch_group.name'] }},
-          profile_pic: { $first: { $ifNull: ['$fetch_user.profile_pic', '$fetch_group.image'] }},
+          name: {
+            $first: {
+              $ifNull: [
+                {
+                  $concat: [
+                    '$fetch_user.first_name',
+                    ' ',
+                    '$fetch_user.last_name',
+                  ],
+                },
+                '$fetch_group.name',
+              ],
+            },
+          },
+          profile_pic: {
+            $first: {
+              $ifNull: ['$fetch_user.profile_pic', '$fetch_group.image'],
+            },
+          },
           updated_at: { $first: '$updated_at' },
           created_at: { $first: '$created_at' },
           group_id: { $first: '$group_id' },
           unread_messages: { $first: '$unread_messages' },
-          is_blocked: { $first: {
-            $cond: { 
-          if: { $ne: ['$fetch_user.blocked', null] }, 
-          then: true, 
-          else: false 
-          }
-        }
-        }
+          is_blocked: {
+            $first: {
+              $cond: {
+                if: { $ne: ['$fetch_user.blocked', null] },
+                then: true,
+                else: false,
+              },
+            },
+          },
         },
       };
     } catch (error) {
@@ -266,28 +283,21 @@ export class aggregate {
     }
   };
 
-  static facetData= async (skip: any, limit: any, pagin_status?:boolean)=>{
-    if(pagin_status){
-  
+  static facetData = async (skip: any, limit: any, pagin_status?: boolean) => {
+    if (pagin_status) {
       return {
         $facet: {
-        metadata: [{ $count: "count" }],
-        data: [
-          { $skip:skip },
-          { $limit: limit },
-        ],
+          metadata: [{ $count: 'count' }],
+          data: [{ $skip: skip }, { $limit: limit }],
         },
       };
-    }else{
+    } else {
       return {
         $facet: {
-        metadata: [{ $count: "count" }],
-        data: [
-        ],
+          metadata: [{ $count: 'count' }],
+          data: [],
         },
       };
     }
-  
-    }
-  
+  };
 }

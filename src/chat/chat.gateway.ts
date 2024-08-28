@@ -1,3 +1,4 @@
+import { UseGuards } from '@nestjs/common';
 import {
   SubscribeMessage,
   WebSocketGateway,
@@ -6,14 +7,11 @@ import {
   OnGatewayDisconnect,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { Body, UnauthorizedException, UseGuards } from '@nestjs/common';
 import { SocketGuard } from 'src/auth/auth.guards';
 import * as dto from './dto';
-import { ChatService } from './chat.service';
+import { ChatService } from 'src/chat/chat.service';
 import { UsersService } from 'src/users/users.service';
-import { Types, set } from 'mongoose';
-import { ModelService } from 'src/model/model.service';
-import { Unauthorized } from 'src/handler/error.services';
+import { Types } from 'mongoose';
 
 interface CustomSocket extends Socket {
   user: any;
@@ -21,7 +19,7 @@ interface CustomSocket extends Socket {
 
 let response = {
   message: '',
-  connection_id:'',
+  connection_id: '',
   data: null,
 };
 
@@ -34,40 +32,56 @@ let response = {
 export class ChatServiceGateway
   implements OnGatewayConnection, OnGatewayDisconnect
 {
-  // private connectedClients: Set<string> = new Set<string>();
   constructor(
     public readonly chatservice: ChatService,
     private userservices: UsersService,
   ) {}
   @WebSocketServer()
   server: Server;
-
   async handleConnection(socket: CustomSocket) {
     try {
       const token: any = socket.handshake.headers.token;
-      console.log("header", socket.handshake.headers)
-      let Bearer_token = token.split(' ')[1];
-      let update = await this.chatservice.updateUserSocketid(Bearer_token, socket?.id, true);
-      if (!update) {
-        throw new Error('unauthorized!')
+      let Bearer_token = token?.split(' ')[1];
+      if (!Bearer_token) throw new Error('Invalid Token check Bearer');
+      let update_user = await this.chatservice.updateUserSocket(
+        Bearer_token,
+        true,
+      );
+      console.log('update_user===>>>', update_user);
+      if (!update_user) {
+        throw new Error('unauthorized!');
+      }
+      if (update_user._id) {
+        let fetch_connections = await this.chatservice.fetch_user_connections(
+          update_user._id,
+        );
+        let connections_ids = fetch_connections.map((connection: any) =>
+          connection._id.toString(),
+        );
+        if (connections_ids.length > 0) {
+          console.log('joined to --', connections_ids);
+          socket.join(connections_ids); // Join the user to these connection rooms
+        } else {
+          console.log('No connections to join.');
+        }
       }
       socket.emit('connected', 'Socket connected');
     } catch (error) {
-       socket.emit('error', error.message);
-        socket.disconnect(true)
+      socket.emit('error', error.message);
+      socket.disconnect(true);
     }
   }
 
   async handleDisconnect(socket: CustomSocket) {
     try {
-      console.log("handle disconnect run")
+      console.log('handle disconnect run');
       const token: any = socket.handshake.headers.token;
       let Bearer_token = token.split(' ')[1];
-      this.chatservice.updateUserSocketid(Bearer_token, socket?.id, false);
-      // this.server.emit('disconnected', 'Socket disconnected');
+      await this.chatservice.updateUserSocket(Bearer_token, false);
       socket.emit('disconnected', 'Socket disconnected');
+      socket.disconnect();
     } catch (error) {
-      socket.emit('error', error.message)
+      socket.emit('error', error.message);
       return error;
     }
   }
@@ -79,17 +93,17 @@ export class ChatServiceGateway
     payload: dto.create_connection,
   ) {
     try {
-      console.log("create_connection")
+      console.log('create_connection');
       const user_id = socket.user.id; //sent_by
       let { sent_to, group_id } = payload;
-      response.data = await this.chatservice.checkConnection(user_id, payload);
-      response.connection_id = response.data.connection_id
+      let fetch_data = await this.chatservice.checkConnection(user_id, payload);
+      response.connection_id = fetch_data.connection_id;
+      response.data = fetch_data.data;
       socket.emit('create_connection', response);
     } catch (error) {
-      socket.emit('error', error.message)
-      return error
+      socket.emit('error', error.message);
+      return error;
     }
-  
   }
 
   @UseGuards(SocketGuard)
@@ -100,8 +114,6 @@ export class ChatServiceGateway
       const user_id = socket.user.id;
       let { connection_id } = payload;
       let get_connection = await this.chatservice.get_connection(connection_id);
-      let socket_ids =
-        await this.chatservice.get_socket_id_by_connection(connection_id, user_id);
       let data = await this.chatservice.saveMessage(
         user_id,
         payload,
@@ -110,37 +122,42 @@ export class ChatServiceGateway
       response.data = data;
       response.connection_id = connection_id;
       console.log('get_message', response.data);
-      this.server.to(socket_ids).emit('get_message', response);
+      console.log('connection_id', connection_id);
+      // socket.to(connection_id).emit('get_message', response);   //to all except sender
+      this.server.to(connection_id).emit('get_message', response); // to all with sender
       let tokens = await this.chatservice.get_tokens(connection_id, user_id);
       let push_data = {
         title: 'Recieved a message',
-        body: `${data.sent_by.first_name} ${data.sent_by.last_name} sent a message`,
-        last_message: `${data.connection_id.last_message}`,
+        body: `${data?.sent_by?.first_name} ${data?.sent_by?.last_name} sent a message`,
+        last_message: `${data.connection_id?.last_message}`,
         connection_id: connection_id,
-        profile_pic:`${data.sent_by.profile_pic}`,
+        profile_pic: `${data.sent_by?.profile_pic}`,
         sent_by: user_id,
       };
-      console.log("tokens", tokens)
+      console.log('tokens', tokens);
       if (tokens.length > 0) {
-        await this.chatservice.send_push(push_data, tokens);
+        // await this.chatservice.send_push(push_data, tokens);
       }
-      return;
+      //  return;
     } catch (error) {
       console.log(error);
-      socket.emit('error', error.message)
+      socket.emit('error', error.message);
     }
   }
 
   @UseGuards(SocketGuard)
   @SubscribeMessage('list_connection')
-  async handleUserList(socket: any, payload:dto.list_connection) {
+  async handleUserList(socket: any, payload: dto.list_connection) {
     try {
       console.log('socket called ===>  list_conneciton');
       const user_id = socket.user.id;
-      response.data = await this.chatservice.getUserConnections(user_id, payload);
-      socket.emit('list_connection', response)
+      response.data = await this.chatservice.getUserConnections(
+        user_id,
+        payload,
+      );
+      socket.emit('list_connection', response);
     } catch (error) {
-      socket.emit('error', error.message)
+      socket.emit('error', error.message);
     }
   }
 
@@ -149,11 +166,11 @@ export class ChatServiceGateway
   async handleAllMessage(socket: CustomSocket, payload: dto.get_all_message) {
     try {
       console.log('socket called ===>get_all_message', payload);
-      let { connection_id, pagination, limit  } = payload;
+      let { connection_id, pagination, limit } = payload;
       const user_id = socket.user.id;
       response.data = await this.chatservice.getAllMessage(
-        {connection_id},
-        { pagination ,limit},
+        { connection_id },
+        { pagination, limit },
         user_id,
       );
       response.connection_id = connection_id;
@@ -164,13 +181,16 @@ export class ChatServiceGateway
       // this.server.to(socket.id).emit('get_all_message', response);
       socket.emit('get_all_message', response);
     } catch (error) {
-      socket.emit('error', error.message)
+      socket.emit('error', error.message);
     }
   }
 
   @UseGuards(SocketGuard)
   @SubscribeMessage('deliver_message')
-  async handleDeliverMessage(socket: CustomSocket, payload: dto.deliver_message) {
+  async handleDeliverMessage(
+    socket: CustomSocket,
+    payload: dto.deliver_message,
+  ) {
     try {
       console.log('socket called ===>deliver_message', payload);
       const user_id = socket.user.id;
@@ -183,7 +203,7 @@ export class ChatServiceGateway
       }
       console.log(data);
     } catch (error) {
-      socket.emit('error', error.message)
+      socket.emit('error', error.message);
     }
   }
 
@@ -199,13 +219,12 @@ export class ChatServiceGateway
         let { connection_id } = data;
         response.data = data;
         response.connection_id = connection_id;
-        socket.emit('read_message', response)
+        socket.emit('read_message', response);
       }
     } catch (error) {
-      socket.emit('error', error.message)
+      socket.emit('error', error.message);
     }
   }
-
 
   @UseGuards(SocketGuard)
   @SubscribeMessage('leave_connection')
@@ -215,12 +234,10 @@ export class ChatServiceGateway
       const user_id = socket.user.id;
       const user_name = socket.user.name;
       let { connection_id } = payload;
-      let socket_ids =
-        await this.chatservice.get_socket_id_by_connection(connection_id, user_id);
       await this.chatservice.leaveConnection(connection_id, user_id);
       response.message = `${user_name} left the group`;
       response.connection_id = connection_id;
-      this.server.to(socket_ids).emit('leave_connection', response);
+      this.server.to(connection_id).emit('leave_connection', response);
       response.message = `leave chat successfully`;
       socket.emit('leave_connection', response);
       console.log(
@@ -228,7 +245,7 @@ export class ChatServiceGateway
         response,
       );
     } catch (error) {
-      socket.emit('error', error.message)
+      socket.emit('error', error.message);
     }
   }
 
@@ -245,9 +262,9 @@ export class ChatServiceGateway
         '🚀 ~ ChatServiceGateway ~ handleDeleteMessage ~ response:',
         response,
       );
-     socket.emit('delete_message', response);
+      socket.emit('delete_message', response);
     } catch (error) {
-      socket.emit('error', error.message)
+      socket.emit('error', error.message);
     }
   }
 
@@ -266,13 +283,11 @@ export class ChatServiceGateway
       );
       let user_name = `${user_data.first_name} ${user_data.last_name}`;
       let { connection_id } = payload;
-      let socket_ids =
-        await this.chatservice.get_socket_id_by_connection(connection_id, socket.user.id);
       response.message = `${user_name} is typing`;
       response.connection_id = connection_id;
-      this.server.to(socket_ids).emit('is_typing', response);
+      this.server.to(connection_id).emit('is_typing', response);
     } catch (error) {
-      socket.emit('error', error.message)
+      socket.emit('error', error.message);
     }
   }
 
@@ -289,17 +304,14 @@ export class ChatServiceGateway
         user_id,
       );
       let { connection_id } = payload;
-      let socket_ids =
-        await this.chatservice.get_socket_id_by_connection(connection_id, user_id);
       response.data = data;
       response.connection_id = connection_id;
-      response.message = `New members added`
-      this.server.to(socket_ids).emit('group_member_added', response);
+      response.message = `New members added`;
+      this.server.to(connection_id).emit('group_member_added', response);
     } catch (error) {
-      socket.emit('error', error.message)
+      socket.emit('error', error.message);
     }
   }
-
 
   @UseGuards(SocketGuard)
   @SubscribeMessage('mute_unmute')
@@ -308,15 +320,17 @@ export class ChatServiceGateway
       console.log('socket called ===>mute_unmute', payload);
       const user_id = socket.user.id;
       let { connection_id, mute_upto } = payload;
-    
+
       let data = await this.chatservice.mute_unmute(
-       user_id, connection_id, payload
+        user_id,
+        connection_id,
+        payload,
       );
       response.message = data.message;
       response.connection_id = connection_id;
       socket.emit('mute_unmute', data);
     } catch (error) {
-      socket.emit('error', error.message)
+      socket.emit('error', error.message);
     }
   }
 
@@ -327,16 +341,18 @@ export class ChatServiceGateway
       console.log('socket called ===>add_pins', payload);
       const user_id = socket.user.id;
       let { connection_id, message_id } = payload;
-      
+
       let data = await this.chatservice.add_pin_items(
-       user_id, connection_id, message_id
+        user_id,
+        connection_id,
+        message_id,
       );
       response.data = data;
       response.message = 'Pinned successfully';
       response.connection_id = connection_id;
       socket.emit('add_pins', response);
     } catch (error) {
-      socket.emit('error', error.message)
+      socket.emit('error', error.message);
     }
   }
 
@@ -347,16 +363,18 @@ export class ChatServiceGateway
       console.log('socket called ===>remove_pins', payload);
       const user_id = socket.user.id;
       let { connection_id, message_id } = payload;
-      
+
       let data = await this.chatservice.remove_pin_items(
-       user_id, connection_id, message_id
+        user_id,
+        connection_id,
+        message_id,
       );
       response.data = data;
       response.message = 'Pin Removed';
       response.connection_id = connection_id;
       socket.emit('remove_pins', response);
     } catch (error) {
-      socket.emit('error', error.message)
+      socket.emit('error', error.message);
     }
   }
 
@@ -366,38 +384,35 @@ export class ChatServiceGateway
     try {
       console.log('socket called ===>get_pins', payload);
       const user_id = socket.user.id;
-      let { connection_id , pagination, limit} = payload;
-  
-      let data = await this.chatservice.get_pin_items(
-       connection_id, {pagination, limit}
-      );
-      response.message = "get_pins"
+      let { connection_id, pagination, limit } = payload;
+
+      let data = await this.chatservice.get_pin_items(connection_id, {
+        pagination,
+        limit,
+      });
+      response.message = 'get_pins';
       response.data = data;
       response.connection_id = connection_id;
       socket.emit('get_pins', response);
     } catch (error) {
-      socket.emit('error', error.message)
+      socket.emit('error', error.message);
     }
   }
-
-
 
   @UseGuards(SocketGuard)
   @SubscribeMessage('start_call')
   async start_call(socket: CustomSocket, payload: dto.start_call) {
     try {
       const user_id = socket.user.id;
-      let {  users_ids, type, connection_id  } = payload;
- 
-      let data:any  = await this.chatservice.start_call(
-        user_id, payload
-      );
+      let { users_ids, type, connection_id } = payload;
+
+      let data: any = await this.chatservice.start_call(user_id, payload);
       response.data = data;
       response.connection_id = connection_id;
-      socket.emit('start_call', response)
+      socket.emit('start_call', response);
     } catch (error) {
-      socket.emit('error', error.message)
-       throw error
+      socket.emit('error', error.message);
+      throw error;
     }
   }
 
@@ -406,14 +421,17 @@ export class ChatServiceGateway
   async join_call(socket: CustomSocket, payload: dto.join_call) {
     try {
       const user_id = socket.user.id;
-     
-      let data:any = await this.chatservice.join_call(user_id, payload.call_id);
+
+      let data: any = await this.chatservice.join_call(
+        user_id,
+        payload.call_id,
+      );
       response.data = data;
       response.connection_id = data.connection_id;
       socket.emit('join_call', response);
     } catch (error) {
-      socket.emit('error', error.message)
-       throw error
+      socket.emit('error', error.message);
+      throw error;
     }
   }
 
@@ -422,18 +440,18 @@ export class ChatServiceGateway
   async end_call(socket: CustomSocket, payload: dto.join_call) {
     try {
       const user_id = socket.user.id;
-      
-      let data :any =  await this.chatservice.end_call(user_id, payload.call_id)
+
+      let data: any = await this.chatservice.end_call(user_id, payload.call_id);
       response.message = data?.call_ended ? 'end call' : 'leave call';
       response.data = data;
       response.connection_id = data.connection_id;
       if (data?.call_ended) {
-        socket.emit('end_call', response)
+        socket.emit('end_call', response);
       }
       socket.emit('leave_call', response);
     } catch (error) {
-      socket.emit('error', error.message)
-       throw error
+      socket.emit('error', error.message);
+      throw error;
     }
   }
 
@@ -447,105 +465,102 @@ export class ChatServiceGateway
       response.connection_id;
       socket.emit('call_detail', response);
     } catch (error) {
-      socket.emit('error', error.message)
-       throw error
+      socket.emit('error', error.message);
+      throw error;
     }
   }
 
-  @UseGuards(SocketGuard)
-  @SubscribeMessage('create_stream')
-  async create_stream(socket: CustomSocket, payload:dto.create_stream) {
-    try {
-      const user_id = socket.user.id;
-      let data:any  = await this.chatservice.create_stream(
-        user_id, payload
-      );
-      response.data = data;
-      response.message = "Stream created"
-      socket.emit('create_stream', response)
-    } catch (error) {
-      socket.emit('error', error.message)
-       throw error
-    }
-  }
+  // @UseGuards(SocketGuard)
+  // @SubscribeMessage('create_stream')
+  // async create_stream(socket: CustomSocket, payload:dto.create_stream) {
+  //   try {
+  //     const user_id = socket.user.id;
+  //     let data:any  = await this.chatservice.create_stream(
+  //       user_id, payload
+  //     );
+  //     response.data = data;
+  //     response.message = "Stream created"
+  //     socket.emit('create_stream', response)
+  //   } catch (error) {
+  //     socket.emit('error', error.message)
+  //      throw error
+  //   }
+  // }
 
-  @UseGuards(SocketGuard)
-  @SubscribeMessage('join_stream')
-  async start_stream(socket: CustomSocket, payload: dto.join_stream) {
-    try {
-      const user_id = socket.user.id;
-      let { stream_id  } = payload;
- 
-      let data:any  = await this.chatservice.join_stream(
-        user_id, payload
-      );
-      let user_data = await this.chatservice.get_user_data(user_id)
-      let user_list = await this.chatservice.list_joined_user(data.joined_by)
-        response.data = {
-          user: user_data,
-          stream: data,
-          user_list: user_list
-        };
-      let socket_ids = await this.chatservice.getUsersSocketIds(data.joined_by)
-      this.server.to(socket_ids).emit('join_stream', response);
-     // socket.emit('join_stream', response)
-    } catch (error) {
-      socket.emit('error', error.message)
-       throw error
-    }
-  }
+  // @UseGuards(SocketGuard)
+  // @SubscribeMessage('join_stream')
+  // async start_stream(socket: CustomSocket, payload: dto.join_stream) {
+  //   try {
+  //     const user_id = socket.user.id;
+  //     let { stream_id  } = payload;
 
-  @UseGuards(SocketGuard)
-  @SubscribeMessage('leave_stream')
-  async leave_stream(socket: CustomSocket, payload: dto.leave_stream) {
-    try {
-      const user_id = socket.user.id;
-      let { stream_id } = payload;
- 
-      let data:any  = await this.chatservice.leave_stream(
-        user_id, payload
-      );
-      let user_data = await this.chatservice.get_user_data(user_id)
-      let user_list = await this.chatservice.list_joined_user(data.joined_by)
-      response.data = {
-        user: user_data,
-        stream: data,
-        user_list: user_list
-      };
-      let socket_ids = await this.chatservice.getUsersSocketIds(data.joined_by)
-      this.server.to(socket_ids).emit('leave_stream', response);
-      //socket.emit('leave_stream', response)
-    } catch (error) {
-      socket.emit('error', error.message)
-       throw error
-    }
-  }
+  //     let data:any  = await this.chatservice.join_stream(
+  //       user_id, payload
+  //     );
+  //     let user_data = await this.chatservice.get_user_data(user_id)
+  //     let user_list = await this.chatservice.list_joined_user(data.joined_by)
+  //       response.data = {
+  //         user: user_data,
+  //         stream: data,
+  //         user_list: user_list
+  //       };
+  //     let socket_ids = await this.chatservice.getUsersSocketIds(data.joined_by)
+  //     socket.to(connection_id).emit('join_stream',response)
+  //     socket.emit('join_stream', response)
+  //   } catch (error) {
+  //     socket.emit('error', error.message)
+  //      throw error
+  //   }
+  // }
 
-  @SubscribeMessage('list_stream')
-  async list_stream(socket: CustomSocket, payload: dto.paginationsortsearch) {
-    try {
-      let fetch_data = await this.chatservice.list_stream(payload);
-      response.data = fetch_data;
-      socket.emit('list_stream',response)
-    } catch (error) {
-      socket.emit('error', error.message)
-       throw error
-    }
-  }
+  // @UseGuards(SocketGuard)
+  // @SubscribeMessage('leave_stream')
+  // async leave_stream(socket: CustomSocket, payload: dto.leave_stream) {
+  //   try {
+  //     const user_id = socket.user.id;
+  //     let { stream_id } = payload;
 
-  @SubscribeMessage("joinned_stream")
-  async joinned_stream(socket: CustomSocket) {
-    try {
-      const user_id = socket.user.id;
-      let fetch_data = await this.chatservice.check_joined_stream(user_id);
-      response.data = fetch_data;
-      socket.emit('joinned_stream', response)
-    } catch (error) {
-      socket.emit('error', error.message)
-       throw error
-    }
-  }
+  //     let data:any  = await this.chatservice.leave_stream(
+  //       user_id, payload
+  //     );
+  //     let user_data = await this.chatservice.get_user_data(user_id)
+  //     let user_list = await this.chatservice.list_joined_user(data.joined_by)
+  //     response.data = {
+  //       user: user_data,
+  //       stream: data,
+  //       user_list: user_list
+  //     };
+  //     let socket_ids = await this.chatservice.getUsersSocketIds(data.joined_by)
+  //     this.server.to(socket_ids).emit('leave_stream', response);
+  //     //socket.emit('leave_stream', response)
+  //   } catch (error) {
+  //     socket.emit('error', error.message)
+  //      throw error
+  //   }
+  // }
 
+  // @SubscribeMessage('list_stream')
+  // async list_stream(socket: CustomSocket, payload: dto.paginationsortsearch) {
+  //   try {
+  //     let fetch_data = await this.chatservice.list_stream(payload);
+  //     response.data = fetch_data;
+  //     socket.emit('list_stream',response)
+  //   } catch (error) {
+  //     socket.emit('error', error.message)
+  //      throw error
+  //   }
+  // }
 
-
+  // @SubscribeMessage("joinned_stream")
+  // async joinned_stream(socket: CustomSocket) {
+  //   try {
+  //     const user_id = socket.user.id;
+  //     let fetch_data = await this.chatservice.check_joined_stream(user_id);
+  //     response.data = fetch_data;
+  //     socket.emit('joinned_stream', response)
+  //   } catch (error) {
+  //     socket.emit('error', error.message)
+  //      throw error
+  //   }
+  // }
 }

@@ -2,7 +2,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import {  Document, SchemaTypes } from 'mongoose';
 import { Groups } from './group.schema'; // Assuming you have a Group schema
 import { Users } from 'src/users/schema/users.schema';  // Assuming you have a User schema
-import { Connections } from './connection.schemas';
+import { Connections } from './connection.schema';
 
 export type CallsDocument = Call & Document;
 

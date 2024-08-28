@@ -8,6 +8,7 @@ import {
   IsString,
 } from 'class-validator';
 import { call_type } from '../schema/call.schemas';
+//import { call_type } from '../schema/call.schemas';
 // import { see_my_activity } from '../schema/chatsetting.schemas';
 
 export class CreateGroupDto {

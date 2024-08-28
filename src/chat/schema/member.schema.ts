@@ -1,5 +1,4 @@
 
-
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, SchemaTypes } from 'mongoose';
 import { Groups } from './group.schema'; // Assuming you have a Group schema
@@ -32,45 +31,3 @@ export class Members {
 
 export const memberSchema = SchemaFactory.createForClass(Members);
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// import { Schema, model } from "mongoose";
-// import * as mongoose from 'mongoose'
-
-
-// export const memberSchema = new mongoose.Schema({
-//     group_id : { type: Schema.Types.ObjectId, ref: "groups", default: null },
-//     user_id: { type: Schema.Types.ObjectId, ref: "users", default: null },
-//     // role: { type:String, enum: , default: }
-//     created_at: { type: Number, default: +new Date() },
-// });
