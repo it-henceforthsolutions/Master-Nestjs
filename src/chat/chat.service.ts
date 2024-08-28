@@ -753,15 +753,8 @@ export class ChatService {
         await this.messageModel.updateMany(query, update, { new: true });
   
         let projection = {
-          sent_to: 1,
-          sent_by: 1,
-          message: 1,
-          read_by: 1,
-          created_at: 1,
-          updated_at: 1,
-          media_url: 1,
-          message_id: 1,
-          read_state: 1,
+          deleted_type: 0,
+          deleted_for:0
         };
         let options: any = { lean: true };
         if (pagin?.pagination || pagin?.limit) {
