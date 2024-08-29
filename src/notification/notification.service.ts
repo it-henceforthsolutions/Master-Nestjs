@@ -119,9 +119,9 @@ export class NotificationService {
 
   async get_notifications_list(req) {
     try {
-      let user = req.user.id;
+      let user_id = req.user_data._id;
       let query = {
-        user_id: user
+        user_id: user_id
       }
       let data = await this.model.NotificationModel.find(query);
       let unreadNotifications = data.filter(notifications => notifications.notification_type === "unread");
@@ -162,7 +162,7 @@ export class NotificationService {
 
   async read_notification(id, request) {
     try {
-      let user = request.user.id;
+      let user_id = request.user_data._id;
       let query = {
         _id: id
       }

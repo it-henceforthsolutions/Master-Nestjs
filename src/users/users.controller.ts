@@ -6,8 +6,9 @@ import { AuthGuard } from 'src/auth/auth.guards';
 import { Roles } from 'src/auth/role.decorator';
 import { UsersType } from './role/user.role';
 import { DeactivateDto } from './dto/user.dto';
+import { UserType } from 'utils';
 
-@Roles(UsersType.user)
+
 // @Permission(Role.manage)
 @ApiTags('users')
 @Controller('users')
@@ -22,6 +23,7 @@ export class UsersController {
         return this.usersService.profile(req.user_data._id)
     }
 
+    @Roles(UsersType.admin, UsersType.staff)
     @UseGuards(AuthGuard)
     @ApiBearerAuth('authentication')
     @Put(':id/block')
@@ -31,6 +33,7 @@ export class UsersController {
         return this.usersService.block(id)
     }
 
+    @Roles(UsersType.admin, UsersType.staff)
     @UseGuards(AuthGuard)
     @ApiBearerAuth('authentication')
     @Put(':id/deactivate')
@@ -57,6 +60,7 @@ export class UsersController {
         return this.usersService.getAll()
     }
     
+   
     @UseGuards(AuthGuard)
     @ApiBearerAuth('authentication')
     @Delete(':id/deactivateUser')
@@ -65,6 +69,7 @@ export class UsersController {
     deactivateUser(@Param('id') id: string,@Body() body:DeactivateDto) {
         return this.usersService.deactivateUser(id,body)
     }
+
 
     @UseGuards(AuthGuard)
     @ApiBearerAuth('authentication')

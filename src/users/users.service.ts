@@ -19,6 +19,7 @@ import { ModelService } from 'src/model/model.service';
 const positiveIntegerRegex = /^\d+$/;
 import { ConfigService } from '@nestjs/config';
 import { UsersType } from 'src/users/role/user.role';
+import { token_payload } from 'src/auth/interface/interface';
 @Injectable()
 export class UsersService {
     private user_scope
@@ -68,14 +69,14 @@ export class UsersService {
 
             let user = await this.model.UserModel.create(data)
             this.common.verification(user.email, otp)
-            let tok_gen_at = moment().utc().valueOf()
-            let payload = { id: user._id, email: user.email, scope: this.user_scope, tok_gen_at: tok_gen_at }
+            let token_gen_at = moment().utc().valueOf()
+           
+            let payload:token_payload = { id: user._id, email: user.email, scope: this.user_scope, token_gen_at: token_gen_at }
             let access_token = await this.jwtService.signAsync(payload)
             await this.model.SessionModel.create({
                 user_id: user?._id,
-                access_token: access_token,
                 user_type: user?.user_type,
-                tok_gen_at: tok_gen_at
+                created_at: token_gen_at
             })
             user = await this.model.UserModel.findOne({ _id: user?._id }, {
                 first_name: 1, last_name: 1, temp_phone: 1, country_code: 1, temp_country_code: 1, phone:1,  email: 1
@@ -109,12 +110,11 @@ export class UsersService {
                 { new: true }
             )
             let token_gen_at = moment().utc().valueOf()
-            let payload = { id: user._id, scope: this.user_scope, token_gen_at: token_gen_at }
+            
+            let payload:token_payload = { id: user._id, scope: this.user_scope, token_gen_at: token_gen_at }
             let access_token = await this.generateToken(payload)
             await this.common.delete_session(user._id)
-            await this.createSession(user._id, access_token, body.fcm_token, user.user_type, token_gen_at)
-
-            // let access_token = await this.generateToken(payload)
+            await this.createSession(user._id, body.fcm_token, user.user_type, token_gen_at)
             let response = this.user_response(id, access_token)
             return response
         } catch (error) {
@@ -154,11 +154,10 @@ export class UsersService {
                 { new: true }
             )
             let token_gen_at = moment().utc().valueOf()
-            let payload = { id: user._id, scope: this.user_scope, token_gen_at: token_gen_at }
+            let payload:token_payload = { id: user._id, scope: this.user_scope, token_gen_at: token_gen_at }
             let access_token = await this.generateToken(payload)
             await this.common.delete_session(user._id)
-            await this.createSession(user._id, access_token, body.fcm_token, user.user_type, token_gen_at)
-
+            await this.createSession(user._id, body.fcm_token, user.user_type, token_gen_at)
             let response = this.user_response(id, access_token)
             return response
         } catch (error) {
@@ -215,15 +214,17 @@ export class UsersService {
             //     let mail = user?.email.slice(0, 5)
             //     throw new HttpException(`This EmailId is Not verified.Please SignIn with Your Previous Email: ${mail}xxxxxx.com`, HttpStatus.UNAUTHORIZED);
             // }
-            let tok_gen_at = moment().utc().valueOf()
-            payload = { id: user?._id, email: user?.email, scope: this.user_scope, tok_gen_at: tok_gen_at }
+            let token_gen_at = moment().utc().valueOf()
+          
             // console.log("user?.temp_mail", user?.temp_mail)
             const isMatch = await this.common.bcriptPass(body.password, user?.password)
             if (!isMatch) {
                 throw new HttpException('Invalid login credentials', HttpStatus.UNAUTHORIZED);
             }
-            let access_token = await this.generateToken(payload)
-            await this.createSession(user._id, access_token, body.fcm_token, user.user_type, tok_gen_at)
+
+            let token_payload: token_payload = { id: user?._id, email: user?.email, scope: this.user_scope, token_gen_at: token_gen_at }
+            let access_token = await this.generateToken(token_payload)
+            await this.createSession(user._id, body.fcm_token, user.user_type, token_gen_at)
             user = await this.model.UserModel.findOne({ _id: user?._id }, {
                 email_otp: 0, phone_otp: 0, password: 0
             }).lean(true)
@@ -266,19 +267,18 @@ export class UsersService {
                 throw new HttpException('Invalid Request', HttpStatus.BAD_REQUEST)
             }
             let user = await this.model.UserModel.findOne({ email: response?.email, is_deleted: false })
-            let payload: any
             let access_token: string
-            let tok_gen_at = moment().utc().valueOf()
+            let token_gen_at = moment().utc().valueOf()
             if (user == null) {
                 user = await this.model.UserModel.create(data)
-                payload = { id: user?._id, email: response?.email, scope: this.user_scope }
+                let payload:token_payload = { id: user?._id, email: response?.email, scope: this.user_scope, token_gen_at }
                 access_token = await this.generateToken(payload)
-                await this.createSession(user?._id, access_token, body.fcm_token, user.user_type, tok_gen_at)
+                await this.createSession(user?._id, body.fcm_token, user.user_type, token_gen_at)
                 return { access_token, user }
             }
-            payload = { id: user?._id, email: response?.email, scope: this.user_scope }
+            let payload :token_payload= { id: user?._id, email: response?.email, scope: this.user_scope, token_gen_at }
             access_token = await this.generateToken(payload)
-            await this.createSession(user?._id, access_token, body.fcm_token, user.user_type, tok_gen_at)
+            await this.createSession(user?._id, body.fcm_token, user.user_type, token_gen_at)
             return { access_token, user }
         } catch (error) {
             console.log(error);
@@ -287,7 +287,7 @@ export class UsersService {
         }
     }
 
-    async generateToken(payload: any) {
+    async generateToken(payload: token_payload) {
         try {
             return await this.jwtService.signAsync(payload)
         } catch (error) {
@@ -295,14 +295,13 @@ export class UsersService {
         }
     }
 
-    async createSession(user_id: any, access_token: string, fcm_token: string, user_type: string, tok_gen_at: any) {
+    async createSession(user_id: any, fcm_token: string, user_type: string, token_gen_at: any) {
         try {
             return await this.model.SessionModel.create({
                 user_id: new mongoose.Types.ObjectId(user_id),
-                access_token: access_token,
                 fcm_token: fcm_token,
                 user_type: user_type,
-                tok_gen_at: tok_gen_at
+                created_at: token_gen_at
             })
         } catch (error) {
             throw error

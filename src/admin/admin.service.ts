@@ -7,6 +7,8 @@ import { SignInDto } from './dto/create-admin.dto';
 import { ModelService } from 'src/model/model.service';
 // import { ConfigService } from 'aws-sdk';
 import { ConfigService } from '@nestjs/config';
+import { token_payload } from 'src/auth/interface/interface';
+import * as moment from 'moment'
 // private user_scope
 // private admin_scope
 // private staff_scope
@@ -74,8 +76,8 @@ export class AdminService {
     async signIn(body: SignInDto) {
         try {
             let user = await this.model.UserModel.findOne({ email: body.email })
-            let payload: any = { id: user?._id, email: user?.email, scope: this.user_scope }
-
+            let token_gen_at= moment().utc().valueOf()
+            let payload: any = { id: user?._id, email: user?.email, scope: this.user_scope, token_gen_at }
             if (!user) {
                 throw new HttpException('Invalid Email', HttpStatus.UNAUTHORIZED);
             }
@@ -84,19 +86,17 @@ export class AdminService {
             //     throw new HttpException('Deactivate Account ', HttpStatus.UNAUTHORIZED);
             // }
             if (user.user_type == UsersType.admin) {
-                payload = { id: user?._id, email: user?.email, scope: this.admin_scope }
+                payload = { id: user?._id, email: user?.email, scope: this.admin_scope, token_gen_at }
             }
             if (user.user_type == UsersType.staff) {
-                payload = { id: user?._id, email: user?.email, scope: this.staff_scope }
+                payload = { id: user?._id, email: user?.email, scope: this.staff_scope, token_gen_at }
             }
-
-
             const isMatch = await this.common.bcriptPass(body.password, user?.password)
             if (!isMatch) {
                 throw new HttpException('Wrong Password', HttpStatus.UNAUTHORIZED);
             }
             let access_token = await this.common.generateToken(payload)
-            await this.common.createSession(user._id, access_token, body.fcm_token, user.user_type)
+            let session = await this.common.createSession(user._id, body.fcm_token, user.user_type, token_gen_at)
             user = await this.model.UserModel.findOne({ _id: user?._id }, {
                 first_name: 1, last_name: 1,   country_code: 1,  email: 1
             }).lean(true)

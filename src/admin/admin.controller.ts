@@ -21,9 +21,8 @@ export class AdminController {
     ) { }
 
     @ApiBearerAuth('authentication')
-    // @UseGuards(AuthGuard, RolesGuard)
+    @UseGuards(AuthGuard)
     @Roles(UsersType.admin, UsersType.staff)
-    @Permission(Role.readonly)
     @ApiOperation({ summary: 'admin dashboard' })
     @ApiResponse({ status: 201, description: 'OK' })
     @Get('dashboard')
