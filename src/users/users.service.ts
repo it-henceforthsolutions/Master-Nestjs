@@ -585,7 +585,7 @@ export class UsersService {
 
     async getUsersCount() {
         try {
-            return await this.model.UserModel.countDocuments({ is_active: true })
+            return await this.model.UserModel.countDocuments({ is_active: true, user_type: UsersType.user })
         } catch (error) {
             throw error
         }

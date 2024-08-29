@@ -9,25 +9,7 @@ import { ModelService } from 'src/model/model.service';
 import { ConfigService } from '@nestjs/config';
 import { token_payload } from 'src/auth/interface/interface';
 import * as moment from 'moment'
-// private user_scope
-// private admin_scope
-// private staff_scope
 
-// constructor(
-//     private model: ModelService,
-//     private jwtService: JwtService,
-//     private common: CommonService,
-//     private readonly StripeService: StripeService,
-//     private ConfigService: ConfigService
-// ) {
-//     this.user_scope = this.ConfigService.get('USER_SCOPE')
-//     this.admin_scope = this.ConfigService.get('ADMIN_SCOPE')
-//     this.staff_scope = this.ConfigService.get('STAFF_SCOPE')
-
-
-//     console.log("user_scope", this.user_scope);
-
-// }
 @Injectable()
 export class AdminService {
     private user_scope
@@ -106,8 +88,16 @@ export class AdminService {
         }
     }
 
-    async dashboard() {
-        return this.userService.getUsersCount()
+    async dashboard(req: any) {
+        let admin_id = req.user_data._id
+        let user_count = await this.userService.getUsersCount();
+        let notification_count = await this.model.NotificationModel.countDocuments({ user_id: admin_id });
+        let staff_count = await this.model.UserModel.countDocuments({ user_type: UsersType.staff });
+        return{
+            user_count,
+            notification_count,
+            staff_count,
+        }
     }
-
+ 
 }

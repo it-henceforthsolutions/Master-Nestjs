@@ -53,7 +53,6 @@ export class AuthGuard implements CanActivate {
       ROLES_KEY,
       [context.getHandler(), context.getClass()],
     );
-    console.log("required_roles----",requiredRoles)
     const request = context.switchToHttp().getRequest();
     const token = this.extractTokenFromHeader(request);
     if (!token) {
@@ -62,7 +61,6 @@ export class AuthGuard implements CanActivate {
     try {
       const payload = await this.jwtService.verifyAsync(token);
       let session_data: any = await this.verifyToken(payload);
-      console.log("session_data", session_data)
       if (session_data) {
         let query = { _id: session_data.user_id, user_type: session_data.user_type };
         let fetch_user: any = await this.Model.UserModel.findOne(query);
@@ -87,7 +85,6 @@ export class AuthGuard implements CanActivate {
             return request.user_data;
           }
           else {
-            console.log("else condition")
             if (payload.scope == this.admin_scope) {
               request.user_data = fetch_user;
               return request.user_data;
@@ -127,7 +124,6 @@ export class AuthGuard implements CanActivate {
 
     let projection = { __v: 0 };
     let option = { lean: true };
-    console.log("session_query", query)
     let fetch_data: any = await this.Model.SessionModel.findOne(
       query,
       projection,
