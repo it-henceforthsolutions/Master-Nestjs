@@ -561,7 +561,7 @@ export class UsersService {
         try {
             let allUsers = await this.model.UserModel.find(
                 { is_deleted: false, user_type: 'user' },
-                'first_name last_name email temp_mail country_code phone temp_phone temp_country_code',
+                'first_name last_name email temp_mail country_code phone temp_phone temp_country_code profile_pic ',
                 { lean: true }
             )
             return {
@@ -576,7 +576,7 @@ export class UsersService {
     async getById(id: string) {
         try {
             return await this.model.UserModel.findById({ _id: new Types.ObjectId(id) },
-                'first_name last_name email temp_mail country_code phone temp_phone temp_country_code last_seen chat_active',
+                'first_name last_name profile_pic email temp_mail country_code phone temp_phone temp_country_code last_seen chat_active',
                 { lean: true })
         } catch (error) {
             throw error
