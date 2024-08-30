@@ -731,7 +731,7 @@ export class ChatService {
         let query:any = {
           connection_id: new Types.ObjectId(connection_id),
           $or: [
-            {is_deleted: false },
+            { is_deleted: false },
             { deleted_for: { $nin: [new Types.ObjectId(user_id)] }}
           ]
         };
@@ -1212,7 +1212,7 @@ export class ChatService {
         if (response.length) {
           let { sent_by, sent_to } = response[0];
           if (
-            new Types.ObjectId(user_id) == sent_by &&
+            user_id == sent_by &&
             deleted_type == message_deleted_type.ALL
           ) {
             data_to_update = {
@@ -1226,8 +1226,10 @@ export class ChatService {
               // },
               is_deleted:true,
             };
+            console.log("iff running")
           } else {
             data_to_update = { deleted_for: new Types.ObjectId(user_id) };
+            console.log("else runningn")
           }
         } else {
           throw {

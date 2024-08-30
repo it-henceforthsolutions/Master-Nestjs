@@ -247,17 +247,18 @@ export class ChatServiceGateway
   @SubscribeMessage('edit_message')
   async handleEditMessage(socket: CustomSocket, payload: dto.editMessage) {
     try {
-      console.log('socket called ===>delete_message', payload);
+      console.log('socket called ===>edit_message', payload);
       const user_id = socket.user.id;
-      let message_data:any = await this.chatservice.editMessage(user_id, payload);
-      response.connection_id = message_data.connection_id;
-      response.data = message_data;
+      let data:any = await this.chatservice.editMessage(user_id, payload);
+      response.connection_id = data.connection_id;
+      response.data = data;
+      socket.to(data.connection_id.toString()).emit('edit_message', response);
       response.message = "Message edited successfully";
       console.log(
         '🚀 ~ ChatServiceGateway ~ handleEditMessage ~ response:',
         response,
       );
-      socket.emit('edit_message', response);
+      socket.emit('edit_message', response)
     } catch (error) {
       socket.emit('error', error.message);
     }
@@ -270,10 +271,11 @@ export class ChatServiceGateway
       console.log('socket called ===>delete_message', payload);
       const user_id = socket.user.id;
       let message_data = await this.chatservice.deleteMessage(user_id, payload);
+      
       response.connection_id = message_data.connection_id;
       response.data = { message_id: message_data._id };
       if (message_data.is_deleted) {
-        socket.to(message_data.connection_id.to_string()).emit('delete_message',response)
+        socket.to(message_data.connection_id.toString()).emit('delete_message',response)
       }
       response.message = "Message deleted successfully";
       console.log(
