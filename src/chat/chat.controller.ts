@@ -29,7 +29,7 @@ export class ChatController {
     @UseGuards(AuthGuard)
     @ApiBearerAuth('authentication')
     @Patch('user/block-unblock')
-    async block(@Req() req, @Body() body: dto.block_unblock) {
+    async block(@Req() req:any, @Body() body: dto.block_unblock) {
       let user_id = req.user_data._id;
       return  await this.chatservice.block_unblock(user_id, body);
     }
@@ -56,26 +56,26 @@ export class ChatController {
     @UseGuards(AuthGuard)
     @ApiBearerAuth('authentication')
     @Get('connections/:_id')
-    async ConnectionDetails(@Req() req:any, @Param('_id') _id:string ) {
+    async ConnectionDetails(@Req() req:any, @Param() param:dto.Mongodb_id ) {
       let user_id = req.user_data._id;
-      return await this.chatservice.connection_details(user_id, _id)
+      return await this.chatservice.connection_details(user_id, param._id)
     } 
   
     @ApiOperation({ summary: 'list pins by connection' })
     @UseGuards(AuthGuard)
     @ApiBearerAuth('authentication')
     @Get('connections/:_id/pins')
-    async listPins(@Param('_id') _id: string, @Query() query: dto.pagination) {
-      return await this.chatservice.get_pin_items(_id, query);
+    async listPins(@Param() param:dto.Mongodb_id, @Query() query: dto.pagination) {
+      return await this.chatservice.get_pin_items(param._id, query);
     }
   
     @ApiOperation({summary:"list messages by connection_id"})
     @UseGuards(AuthGuard)
     @ApiBearerAuth('authentication')
     @Get('connections/:_id/message')
-    async listMessage(@Req() req:any, @Param('_id') _id:string, @Query() query: dto.pagination ) {
+    async listMessage(@Req() req:any, @Param() param:dto.Mongodb_id, @Query() query: dto.pagination ) {
       let user_id = req.user_data._id;
-      let payload =  { connection_id:_id } 
+      let payload =  { connection_id: param._id } 
       return await this.chatservice.getAllMessage( payload, query, user_id)
     }
   
@@ -83,9 +83,9 @@ export class ChatController {
     @UseGuards(AuthGuard)
     @ApiBearerAuth('authentication')
     @Patch('connection/:_id/mute')
-    async connection_mute(@Param('_id') _id:string, @Body() body:dto.mute_connection ,@Req() req:any) {
+    async connection_mute(@Param() param:dto.Mongodb_id, @Body() body:dto.mute_connection ,@Req() req:any) {
       let user_id = req.user_data._id;
-      return await this.chatservice.mute_unmute( user_id, _id, body)
+      return await this.chatservice.mute_unmute( user_id, param._id, body)
     }
     
     @ApiOperation({summary:"create_group"})
@@ -100,9 +100,9 @@ export class ChatController {
     @UseGuards(AuthGuard)
     @ApiBearerAuth('authentication')
     @Put('group/:_id/members')
-    async addGroupMember(@Param('_id') _id:string, @Body() body:dto.AddGroupMemberDto ,@Req() req) {
+    async addGroupMember(@Param() param:dto.Mongodb_id, @Body() body:dto.AddGroupMemberDto ,@Req() req) {
       let user_id = req.user_data._id;
-      return await this.chatservice.addGroupMember(_id, body, user_id)
+      return await this.chatservice.addGroupMember(param._id, body, user_id)
     }
   
     @ApiOperation({summary:"get user groups"})
@@ -117,13 +117,13 @@ export class ChatController {
     @UseGuards(AuthGuard)
     @ApiBearerAuth('authentication')
     @Get('group/:_id/memberlist')
-    async getGroupMembers(@Param('_id') _id:string, @Req() req:any, @Query() query: dto.paginationsort ) {
-      return await this.chatservice.getGroupMembers(_id, query)
+    async getGroupMembers(@Param() param:dto.Mongodb_id, @Req() req:any, @Query() query: dto.paginationsort ) {
+      return await this.chatservice.getGroupMembers(param._id, query)
     }
     
     @ApiOperation({ summary: "deliver" })
     @Patch('deliver')
-    async Deliver(@Req() req, @Body() dto: dto.Deliver_message) {
+    async Deliver(@Req() req:any, @Body() dto: dto.Deliver_message) {
       return await this.chatservice.deliverMessage(req.user.id, dto);
     }
 

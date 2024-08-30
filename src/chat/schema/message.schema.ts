@@ -3,6 +3,7 @@ import { Document, SchemaTypes } from 'mongoose';
 import { Connections } from './connection.schema'; // Assuming you have a Connection schema
 import { Groups } from './group.schema';
 import { Users } from 'src/users/schema/users.schema';  // Assuming you have a User schema
+import { message_deleted_type } from 'utils';
 
 const message_type = [null, 'TEXT', 'IMAGE', 'VIDEO', 'AUDIO', 'DOCUMENT', 'GROUP_LINK'];
 const type = [null, 'NORMAL', 'REPLY', 'FORWARDED', 'DELETED'];
@@ -50,8 +51,8 @@ export class Messages {
   @Prop({ type: Number ,default: 0 })
   read_state: number
 
-  @Prop({ default: null })
-  deleted_type: number;
+  @Prop({ type:Boolean, default: false })
+  is_deleted: string;
 
   @Prop({ type: [{ type: SchemaTypes.ObjectId, ref:  "users", default: null }] })
   deleted_for: Users[];

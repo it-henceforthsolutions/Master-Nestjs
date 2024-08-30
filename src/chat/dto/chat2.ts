@@ -3,6 +3,8 @@ import {
   IsArray,
   IsEmail,
   IsEnum,
+  IsMongoId,
+  IsNotEmpty,
   IsNumber,
   IsOptional,
   IsString,
@@ -174,4 +176,12 @@ export class Deliver_message {
   @ApiProperty({ required: true , description:"message_id"})
   @IsString()
   message_id: string
+}
+
+export class Mongodb_id {
+  @ApiProperty({ required: true, description: "mongodb_id" })
+  @IsString()
+  @IsMongoId({ message: "Please provide vaild mongodb id" })
+  @IsNotEmpty({ message: "id field is mandatory" })
+  _id: string;
 }

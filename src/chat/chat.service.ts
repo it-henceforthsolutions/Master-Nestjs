@@ -54,7 +54,7 @@ export class ChatService {
       @InjectModel(LiveStreaming.name) private LiveStreamModel: Model<any>,
     ) { }
     
-    async updateUserSocket(token: any, is_connect: boolean) {
+    async updateUserSocket(token: string, is_connect: boolean) {
        try {
         console.log('token------>>>>>>>', token);
       const payload = await this.jwtService.verifyAsync(token, {
@@ -138,7 +138,7 @@ export class ChatService {
       
             let projection = { __v: 0 };
             let options = { lean: true };
-            let connection: any = await this.connectionModel.find(
+            let connection = await this.connectionModel.find(
               query,
               projection,
               options,
@@ -153,7 +153,7 @@ export class ChatService {
                 data: data,
               };
             } else {
-              const new_connection: any = await this.createConnection(
+              const new_connection = await this.createConnection(
                 sent_by,
                 payload,
               ); ///create connection
@@ -172,7 +172,7 @@ export class ChatService {
     async createConnection(sent_by: string, payload: any) {
       try {
         let { sent_to, group_id } = payload;
-        let data_to_save: any;
+        let data_to_save:any;
         if (!!sent_by && !!sent_to) {
           data_to_save = {
             sent_by: sent_by,
@@ -728,20 +728,26 @@ export class ChatService {
           { new: true },
         );
   
-        let query: any = {
+        let query:any = {
           connection_id: new Types.ObjectId(connection_id),
-          deleted_for: { $nin: [new Types.ObjectId(user_id)] },
+          $or: [
+            {is_deleted: false },
+            { deleted_for: { $nin: [new Types.ObjectId(user_id)] }}
+          ]
         };
   
-        let update: any = {
+        let update = {
           $addToSet: { read_by: user_id },
         };
   
         if (connnection.sent_to) {
           let query2 = {
             connection_id: new Types.ObjectId(connection_id),
-            deleted_for: { $nin: [new Types.ObjectId(user_id)] },
             sent_to: new Types.ObjectId(user_id),
+            $or: [
+              { is_deleted: false },
+              { deleted_for: { $nin: [new Types.ObjectId(user_id)] }}
+            ]
           };
           await this.messageModel.updateMany(
             query2,
@@ -750,9 +756,8 @@ export class ChatService {
           );
         }
         await this.messageModel.updateMany(query, update, { new: true });
-  
         let projection = {
-          deleted_type: 0,
+          is_deleted: 0,
           deleted_for:0
         };
         let options: any = { lean: true };
@@ -1180,14 +1185,25 @@ export class ChatService {
       }
     }
   
-    async deleteMessage(user_id: string, payload: any) {
+  async editMessage(user_id: string, payload: dto.editMessage) {
+      try {
+        let { message_id, message } = payload;
+        let query = { _id: new Types.ObjectId(message_id), sent_by: new Types.ObjectId(user_id) };
+        let projection = { __v: 0 };
+        let response = await this.messageModel.findOne(query, projection, options)
+        return response;
+      } catch (error) {
+         throw error
+      }
+    }
+  
+    async deleteMessage(user_id: string, payload: dto.deleteMessage) {
       try {
         let { message_id, deleted_type } = payload;
         let query = { _id: new Types.ObjectId(message_id) };
         let projection = { __v: 0 };
-        //let update = { is_read: true };
         let options = { new: true };
-        let response: any = await this.messageModel.find(
+        let response = await this.messageModel.find(
           query,
           projection,
           options,
@@ -1197,17 +1213,18 @@ export class ChatService {
           let { sent_by, sent_to } = response[0];
           if (
             new Types.ObjectId(user_id) == sent_by &&
-            deleted_type == message_deleted_type.BOTH
+            deleted_type == message_deleted_type.ALL
           ) {
             data_to_update = {
-              $push: {
-                deleted_for: {
-                  $each: [
-                    new Types.ObjectId(sent_by),
-                    new Types.ObjectId(sent_to),
-                  ],
-                },
-              },
+              // $push: {
+              //   deleted_for: {
+              //     $each: [
+              //       new Types.ObjectId(sent_by),
+              //       new Types.ObjectId(sent_to),
+              //     ],
+              //   },
+              // },
+              is_deleted:true,
             };
           } else {
             data_to_update = { deleted_for: new Types.ObjectId(user_id) };
@@ -1223,12 +1240,8 @@ export class ChatService {
           data_to_update,
           options,
         );
-        //console.log("updated_at", updated_data)
-        return {
-          type: 'SUCCESS',
-          message: `${updated_data._id} is deleted`,
-          connection_id: updated_data.connection_id,
-        };
+        return updated_data;
+
       } catch (error) {
         throw error;
       }
