@@ -41,10 +41,14 @@ export class readMessage {
 
 
 export class deleteMessage {
-  deleted_type:number;  //0
+  deleted_type:string;  
   message_id:string;
 }
 
+export class editMessage {
+  message:string;  
+  message_id:string;
+}
 
 
 

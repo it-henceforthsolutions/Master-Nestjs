@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request, Req } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { UpdateAdminDto } from './dto/update-admin.dto';
 import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
@@ -21,14 +21,13 @@ export class AdminController {
     ) { }
 
     @ApiBearerAuth('authentication')
-    // @UseGuards(AuthGuard, RolesGuard)
+    @UseGuards(AuthGuard)
     @Roles(UsersType.admin, UsersType.staff)
-    @Permission(Role.readonly)
     @ApiOperation({ summary: 'admin dashboard' })
     @ApiResponse({ status: 201, description: 'OK' })
     @Get('dashboard')
-    dashboard() {
-        return this.adminService.dashboard();
+    dashboard(@Req()req:any) {
+        return this.adminService.dashboard(req);
     }
 
     @ApiOperation({ summary: 'sign in' })
@@ -38,7 +37,6 @@ export class AdminController {
     async signIn(@Body() body: SignInDto) {
         try {
             return await this.adminService.signIn(body);
-
         } catch (error) {
             throw error
         }

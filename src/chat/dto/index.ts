@@ -1,14 +1,14 @@
 import {
     create_connection, join_connection, sendMessage, readMessage,
     deleteMessage, addGroupMember, mute_connection_skt, add_pin_items, deliver_message,
-    call_detail, join_stream, leave_stream, get_all_message
+    call_detail, join_stream, leave_stream, get_all_message, editMessage
 } from "./chat"
 import {
     CreateGroupDto, AddGroupMemberDto, paginationsort, pagination,
     paginationsortsearch, mute_connection, block_unblock, chat_setting,
     start_call,
     join_call, get_pin_items,
-    list_connection, create_stream, Deliver_message
+    list_connection, create_stream, Deliver_message, Mongodb_id
 } from "./chat2"
 
 export{
@@ -17,5 +17,6 @@ export{
     , add_pin_items, block_unblock,
     start_call,
     join_call, get_pin_items,
-    chat_setting, call_detail, deliver_message ,create_stream, join_stream, leave_stream, Deliver_message
+    chat_setting, call_detail, deliver_message, create_stream, join_stream, leave_stream, Deliver_message, Mongodb_id,
+    editMessage
 }

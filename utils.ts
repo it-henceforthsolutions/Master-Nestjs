@@ -53,8 +53,9 @@ export enum chat_type {
 }
 
 export enum message_deleted_type{
+    null= null,
     ME="ME",
-    BOTH = "BOTH"
+    ALL = "ALL"
 }
 
 export enum type {

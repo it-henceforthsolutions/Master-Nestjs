@@ -11,7 +11,7 @@ import { SocketGuard } from 'src/auth/auth.guards';
 import * as dto from './dto';
 import { ChatService } from 'src/chat/chat.service';
 import { UsersService } from 'src/users/users.service';
-import { Types } from 'mongoose';
+import { connection, Types } from 'mongoose';
 
 interface CustomSocket extends Socket {
   user: any;
@@ -55,15 +55,9 @@ export class ChatServiceGateway
         let fetch_connections = await this.chatservice.fetch_user_connections(
           update_user._id,
         );
-        let connections_ids = fetch_connections.map((connection: any) =>
-          connection._id.toString(),
+        fetch_connections.forEach((connection: any) =>
+          socket.join(connection._id.toString())
         );
-        if (connections_ids.length > 0) {
-          console.log('joined to --', connections_ids);
-          socket.join(connections_ids); // Join the user to these connection rooms
-        } else {
-          console.log('No connections to join.');
-        }
       }
       socket.emit('connected', 'Socket connected');
     } catch (error) {
@@ -75,7 +69,7 @@ export class ChatServiceGateway
   async handleDisconnect(socket: CustomSocket) {
     try {
       console.log('handle disconnect run');
-      const token: any = socket.handshake.headers.token;
+      const token:any = socket.handshake.headers.token;
       let Bearer_token = token.split(' ')[1];
       await this.chatservice.updateUserSocket(Bearer_token, false);
       socket.emit('disconnected', 'Socket disconnected');
@@ -121,8 +115,8 @@ export class ChatServiceGateway
       );
       response.data = data;
       response.connection_id = connection_id;
-      console.log('get_message', response.data);
-      console.log('connection_id', connection_id);
+      console.log('get_message---->>>', response.data);
+      console.log('connection_id---->>>', connection_id);
       // socket.to(connection_id).emit('get_message', response);   //to all except sender
       this.server.to(connection_id).emit('get_message', response); // to all with sender
       let tokens = await this.chatservice.get_tokens(connection_id, user_id);
@@ -250,14 +244,40 @@ export class ChatServiceGateway
   }
 
   @UseGuards(SocketGuard)
+  @SubscribeMessage('edit_message')
+  async handleEditMessage(socket: CustomSocket, payload: dto.editMessage) {
+    try {
+      console.log('socket called ===>edit_message', payload);
+      const user_id = socket.user.id;
+      let data:any = await this.chatservice.editMessage(user_id, payload);
+      response.connection_id = data.connection_id;
+      response.data = data;
+      socket.to(data.connection_id.toString()).emit('edit_message', response);
+      response.message = "Message edited successfully";
+      console.log(
+        '🚀 ~ ChatServiceGateway ~ handleEditMessage ~ response:',
+        response,
+      );
+      socket.emit('edit_message', response)
+    } catch (error) {
+      socket.emit('error', error.message);
+    }
+  }
+
+  @UseGuards(SocketGuard)
   @SubscribeMessage('delete_message')
   async handleDeleteMessage(socket: CustomSocket, payload: dto.deleteMessage) {
     try {
       console.log('socket called ===>delete_message', payload);
       const user_id = socket.user.id;
-      let data = await this.chatservice.deleteMessage(user_id, payload);
-      response.message = data.message;
-      response.connection_id = data.connection_id;
+      let message_data = await this.chatservice.deleteMessage(user_id, payload);
+      
+      response.connection_id = message_data.connection_id;
+      response.data = { message_id: message_data._id };
+      if (message_data.is_deleted) {
+        socket.to(message_data.connection_id.toString()).emit('delete_message',response)
+      }
+      response.message = "Message deleted successfully";
       console.log(
         '🚀 ~ ChatServiceGateway ~ handleDeleteMessage ~ response:',
         response,
@@ -285,7 +305,7 @@ export class ChatServiceGateway
       let { connection_id } = payload;
       response.message = `${user_name} is typing`;
       response.connection_id = connection_id;
-      this.server.to(connection_id).emit('is_typing', response);
+      socket.to(connection_id).emit('is_typing', response);
     } catch (error) {
       socket.emit('error', error.message);
     }

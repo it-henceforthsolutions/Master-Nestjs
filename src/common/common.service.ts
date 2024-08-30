@@ -6,6 +6,7 @@ import * as FCM from 'fcm-push';
 import { JwtService } from "@nestjs/jwt";
 import { ModelService } from "src/model/model.service";
 import * as mongoose from 'mongoose'
+import { token_payload } from "src/auth/interface/interface";
 @Injectable()
 export class CommonService {
     constructor(
@@ -23,7 +24,7 @@ export class CommonService {
             return await this.mailerService
                 .sendMail({
                     to: `${email}`,
-                    from: process.env.EMAIL,
+                    from: `MasterModule<${process.env.EMAIL}>`,
                     subject: 'Verify User',
                     text: ` OTP :${otp}`
                 });
@@ -132,20 +133,20 @@ export class CommonService {
         }
     }
 
-    async generateToken(payload: any) {
+    async generateToken(payload:token_payload) {
         try {
             return await this.jwtService.signAsync(payload)
         } catch (error) {
             throw error
         }
     }
-    async createSession(user_id: any, access_token: string, fcm_token: string, user_type: string) {
+    async createSession(user_id: any, fcm_token: string, user_type: string, token_gen_at: any) {
         try {
             return await this.model.SessionModel.create({
                 user_id: new mongoose.Types.ObjectId(user_id),
-                access_token: access_token,
                 fcm_token: fcm_token,
-                user_type: user_type
+                user_type: user_type,
+                created_at: token_gen_at
             })
         } catch (error) {
             throw error

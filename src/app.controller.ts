@@ -8,8 +8,9 @@ import { ChangePassDto, ResetPassDto, UpdateEmailDto, UpdatePhoneDto, UpdateUser
 import { AdminService } from './admin/admin.service';
 import { UsersType } from './users/role/user.role';
 import { Roles } from './auth/role.decorator';
+import { UserType } from 'utils';
 
-@Roles(UsersType.user)
+
 @Controller()
 export class AppController {
     constructor(
@@ -21,6 +22,7 @@ export class AppController {
     async onApplicationBootstrap(): Promise<void> {
         await this.adminService.createAdmin();
     }
+    
     
     @ApiOperation({ summary: 'sign up' })
     @ApiResponse({ status: 201, description: 'OK' })
@@ -82,6 +84,7 @@ export class AppController {
     // resendEmailOtp(@Request() req) {
     //     return this.userService.resendEmailOtp(req.user_data._id)
     // }
+
     @UseGuards(AuthGuard)
     @ApiBearerAuth('authentication')
     @ApiOperation({ summary: 'resend otp on phone' })
@@ -99,6 +102,7 @@ export class AppController {
     resendOtp(@Body() body: UpdateEmailDto) {
         return this.userService.resendOtp(body)
     }
+    
     @ApiOperation({ summary: 'forget password' })
     @ApiConsumes('application/json', 'application/x-www-form-urlencoded')
     @ApiResponse({ status: 201, description: 'OK' })
@@ -114,6 +118,8 @@ export class AppController {
     resetPassward(@Body() body: ResetPassDto) {
         return this.userService.resetPassward(body)
     }
+
+  
     @UseGuards(AuthGuard)
     @ApiBearerAuth('authentication')
     @ApiOperation({ summary: 'change password' })
@@ -124,6 +130,7 @@ export class AppController {
         return this.userService.changePassward(body, req.user_data._id)
     }
 
+  
     @UseGuards(AuthGuard)
     @ApiBearerAuth('authentication')
     @ApiOperation({ summary: 'update profile' })

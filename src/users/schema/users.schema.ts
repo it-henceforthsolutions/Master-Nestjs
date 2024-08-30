@@ -62,11 +62,11 @@ export class Users {
     @Prop({type: String, default: null })
     custumer_id: string
 
-    @Prop({ type: String, default: null })
-    created_at: string
+    @Prop({ type: Number, default: 0 })
+    created_at: number
 
-    @Prop({default: null})
-    updated_at: string
+    @Prop({type: Number, default: 0 })
+    updated_at: number
 
     @Prop({default: false})
     is_deleted: boolean
