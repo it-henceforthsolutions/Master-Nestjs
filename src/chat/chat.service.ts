@@ -531,6 +531,7 @@ export class ChatService {
         let group_data: any = null;
         let other_user: any = null;
         let blocked: any = null;
+        let other_blocked: any = null;
         if (connections.group_id) {
           group_data = await this.GroupModel.findOne(
             { _id: connections.group_id },
@@ -558,21 +559,15 @@ export class ChatService {
         }
         if (other_user) {
           console.log('🚀 ~ connection_details ~ other_user:', other_user);
-  
           let query = {
-            $or: [
-              {
                 block_by: new Types.ObjectId(user_id),
-                block_to: new Types.ObjectId(other_user._id),
-              },
-              {
-                block_to: new Types.ObjectId(other_user._id),
-                block_by: new Types.ObjectId(user_id),
-              },
-            ],
+                block_to: new Types.ObjectId(other_user._id)
           };
-          console.log('🚀 ~ connection_details ~ query:', query);
-          blocked = await this.BlockedModel.find(query, { block_by: 1 }, options);
+          console.log('🚀 ~ connection_details ~ query: blocked', query);
+          blocked = await this.BlockedModel.findOne(query, { block_by: 1 }, options);
+          query.block_by = new Types.ObjectId(other_user._id)
+          query.block_to = new Types.ObjectId(user_id)
+          other_blocked = await this.BlockedModel.findOne( query, {block_to:1},options)
         }
         let pin_count = await this.PinsModel.countDocuments({
           connection_id: new Types.ObjectId(connection_id),
@@ -586,7 +581,8 @@ export class ChatService {
           group_member: members,
           member_count,
           pin_count,
-          block_by: blocked,
+          is_blocked: blocked ? true:false,  // you blocked the other user
+          other_blocked: other_blocked ? true:false  // other user blocked you
         };
       } catch (err) {
         throw err;
@@ -1183,6 +1179,7 @@ export class ChatService {
           message_type: payload?.message_type,
           message_id: payload?.message_id,
           media_url: payload?.media_url,
+          updated_at: moment().utc().valueOf()
         }
         let updated_data = await this.messageModel.findOneAndUpdate(query, update, option_new);
         return updated_data;
