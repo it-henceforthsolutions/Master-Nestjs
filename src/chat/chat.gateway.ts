@@ -120,16 +120,15 @@ export class ChatServiceGateway
       // socket.to(connection_id).emit('get_message', response);   //to all except sender
       this.server.to(connection_id).emit('get_message', response); // to all with sender
       let tokens = await this.chatservice.get_tokens(connection_id, user_id);
-      let push_data = {
-        title: 'Recieved a message',
-        body: `${data?.sent_by?.first_name} ${data?.sent_by?.last_name} sent a message`,
-        last_message: `${data.connection_id?.last_message}`,
-        connection_id: connection_id,
-        profile_pic: `${data.sent_by?.profile_pic}`,
-        sent_by: user_id,
-      };
-      console.log('tokens', tokens);
       if (tokens.length > 0) {
+        let push_data = {
+          title: 'Recieved a message',
+          body: `${data?.sent_by?.first_name} ${data?.sent_by?.last_name} sent a message`,
+          last_message: `${data.connection_id?.last_message}`,
+          connection_id: connection_id,
+          profile_pic: `${data.sent_by?.profile_pic}`,
+          sent_by: user_id,
+        };
         // await this.chatservice.send_push(push_data, tokens);
       }
       //  return;
