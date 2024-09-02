@@ -26,7 +26,7 @@ export class Connections {
   last_message: string;
 
   @Prop({ type: [{ user_id: { type: Types.ObjectId, ref: Users.name, default: null, mute_till:{ type: Number, default: 0 } }}]})
-  mute: { mute_by:Types.ObjectId, mute_till :number }[];
+  mute: { user_id:Types.ObjectId, mute_till :number }[];
 
   @Prop({ default: +new Date() })
   updated_at: number;

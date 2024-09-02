@@ -124,7 +124,7 @@ export class ChatController {
     @ApiOperation({ summary: "deliver" })
     @Patch('deliver')
     async Deliver(@Req() req:any, @Body() dto: dto.Deliver_message) {
-      return await this.chatservice.deliverMessage(req.user.id, dto);
+      return await this.chatservice.deliverMessage(req.user_data._id, dto);
     }
 
 

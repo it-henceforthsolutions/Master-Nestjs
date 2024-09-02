@@ -596,58 +596,54 @@ export class ChatService {
     async get_tokens(connection_id: any, user_id: any) {
       try {
         let currentUtc = moment().utc().valueOf();
-        let connection = await this.get_connection(connection_id);
-        let { group_id, sent_to } = connection;
-        console.log('🚀 ~ get_tokens ~ connection:', connection);
-        let s_query: any;
-        let sessions: any = [];
-        if (group_id) {
-          let query = {
-            group_id: new Types.ObjectId(group_id),
-          };
-          let members = await this.MemberModel.find(
-            query,
-            { user_id: 1 },
-            { lean: true },
-          );
-          let user_ids = members.map((res) => res.user_id);
-          s_query = {
-            user_id: { $and: [{ $in: user_ids }, { $ne: user_id }] },
-            fcm_token: { $ne: null },
-          };
+        const query = {
+          _id: new Types.ObjectId(connection_id),
+          'mute.user_id': user_id,
+          'mute.mute_till': { $gt: currentUtc }, 
+        };
+        let connection = await this.connectionModel.findOne(query);
+        if (connection) {
+          let { group_id, sent_to, mute } = connection;
+          let s_query: any;
+          let sessions: any = [];
+          if (group_id) {
+            let query = {
+              group_id: new Types.ObjectId(group_id),
+            };
+            let members = await this.MemberModel.find(
+              query,
+              { user_id: 1 },
+              { lean: true },
+            );
+            let user_ids = members.map((res) => res.user_id);
+            s_query = {
+              user_id: { $and: [{ $in: user_ids }, { $ne: user_id }] },
+              fcm_token: { $ne: null },
+            };
+          } else if (sent_to) {
+            if (sent_to._id == user_id) {
+              s_query = {
+                user_id: connection.sent_by._id,
+                fcm_token: { $ne: null },
+              };
+            } else {
+              s_query = {
+                user_id: connection.sent_to._id,
+                fcm_token: { $ne: null },
+              };
+            }
+          }
           sessions = await this.model.SessionModel.find(
             s_query,
             { fcm_token: 1 },
             options,
           );
-        } else if (sent_to) {
-          if (sent_to._id == user_id) {
-              s_query = {
-                user_id: connection.sent_by._id,
-                fcm_token: { $ne: null },
-              };
-              sessions = await this.model.SessionModel.find(
-                s_query,
-                { fcm_token: 1 },
-                options,
-              );
-          } else {
-            console.log('connection mute time--', connection.reciever_mute);
-            console.log('currentutc===', currentUtc);
-              s_query = {
-                user_id: connection.sent_to._id,
-                fcm_token: { $ne: null },
-              };
-              sessions = await this.model.SessionModel.find(
-                s_query,
-                { fcm_token: 1 },
-                options,
-              );
-          }
-        }
-        let tokens = sessions.map((res: any) => res?.fcm_token);
-        console.log('🚀 ~ get_tokens ~ tokens:', tokens);
-        return tokens;
+          let tokens = sessions.map((res: any) => res?.fcm_token);
+          console.log('🚀 ~ get_tokens ~ tokens:', tokens);
+          return tokens;
+        } else {
+          return [];
+        } 
       } catch (error) {
         throw error;
       }
@@ -789,13 +785,12 @@ export class ChatService {
         throw error;
       }
     }
-  
-  
+
   
   
     async createGroup(req: any, body: dto.CreateGroupDto) {
       try {
-        let user_id = req.user.id;
+        let user_id = req.user_data._id;
         let check_group = await this.GroupModel.findOne({
           created_by: new Types.ObjectId(user_id),
           name: body.name,
@@ -875,7 +870,7 @@ export class ChatService {
   
     async getGroups(req: any, quer: dto.paginationsort) {
       try {
-        let user_id = req.user.id;
+        let user_id = req.user_data._id;
   
         let { pagination, limit, sort_by } = quer;
         //console.log('🚀 ~ file: chat.service.ts:361 ~ getGroups ~ quer:', quer);
@@ -1007,21 +1002,20 @@ export class ChatService {
           value = 0;
           message = 'Successfully unmuted';
         }
-        let connection = await this.get_connection(connection_id);
-        if (connection.group_id) {
-          let query = {
-            group_id: connection.group_id,
-            user_id: new Types.ObjectId(user_id),
-          };
-          let update: any = { mute: value };
-          await this.MemberModel.updateOne(query, update);
-        } else {
-          let query = { _id: connection._id };
-          let update_connection: any = { reciever_mute: value };
-          if (connection.sent_by == user_id) {
-            update_connection = { sender_mute: value };
-          }
-          await this.connectionModel.updateOne(query, update_connection);
+     
+        const query = { _id: new Types.ObjectId(connection_id), 'mute.user_id': new Types.ObjectId(user_id) };
+        const updateIfExists = {
+          $set: { 'mute.$.mute_till': value },
+        };
+        const updateIfNotExists = {
+          $push: { mute: { user_id: new Types.ObjectId(user_id), mute_till: value } },
+        };
+        // First, try to update the mute_till value if the user_id already exists in the mute array
+        let updated_data = await this.connectionModel.findOneAndUpdate(query, updateIfExists, { new: true });
+    
+        // If no document was updated, add a new mute object with user_id and mute_till
+        if (!updated_data) {
+          updated_data = await this.connectionModel.findOneAndUpdate({ _id: new Types.ObjectId(connection_id) }, updateIfNotExists, { new: true });
         }
         return {
           message,
@@ -1315,17 +1309,19 @@ export class ChatService {
         let saved_data = await this.CallModel.create(data_to_save);
         for (let i = 0; i < users_ids.length; i++) {
           let fcm_token = await this.get_tokens(connection_id, user_id);
-          let notification_data = {
-            channel_name: data_to_save.channel_name,
-            agora_token: data_to_save.agora_token,
-            id: saved_data._id,
-            type,
-            userId: users_ids[i],
-            user_id: user?._id,
-            user_name: user?.first_name ?? `${user.first_name} ${user.last_name}`,
-            user_image: user?.profile_pic ?? null,
-          };
-          await this.send_push(notification_data, fcm_token);
+          if (fcm_token.length) {
+            let notification_data = {
+              channel_name: data_to_save.channel_name,
+              agora_token: data_to_save.agora_token,
+              id: saved_data._id,
+              type,
+              userId: users_ids[i],
+              user_id: user?._id,
+              user_name: user?.first_name ?? `${user.first_name} ${user.last_name}`,
+              user_image: user?.profile_pic ?? null,
+            };
+            await this.send_push(notification_data, fcm_token);
+          }
         }
         return saved_data;
       } catch (error) {
@@ -1346,7 +1342,7 @@ export class ChatService {
         let update = {
           $set: { 'members.$.joined_at': moment().utc().valueOf() },
         };
-        let updated_data = await this.CallModel.findOneAndUpdate(
+        let call_data = await this.CallModel.findOneAndUpdate(
           query,
           update,
           option_new,
@@ -1358,16 +1354,27 @@ export class ChatService {
           user_projection,
           options,
         );
-        let get_users = updated_data.members;
+        let get_users = call_data.members;
         let socket_ids: any;
         for (let i = 0; i < get_users.length; i++) {
           let { joined_at, leave_at, user_id: member_id } = get_users[i];
           if (joined_at != 0 && leave_at == 0 && member_id != user_id) {
-            let socket_id = await this.get_tokens(updated_data.connection_id,member_id);
-            socket_ids.push(socket_id);
+            let fcm_token = await this.get_tokens(call_data.connection_id,member_id);
+            if (fcm_token.length) {
+              let notification_data = {
+                // title: call_data?.call_ended ? 'Join Call ' : 'Call Join',
+                // subject: call_data?.call_ended ? '' : 'Call Leave',
+                id: call_data?._id,
+                userId: member_id,
+                user_id: user_id, ////leaved by
+                user_name: `${user_data.first_name} ${user_data.last_name}`,
+                user_profile_pic: user_data.profile_pic,
+              };
+              await this.send_push(notification_data, fcm_token);
+            }
           }
         }
-        return updated_data;
+        return call_data;
       } catch (error) {
         throw error;
       }
@@ -1412,17 +1419,19 @@ export class ChatService {
         for (let i = 0; i < get_users.length; i++) {
           let { joined_at, leave_at, user_id: member_id } = get_users[i];
           if (joined_at != 0 && leave_at == 0 && member_id != user_id) {
-            let fcm_token = await this.get_tokens(data.connection_id,user_id);
-            let notification_data = {
-              title: data?.call_ended ? 'Call Ended' : 'Call Leave',
-              subject: data?.call_ended ? 'Call Ended' : 'Call Leave',
-              id: data?._id,
-              userId: member_id,
-              user_id: user_id, ////leaved by
-              user_name: `${user_data.first_name} ${user_data.last_name}`,
-              user_profile_pic: user_data.profile_pic,
-            };
-            await this.send_push(notification_data, fcm_token);
+            let fcm_token = await this.get_tokens(data.connection_id, user_id);
+            if (fcm_token.length) {
+              let notification_data = {
+                title: data?.call_ended ? 'Call Ended' : 'Call Leave',
+                subject: data?.call_ended ? 'Call Ended' : 'Call Leave',
+                id: data?._id,
+                userId: member_id,
+                user_id: user_id, ////leaved by
+                user_name: `${user_data.first_name} ${user_data.last_name}`,
+                user_profile_pic: user_data.profile_pic,
+              };
+              await this.send_push(notification_data, fcm_token);
+            }
           }
         }
         return data;
