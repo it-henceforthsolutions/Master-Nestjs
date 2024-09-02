@@ -25,7 +25,8 @@ export class sendMessage {
   message: string;
   media_url:string;
   message_type:string;
-  type:string
+  type: string;
+
 }
 
 export class deliver_message {
@@ -46,8 +47,12 @@ export class deleteMessage {
 }
 
 export class editMessage {
-  message:string;  
-  message_id:string;
+  _id: string;
+  message: string;
+  media_url:string;
+  message_type:string;
+  type: string;
+  message_id: string;
 }
 
 

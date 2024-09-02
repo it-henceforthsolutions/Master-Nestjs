@@ -75,7 +75,7 @@ export class aggregate {
     }
   };
 
-  static lookupUser = async () => {
+  static lookupUser = async (user_id:string) => {
     try {
       return {
         $lookup: {
@@ -91,29 +91,42 @@ export class aggregate {
             },
             {
               $lookup: {
-                from: 'blocked',
-                let: { user_id: '$_id' },
+                from: 'blockeds',
+                let: { other_user: '$_id' , user_id},
                 pipeline: [
                   {
                     $match: {
                       $expr: {
-                        $or: [
-                          { $eq: ['$block_by', '$$user_id'] },
-                          { $eq: ['$block_to', '$$user_id'] },
-                        ],
+                        $and: [
+                          { $eq: ['$block_by', user_id]},
+                          { $eq: ['$block_to', '$$other_user'] }
+                        ]
                       },
                     },
                   },
                 ],
-                as: 'blocked',
+                as: 'blocked_user',  /// if you blocked the user
               },
             },
             {
-              $unwind: {
-                path: '$blocked',
-                preserveNullAndEmptyArrays: true,
+              $lookup: {
+                from: 'blockeds',
+                let: { other_user: '$_id' , user_id},
+                pipeline: [
+                  {
+                    $match: {
+                      $expr: {
+                        $and: [
+                          { $eq: ['$block_by', '$$other_user']},
+                          { $eq: ['$block_to', user_id] }
+                        ]
+                      },
+                    },
+                  },
+                ],
+                as: 'blocked_other',   // if you blocked by other 
               },
-            },
+            }
           ],
           as: 'fetch_user',
         },
@@ -182,6 +195,7 @@ export class aggregate {
       throw error;
     }
   };
+
 
   static search = async (search: any) => {
     return {
@@ -252,12 +266,21 @@ export class aggregate {
           is_blocked: {
             $first: {
               $cond: {
-                if: { $ne: ['$fetch_user.blocked', null] },
+                if: { $gt: [{ $size: { $ifNull: ['$fetch_user.blocked_user',[]] } }, 0] },
                 then: true,
                 else: false,
               },
             },
           },
+          other_blocked: {
+            $first: {
+              $cond: {
+                if: { $gt: [{ $size: { $ifNull: ['$fetch_user.blocked_other',[]] } }, 0] },
+                then: true,
+                else: false,
+              },
+            },
+          }
         },
       };
     } catch (error) {

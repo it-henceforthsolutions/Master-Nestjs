@@ -7,6 +7,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, SchemaTypes } from 'mongoose';
 import { Users } from 'src/users/schema/users.schema'; // Assuming you have a User schema
 import { Groups } from './group.schema';
+import {Types} from 'mongoose'
 
 export type ConnectionDocument = Connections & Document;
 
@@ -24,11 +25,8 @@ export class Connections {
   @Prop({ default: null })
   last_message: string;
 
-  @Prop({ default:0 })
-  sender_mute: number;
-
-  @Prop({ default:0 })
-  reciever_mute: number;
+  @Prop({ type: [{ user_id: { type: Types.ObjectId, ref: Users.name, default: null, mute_till:{ type: Number, default: 0 } }}]})
+  mute: { mute_by:Types.ObjectId, mute_till :number }[];
 
   @Prop({ default: +new Date() })
   updated_at: number;
@@ -38,9 +36,6 @@ export class Connections {
 }
 
 export const connectionModel = SchemaFactory.createForClass(Connections);
-
-
-
 
 
 
