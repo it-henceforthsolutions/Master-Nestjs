@@ -730,10 +730,8 @@ export class ChatService {
   
         let query:any = {
           connection_id: new Types.ObjectId(connection_id),
-          $or: [
-            { is_deleted: false },
-            { deleted_for: { $nin: [new Types.ObjectId(user_id)] }}
-          ]
+          is_deleted: false,
+          deleted_for: { $nin: [new Types.ObjectId(user_id)] }
         };
   
         let update = {
