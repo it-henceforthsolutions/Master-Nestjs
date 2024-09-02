@@ -462,6 +462,7 @@ export class ChatService {
       try {
         let { user_id: block_to, status } = body;
         let message = 'unblocked successfully';
+        if(block_by == block_to) throw new BadRequestException(`can't blocked self`)
         if (status === 0) {
           await this.BlockedModel.deleteOne({
             block_by: new Types.ObjectId(block_by),
@@ -603,7 +604,6 @@ export class ChatService {
         if (group_id) {
           let query = {
             group_id: new Types.ObjectId(group_id),
-            mute: { $ne: 0, $lt: currentUtc },
           };
           let members = await this.MemberModel.find(
             query,
@@ -622,10 +622,6 @@ export class ChatService {
           );
         } else if (sent_to) {
           if (sent_to._id == user_id) {
-            if (
-              connection.sender_mute == 0 ||
-              connection.sender_mute < currentUtc
-            ) {
               s_query = {
                 user_id: connection.sent_by._id,
                 fcm_token: { $ne: null },
@@ -635,14 +631,9 @@ export class ChatService {
                 { fcm_token: 1 },
                 options,
               );
-            }
           } else {
             console.log('connection mute time--', connection.reciever_mute);
             console.log('currentutc===', currentUtc);
-            if (
-              connection.reciever_mute == 0 ||
-              connection.reciever_mute < currentUtc
-            ) {
               s_query = {
                 user_id: connection.sent_to._id,
                 fcm_token: { $ne: null },
@@ -652,16 +643,21 @@ export class ChatService {
                 { fcm_token: 1 },
                 options,
               );
-            }
           }
         }
-        console.log('squery====>>', s_query);
-        console.log('sessions ===> ', sessions);
         let tokens = sessions.map((res: any) => res?.fcm_token);
         console.log('🚀 ~ get_tokens ~ tokens:', tokens);
         return tokens;
       } catch (error) {
         throw error;
+      }
+    }
+  
+    async check_mute(user_id: string, connection_id: string) {
+      try {
+         return 
+      } catch (error) {
+         throw error
       }
     }
 
@@ -692,7 +688,7 @@ export class ChatService {
         let query: any = [
           await aggregate.match(user_id, ids),
           await aggregate.set_data(user_id),
-          await aggregate.lookupUser(),
+          await aggregate.lookupUser(user_id),
           await aggregate.unwindUser(),
           await aggregate.lookup_group(),
           await aggregate.unwindGroup(),
@@ -1185,11 +1181,17 @@ export class ChatService {
   
   async editMessage(user_id: string, payload: dto.editMessage) {
       try {
-        let { message_id, message } = payload;
-        let query = { _id: new Types.ObjectId(message_id), sent_by: new Types.ObjectId(user_id) };
-        let projection = { __v: 0 };
-        let response = await this.messageModel.findOne(query, projection, options)
-        return response;
+        let { _id } = payload;
+        let query = { _id: new Types.ObjectId(_id), sent_by: new Types.ObjectId(user_id) };
+        let update = {
+          message: payload?.message,
+          type: payload?.type,
+          message_type: payload?.message_type,
+          message_id: payload?.message_id,
+          media_url: payload?.media_url,
+        }
+        let updated_data = await this.messageModel.findOneAndUpdate(query, update, option_new);
+        return updated_data;
       } catch (error) {
          throw error
       }

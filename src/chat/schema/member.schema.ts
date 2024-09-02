@@ -22,9 +22,6 @@ export class Members {
   @Prop({  enum: member_role, default: member_role.USER })
   role: string;
 
-  @Prop({ default:0 })
-  mute: number;
-
   @Prop({ default: +new Date() })
   created_at: number;
 }
