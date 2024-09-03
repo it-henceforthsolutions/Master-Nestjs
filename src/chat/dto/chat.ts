@@ -58,7 +58,6 @@ export class editMessage {
 
 
 export class addGroupMember{
-  connection_id:string;
   group_id:string;
   members:string[];
 }

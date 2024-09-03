@@ -834,17 +834,16 @@ export class ChatService {
     async addGroupMember(  group_id: string,  body: dto.AddGroupMemberDto, user_id: string ) {
       try {
         let { members } = body;
-      
         let admin_query = {
           group_id: new Types.ObjectId(group_id),
           user_id: new Types.ObjectId(user_id),
           role: member_role.ADMIN,
         };
-        let check_admin = await this.MemberModel.findOne(
+        let check_admin:any = await this.MemberModel.findOne(
           admin_query,
           { __v: 0 },
           { lean: true },
-        );
+        ).populate({path:"user_id", select:"first_name last_name profile_pic"})
   
         if (!check_admin)
           throw new BadRequestException('You are not admin of this group');
@@ -865,21 +864,27 @@ export class ChatService {
           }
         }
         let saved_data = await this.MemberModel.insertMany(new_members_to_save);
-        // let data_to_save = {
-        //   group_id,
-        //   sent_by,
-        //   type,
-        //   sent_to: sent_to,
-        //   message,
-        //   message_id,
-        //   media_url,
-        //   message_type,
-        //   connection_id,
-        //   created_at: +new Date(),
-        // };
-        // let saved_message: any = await this.messageModel.create(data_to_save);
+        let fetch_connections = await this.connectionModel.findOne({ group_id: new Types.ObjectId(group_id) });
+        let fetch_first_user = await this.get_user_data(members[0]);
+        let count_members = new_members_to_save.length;
+        let message = `${check_admin?.user_id?.first_name} added ${fetch_first_user.first_name}`
+        if (count_members > 1) {
+          message = `${check_admin?.user_id?.first_name} added ${fetch_first_user.first_name} and ${count_members-1} more also joined!`
+        }
+        let data_to_save = {
+          group_id,
+          sent_by:user_id,
+          type:"NORMAL",
+          message:`${check_admin?.user_id?.first_name} added ${fetch_first_user.first_name} `,
+          message_type:'TEXT',
+          connection_id:fetch_connections._id,
+          created_at: +new Date(),
+        };
+        let saved_message: any = await this.messageModel.create(data_to_save);
         return {
-          message:""
+          connection_id: fetch_connections._id,
+          saved_message,
+          user_data:check_admin
         };
       } catch (error) {
         throw error;
@@ -1191,25 +1196,19 @@ export class ChatService {
       }
     }
   
-  async clearChat(user_id: string, connection_id: string) {
-    let fetch_connections = await this.get_connection(connection_id);
-    let query = {};
-    if (fetch_connections.group_id) {
-      let query = { connection_id: new Types.ObjectId(connection_id), is_deleted: false };
-      let update = { $addToSet: { deleted_for: new Types.ObjectId(user_id) } };
-      await this.messageModel.updateMany(query, update);
-    } else {
-      let query = { connection_id: new Types.ObjectId(connection_id), is_deleted: false, deleted_for: { $size: 0 } };
-      let update = { $addToSet: { deleted_for: new Types.ObjectId(user_id) } };
-      await this.messageModel.updateMany(query, update);
-      let query2 = {
-        connection_id: new Types.ObjectId(connection_id),
-        is_deleted: false,
-        deleted_for: { $nin: [new Types.ObjectId(user_id)],  deleted_for: { $size: {$ne: 0 } } }
+  async clearChat(connection_id: string, user_id: string) {
+    try {
+      let fetch_connections = await this.get_connection(connection_id);
+      if (fetch_connections) {
+        let query = { connection_id: new Types.ObjectId(connection_id), is_deleted: false};
+        let update = { $addToSet: { deleted_for: new Types.ObjectId(user_id) } };
+        await this.messageModel.updateMany(query, update);
       }
-      await this.messageModel.updateMany(query2, { is_deleted: true });
+      return;
+    } catch (error) {
+      console.log("error", error)
+      throw error
     }
-    return 
   }
   
   async editMessage(user_id: string, payload: dto.editMessage) {
