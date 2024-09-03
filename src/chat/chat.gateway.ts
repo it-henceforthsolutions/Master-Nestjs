@@ -305,18 +305,18 @@ export class ChatServiceGateway
   async group_add_member(socket: CustomSocket, payload: dto.addGroupMember) {
     try {
       const user_id = socket.user.id;
-      let fetch_user = await this.chatservice.get_user_data(user_id)
+
       let { group_id, members } = payload;
       let data = await this.chatservice.addGroupMember(
         group_id,
         payload,
         user_id,
       );
-      let { connection_id } = payload;
-      response.data = data;
+      let { connection_id, user_data, saved_message } = data
+      response.data = saved_message;
       response.connection_id = connection_id;
-      response.message = `${fetch_user?.first_name} is added ${members.length} new Member`;
-      socket.to(connection_id).emit(listner.group_add_member, response);
+      response.message = `${user_data?.first_name} is added ${members.length} new Member`;
+      socket.to(data.connection_id.toString()).emit(listner.group_add_member, response);
       response.message = `You added ${members.length} new Member`
       socket.emit(listner.group_add_member, response);
     } catch (error) {
