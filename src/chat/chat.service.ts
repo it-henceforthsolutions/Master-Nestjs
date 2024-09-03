@@ -827,7 +827,7 @@ export class ChatService {
     async addGroupMember(  group_id: string,  body: dto.AddGroupMemberDto, user_id: string ) {
       try {
         let { members } = body;
-  
+      
         let admin_query = {
           group_id: new Types.ObjectId(group_id),
           user_id: new Types.ObjectId(user_id),
@@ -858,7 +858,9 @@ export class ChatService {
           }
         }
         let saved_data = await this.MemberModel.insertMany(new_members_to_save);
-        return saved_data;
+        return {
+          message:""
+        };
       } catch (error) {
         throw error;
       }
@@ -1140,7 +1142,7 @@ export class ChatService {
         let connection = await this.get_connection(connection_id);
         if (connection.group_id != null) {
           let query = { group_id: connection.group_id, user_id: user_id };
-          let member = await this.MemberModel.deleteMany(query);
+           await this.MemberModel.deleteMany(query);
         } else {
           let query = {
             sent_to: new Types.ObjectId(user_id),
@@ -1168,6 +1170,27 @@ export class ChatService {
         throw error;
       }
     }
+  
+  async clearChat(user_id: string, connection_id: string) {
+    let fetch_connections = await this.get_connection(connection_id);
+    let query = {};
+    if (fetch_connections.group_id) {
+      let query = { connection_id: new Types.ObjectId(connection_id), is_deleted: false };
+      let update = { $addToSet: { deleted_for: new Types.ObjectId(user_id) } };
+      await this.messageModel.updateMany(query, update);
+    } else {
+      let query = { connection_id: new Types.ObjectId(connection_id), is_deleted: false, deleted_for: { $size: 0 } };
+      let update = { $addToSet: { deleted_for: new Types.ObjectId(user_id) } };
+      await this.messageModel.updateMany(query, update);
+      let query2 = {
+        connection_id: new Types.ObjectId(connection_id),
+        is_deleted: false,
+        deleted_for: { $nin: [new Types.ObjectId(user_id)],  deleted_for: { $size: {$ne: 0 } } }
+      }
+      await this.messageModel.updateMany(query2, { is_deleted: true });
+    }
+    return 
+  }
   
   async editMessage(user_id: string, payload: dto.editMessage) {
       try {
@@ -1258,15 +1281,13 @@ export class ChatService {
       }
     }
   
-    async remove_pin_items(
-      user_id: string,
-      connection_id: string,
-      message_id: string,
+  async remove_pin_items(
+      user_id:string,
+      pin_id: string,
     ) {
       try {
-        let data_to_save = { user_id, connection_id, message_id };
-        await this.PinsModel.deleteOne(data_to_save);
-        return;
+        let query = { _id: new Types.ObjectId(pin_id), user_id: new Types.ObjectId(user_id)}
+        return await this.PinsModel.findOneAndDelete(query, { lean: true });
       } catch (error) {
         throw error;
       }
@@ -1359,8 +1380,8 @@ export class ChatService {
             let fcm_token = await this.get_tokens(call_data.connection_id,member_id);
             if (fcm_token.length) {
               let notification_data = {
-                // title: call_data?.call_ended ? 'Join Call ' : 'Call Join',
-                // subject: call_data?.call_ended ? '' : 'Call Leave',
+                title: 'Call Join',
+                subject: `${user_data.first_name} ${user_data.last_name} join call`,
                 id: call_data?._id,
                 userId: member_id,
                 user_id: user_id, ////leaved by

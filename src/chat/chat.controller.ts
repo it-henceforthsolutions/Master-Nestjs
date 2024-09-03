@@ -126,9 +126,31 @@ export class ChatController {
     async Deliver(@Req() req:any, @Body() dto: dto.Deliver_message) {
       return await this.chatservice.deliverMessage(req.user_data._id, dto);
     }
-
-
     
+    @ApiOperation({ summary: "start call api" })
+    @UseGuards(AuthGuard)
+    @ApiBearerAuth('authentication')
+    @Post('call/start')
+    async StartCall(@Req() req: any, @Body() dto: dto.start_call) {
+      return await this.chatservice.start_call(req.user_data._id, dto)
+    }
+     
+    @ApiOperation({ summary: "join call api" })
+    @UseGuards(AuthGuard)
+    @ApiBearerAuth('authentication')
+    @Patch('call/join')
+    async JoinCall(@Req() req: any, @Body() dto: dto.join_call) {
+      return await this.chatservice.join_call(req.user_data._id, dto.call_id)
+    }
+      
+    @ApiOperation({ summary: "leave call api" })
+    @UseGuards(AuthGuard)
+    @ApiBearerAuth('authentication')
+    @Patch('call/leave')
+    async EndCall(@Req() req: any, @Body() dto: dto.join_call) {
+      return await this.chatservice.end_call(req.user_data._id, dto.call_id)
+    }
+  
     
     
  }

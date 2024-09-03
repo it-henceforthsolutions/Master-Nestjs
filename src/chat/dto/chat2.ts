@@ -4,6 +4,7 @@ import {
   IsEmail,
   IsEnum,
   IsMongoId,
+  isNotEmpty,
   IsNotEmpty,
   IsNumber,
   IsOptional,
@@ -132,11 +133,17 @@ export class start_call {
 
 export class join_call {
   @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  @IsMongoId()
   call_id: string;
 }
 
 export class get_pin_items extends pagination {
   @ApiProperty({ required: true })
+  @IsString()
+  @IsMongoId()
+  @IsNotEmpty()
   connection_id: string;
 }
 

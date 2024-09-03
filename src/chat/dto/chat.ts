@@ -73,6 +73,10 @@ export class add_pin_items {
   message_id: string;
 }
 
+export class remove_pin_items {
+  pin_id: string;
+}
+
 export class call_detail {
   call_id: string;
 }
