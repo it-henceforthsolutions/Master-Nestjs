@@ -364,6 +364,13 @@ export class ChatService {
           { path: 'sent_to', select: 'first_name last_name profile_pic' },
           { path: 'group_id', select: 'name image' },
           { path: 'connection_id', select: 'updated_at' },
+          {
+            path: 'message_id',
+            select: 'sent_by message message_type media_url message_url type',
+            populate: [
+              { path: 'sent_by', select: 'first_name last_name profile_pic' },
+            ],
+          },
         ];
   
         let response = await this.messageModel
@@ -858,6 +865,19 @@ export class ChatService {
           }
         }
         let saved_data = await this.MemberModel.insertMany(new_members_to_save);
+        // let data_to_save = {
+        //   group_id,
+        //   sent_by,
+        //   type,
+        //   sent_to: sent_to,
+        //   message,
+        //   message_id,
+        //   media_url,
+        //   message_type,
+        //   connection_id,
+        //   created_at: +new Date(),
+        // };
+        // let saved_message: any = await this.messageModel.create(data_to_save);
         return {
           message:""
         };

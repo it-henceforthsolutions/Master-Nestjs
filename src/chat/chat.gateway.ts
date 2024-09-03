@@ -163,7 +163,6 @@ export class ChatServiceGateway
         user_id,
       );
       response.connection_id = connection_id;
-      // this.server.to(socket.id).emit('get_all_message', response);
       socket.emit(emitter.get_all_message, response);
     } catch (error) {
       socket.emit(emitter.error, error.message);
@@ -217,7 +216,7 @@ export class ChatServiceGateway
       const user_name = socket.user.name;
       let { connection_id } = payload;
       await this.chatservice.leaveConnection(connection_id, user_id);
-      response.message = `${user_name} left the group`;
+      response.message = `${user_name} left the chat`;
       response.connection_id = connection_id;
       this.server.to(connection_id).emit(emitter.leave_connection, response);
       response.message = `leave chat successfully`;
@@ -233,7 +232,6 @@ export class ChatServiceGateway
   async handleClearChat(socket: CustomSocket, payload: dto.join_connection) {
     try {
       const user_id = socket.user.id;
-      const user_name = socket.user.name;
       let { connection_id } = payload;
       await this.chatservice.clearChat(connection_id, user_id);
       response.connection_id = connection_id;
