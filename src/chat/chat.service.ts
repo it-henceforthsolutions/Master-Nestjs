@@ -863,28 +863,29 @@ export class ChatService {
             new_members_to_save.push(member);
           }
         }
-        let saved_data = await this.MemberModel.insertMany(new_members_to_save);
+        await this.MemberModel.insertMany(new_members_to_save);
         let fetch_connections = await this.connectionModel.findOne({ group_id: new Types.ObjectId(group_id) });
         let fetch_first_user = await this.get_user_data(members[0]);
         let count_members = new_members_to_save.length;
-        let message = `${check_admin?.user_id?.first_name} added ${fetch_first_user.first_name}`
+        let message = `${check_admin?.user_id?.first_name} added ${fetch_first_user?.first_name}`
         if (count_members > 1) {
-          message = `${check_admin?.user_id?.first_name} added ${fetch_first_user.first_name} and ${count_members-1} more also joined!`
+          message = `${check_admin?.user_id?.first_name} added ${fetch_first_user?.first_name} and ${count_members-1} more also joined!`
         }
         let data_to_save = {
           group_id,
           sent_by:user_id,
           type:"NORMAL",
-          message:`${check_admin?.user_id?.first_name} added ${fetch_first_user.first_name} `,
+          message:`${check_admin?.user_id?.first_name} added ${fetch_first_user?.first_name} `,
           message_type:'TEXT',
-          connection_id:fetch_connections._id,
+          connection_id:fetch_connections?._id,
           created_at: +new Date(),
         };
         let saved_message: any = await this.messageModel.create(data_to_save);
         return {
           connection_id: fetch_connections._id,
           saved_message,
-          user_data:check_admin
+          user_data: check_admin,
+          member_added: new_members_to_save.length
         };
       } catch (error) {
         throw error;
