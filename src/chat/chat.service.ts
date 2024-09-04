@@ -884,7 +884,8 @@ export class ChatService {
         return {
           connection_id: fetch_connections._id,
           saved_message,
-          user_data:check_admin
+          user_data: check_admin,
+          member_added: new_members_to_save.length
         };
       } catch (error) {
         throw error;

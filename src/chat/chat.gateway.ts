@@ -306,18 +306,18 @@ export class ChatServiceGateway
     try {
       const user_id = socket.user.id;
 
-      let { group_id, members } = payload;
+      let { group_id } = payload;
       let data = await this.chatservice.addGroupMember(
         group_id,
         payload,
         user_id,
       );
-      let { connection_id, user_data, saved_message } = data
+      let { connection_id, user_data, saved_message, member_added } = data
       response.data = saved_message;
       response.connection_id = connection_id;
-      response.message = `${user_data?.first_name} is added ${members.length} new Member`;
+      response.message = `${user_data?.first_name} is added ${member_added} new Member`;
       socket.to(data.connection_id.toString()).emit(listner.group_add_member, response);
-      response.message = `You added ${members.length} new Member`
+      response.message = `You added ${member_added} new Member`
       socket.emit(listner.group_add_member, response);
     } catch (error) {
       socket.emit(emitter.error, error.message);
