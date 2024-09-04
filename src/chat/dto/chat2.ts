@@ -28,10 +28,18 @@ export class CreateGroupDto {
   description: string;
 }
 
-export class AddGroupMemberDto {
+export class addGroupMemberDto {
   @ApiProperty()
   @IsArray()
   members: Array<string>;
+}
+
+export class removeGroupMemberDto {
+  @ApiProperty({ required: true })
+  @IsString()
+  @IsMongoId()
+  @IsNotEmpty()
+  member_id: string;
 }
 
 export enum sortBy {

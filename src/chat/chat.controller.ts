@@ -100,12 +100,24 @@ export class ChatController {
     @UseGuards(AuthGuard)
     @ApiBearerAuth('authentication')
     @Put('group/:_id/members')
-    async addGroupMember(@Param() param:dto.Mongodb_id, @Body() body:dto.AddGroupMemberDto ,@Req() req) {
+    async addGroupMember(@Param() param:dto.Mongodb_id, @Body() body:dto.addGroupMemberDto ,@Req() req) {
       let user_id = req.user_data._id;
       let data = await this.chatservice.addGroupMember(param._id, body, user_id)
       return {
         member_added: data.member_added,
         message:`${data.member_added} added successfully`
+      };
+    }
+  
+    @ApiOperation({summary:"remove group member"})
+    @UseGuards(AuthGuard)
+    @ApiBearerAuth('authentication')
+    @Put('group/:_id/remove')
+    async removeGroupMember(@Param() param:dto.Mongodb_id, @Body() body:dto.removeGroupMemberDto, @Req() req) {
+      let user_id = req.user_data._id;
+      await this.chatservice.remove_member(param._id, user_id, body.member_id)
+      return {
+        message:`Removed successfully`
       };
     }
   

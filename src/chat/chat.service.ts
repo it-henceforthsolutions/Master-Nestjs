@@ -831,7 +831,7 @@ export class ChatService {
       }
     }
   
-    async addGroupMember(  group_id: string,  body: dto.AddGroupMemberDto, user_id: string ) {
+    async addGroupMember(  group_id: string,  body: dto.addGroupMemberDto, user_id: string ) {
       try {
         let { members } = body;
         let admin_query = {
@@ -865,7 +865,7 @@ export class ChatService {
         }
         await this.MemberModel.insertMany(new_members_to_save);
         let fetch_connections = await this.connectionModel.findOne({ group_id: new Types.ObjectId(group_id) });
-        let fetch_first_user = await this.get_user_data(members[0]);
+        let fetch_first_user = await this.get_user_data(new_members_to_save[0]);
         let count_members = new_members_to_save.length;
         let message = `${check_admin?.user_id?.first_name} added ${fetch_first_user?.first_name}`
         if (count_members > 1) {
@@ -1165,11 +1165,30 @@ export class ChatService {
   
     async leaveConnection(connection_id: string, user_id: string) {
       try {
+        let fetch_user = await this.get_user_data(user_id)
+        let data_to_save: any = {
+          sent_by: fetch_user._id,
+          type:"NORMAL",
+          message:`${fetch_user.first_name} left`,
+          message_type:'TEXT',
+          connection_id: connection_id,
+          created_at: +new Date(),
+        };
         let connection = await this.get_connection(connection_id);
         if (connection.group_id != null) {
-          let query = { group_id: connection.group_id, user_id: user_id };
-           await this.MemberModel.deleteMany(query);
-        } else {
+          let fetch_group = await this.GroupModel.findOne({ _id: connection.group_id, created_by: new Types.ObjectId(user_id) })
+          if (fetch_group) {
+            await this.GroupModel.deleteOne({ _id: fetch_group._id })
+            await this.connectionModel.deleteOne({ _id: new Types.ObjectId(connection._id) })
+            await this.MemberModel.deleteMany({ group_id: new Types.ObjectId(fetch_group._id)})
+          } else {
+            let query = { group_id: connection.group_id, user_id: user_id };
+            await this.MemberModel.deleteMany(query);
+            data_to_save.group_id = fetch_group._id;
+            await this.messageModel.create(data_to_save)
+          }
+        }
+        else {
           let query = {
             sent_to: new Types.ObjectId(user_id),
             connection_id: connection_id,
@@ -1190,12 +1209,32 @@ export class ChatService {
               { new: true },
             );
           }
+          await this.messageModel.create(data_to_save)
         }
         return true;
       } catch (error) {
         throw error;
       }
     }
+  
+  async remove_member(group_id: string, user_id: string, remove_to:string) {
+    try {
+      let fetch_group = await this.GroupModel.findOne({ _id: new Types.ObjectId(group_id) }, projection, options)
+      let admin_query = {
+        _id: new Types.ObjectId(user_id),
+        role: member_role.ADMIN,
+        group_id: new Types.ObjectId(group_id)
+      }
+      let check_admin = await this.MemberModel.findOne(admin_query, projection, options)
+      if (check_admin) {
+        await this.MemberModel.deleteOne({ _id: new Types.ObjectId(remove_to), group_id: fetch_group._id})
+      }
+      return;
+    } catch (error) {
+       throw error
+    }
+  }
+
   
   async clearChat(connection_id: string, user_id: string) {
     try {
