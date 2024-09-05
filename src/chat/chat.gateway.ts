@@ -331,12 +331,13 @@ export class ChatServiceGateway
     try {
       const user_id = socket.user.id;
       const user_name = socket.user.name;
-      let { connection_id, group_id, member_id } = payload;
+      let { group_id, member_id } = payload;
       let data = await this.chatservice.remove_member(group_id, user_id, member_id)
-      response.message = `${user_name} left the chat`;
+      let { connection_id, saved_message, message } = data
+      response.message = message
       response.connection_id = connection_id;
       socket.to(connection_id).emit(emitter.leave_connection, response);
-      socket.to(connection_id).emit(emitter.get_message, { data: data, connection_id: connection_id} );
+      socket.to(connection_id).emit(emitter.get_message, { data: saved_message, connection_id } );
       response.message = `leave chat successfully`;
       socket.emit(emitter.leave_connection, response);
     } catch (error) {

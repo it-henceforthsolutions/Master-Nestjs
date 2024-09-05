@@ -1243,7 +1243,12 @@ export class ChatService {
           connection_id: fetch_connection._id,
           created_at: +new Date(),
         };
-        return await this.saveMessage(user_id, data_to_save,fetch_connection );
+        let saved_message = await this.saveMessage(user_id, data_to_save, fetch_connection);
+        return {
+          saved_message: saved_message,
+          connection_id: fetch_connection._id,
+          message: data_to_save.message
+        }
       } else 
         throw new BadRequestException('You are not the admin of this group')
     } catch (error) {
