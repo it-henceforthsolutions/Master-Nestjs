@@ -873,14 +873,16 @@ export class ChatService {
         }
         let data_to_save = {
           group_id,
-          sent_by:user_id,
           type:"NORMAL",
           message:`${check_admin?.user_id?.first_name} added ${fetch_first_user?.first_name} `,
           message_type:'TEXT',
-          connection_id:fetch_connections?._id,
+          connection_id: fetch_connections?._id,
+          message_id: null,
+          sent_to: null,
+          media_url: null,
           created_at: +new Date(),
         };
-        let saved_message: any = await this.messageModel.create(data_to_save);
+        let saved_message: any = await this.saveMessage(user_id, data_to_save, fetch_connections )
         return {
           connection_id: fetch_connections._id,
           saved_message,
@@ -1168,12 +1170,13 @@ export class ChatService {
         let fetch_user = await this.get_user_data(user_id)
         let data_to_save: any = {
           sent_by: fetch_user._id,
-          type:"NORMAL",
+          type:"CHAT_EVENT",
           message:`${fetch_user.first_name} left`,
           message_type:'TEXT',
           connection_id: connection_id,
           created_at: +new Date(),
         };
+        let saved_message;
         let connection = await this.get_connection(connection_id);
         if (connection.group_id != null) {
           let fetch_group = await this.GroupModel.findOne({ _id: connection.group_id, created_by: new Types.ObjectId(user_id) })
@@ -1185,7 +1188,7 @@ export class ChatService {
             let query = { group_id: connection.group_id, user_id: user_id };
             await this.MemberModel.deleteMany(query);
             data_to_save.group_id = fetch_group._id;
-            await this.messageModel.create(data_to_save)
+            saved_message = await this.saveMessage(fetch_user._id.toString(), data_to_save, connection)
           }
         }
         else {
@@ -1198,18 +1201,20 @@ export class ChatService {
             { sent_to: null },
             { new: true },
           );
+          data_to_save.sent_to = connection.sent_by;
           if (!deleted) {
             let query1 = {
               sent_by: new Types.ObjectId(user_id),
               connection_id: connection_id,
             };
+            data_to_save.sent_to = connection.sent_to
             await this.connectionModel.findOneAndUpdate(
-              query,
+              query1,
               { sent_by: null },
               { new: true },
             );
           }
-          await this.messageModel.create(data_to_save)
+          saved_message = await this.saveMessage(fetch_user._id.toString(), data_to_save, connection)
         }
         return true;
       } catch (error) {
@@ -1225,11 +1230,22 @@ export class ChatService {
         role: member_role.ADMIN,
         group_id: new Types.ObjectId(group_id)
       }
+      let fetch_connection = await this.connectionModel.findOne({_id: fetch_group.connection_id})
       let check_admin = await this.MemberModel.findOne(admin_query, projection, options)
       if (check_admin) {
-        await this.MemberModel.deleteOne({ _id: new Types.ObjectId(remove_to), group_id: fetch_group._id})
-      }
-      return;
+        let deleted:any = await this.MemberModel.findOneAndDelete({ _id: new Types.ObjectId(remove_to), group_id: fetch_group._id });
+        let fetch_member = await this.get_user_data(deleted?.user_id) 
+        let data_to_save: any = {
+          sent_by: user_id,
+          type:"CHAT_EVENT",
+          message:`${check_admin.first_name} removed ${fetch_member.first_name}`,
+          message_type:'TEXT',
+          connection_id: fetch_connection._id,
+          created_at: +new Date(),
+        };
+        return await this.saveMessage(user_id, data_to_save,fetch_connection );
+      } else 
+        throw new BadRequestException('You are not the admin of this group')
     } catch (error) {
        throw error
     }
@@ -1711,6 +1727,7 @@ export class ChatService {
     async socketEmit(connection_id: any, event: string, response: any) {
       await this.socketGateway.socket_to(connection_id, event, response);
     }
+    
   
   
 }

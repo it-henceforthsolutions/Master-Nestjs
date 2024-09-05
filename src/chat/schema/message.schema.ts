@@ -6,7 +6,7 @@ import { Users } from 'src/users/schema/users.schema';  // Assuming you have a U
 import { message_deleted_type } from 'utils';
 
 const message_type = [null, 'TEXT', 'IMAGE', 'VIDEO', 'AUDIO', 'DOCUMENT', 'GROUP_LINK'];
-const type = [null, 'NORMAL', 'REPLY', 'FORWARDED', 'DELETED'];
+const type = [null, 'NORMAL', 'REPLY', 'FORWARDED', 'DELETED','CHAT_EVENT'];
 
 export type MessageDocument = Messages & Document;
 

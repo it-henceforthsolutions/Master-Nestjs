@@ -208,24 +208,6 @@ export class ChatServiceGateway
     }
   }
 
-  @UseGuards(SocketGuard)
-  @SubscribeMessage(listner.leave_connection)
-  async handleLeaveChat(socket: CustomSocket, payload: dto.join_connection) {
-    try {
-      const user_id = socket.user.id;
-      const user_name = socket.user.name;
-      let { connection_id } = payload;
-      await this.chatservice.leaveConnection(connection_id, user_id);
-      response.message = `${user_name} left the chat`;
-      response.connection_id = connection_id;
-      this.server.to(connection_id).emit(emitter.leave_connection, response);
-      response.message = `leave chat successfully`;
-      socket.emit(emitter.leave_connection, response);
-    } catch (error) {
-      socket.emit(emitter.error, error.message);
-    }
-  }
-
 
   @UseGuards(SocketGuard)
   @SubscribeMessage(listner.clear_chat)
@@ -313,16 +295,56 @@ export class ChatServiceGateway
         user_id,
       );
       let { connection_id, user_data, saved_message, member_added } = data
-      response.data = saved_message;
       response.connection_id = connection_id;
       response.message = `${user_data?.first_name} is added ${member_added} new Member`;
       socket.to(data.connection_id.toString()).emit(listner.group_add_member, response);
+      socket.to(connection_id).emit(emitter.get_message, { data: data.saved_message, connection_id: connection_id } );
       response.message = `You added ${member_added} new Member`
       socket.emit(listner.group_add_member, response);
     } catch (error) {
       socket.emit(emitter.error, error.message);
     }
   }
+
+  @UseGuards(SocketGuard)
+  @SubscribeMessage(listner.leave_connection)
+  async handleLeaveChat(socket: CustomSocket, payload: dto.join_connection) {
+    try {
+      const user_id = socket.user.id;
+      const user_name = socket.user.name;
+      let { connection_id } = payload;
+      let data = await this.chatservice.leaveConnection(connection_id, user_id);
+      response.message = `${user_name} left the chat`;
+      response.connection_id = connection_id;
+      socket.to(connection_id).emit(emitter.leave_connection, response);
+      socket.to(connection_id).emit(emitter.get_message, { data: data, connection_id: connection_id} );
+      response.message = `leave chat successfully`;
+      socket.emit(emitter.leave_connection, response);
+    } catch (error) {
+      socket.emit(emitter.error, error.message);
+    }
+  }
+
+  @UseGuards(SocketGuard)
+  @SubscribeMessage(listner.leave_connection)
+  async handleRemoveMember(socket: CustomSocket, payload: dto.remove_member) {
+    try {
+      const user_id = socket.user.id;
+      const user_name = socket.user.name;
+      let { connection_id, group_id, member_id } = payload;
+      let data = await this.chatservice.remove_member(group_id, user_id, member_id)
+      response.message = `${user_name} left the chat`;
+      response.connection_id = connection_id;
+      socket.to(connection_id).emit(emitter.leave_connection, response);
+      socket.to(connection_id).emit(emitter.get_message, { data: data, connection_id: connection_id} );
+      response.message = `leave chat successfully`;
+      socket.emit(emitter.leave_connection, response);
+    } catch (error) {
+      socket.emit(emitter.error, error.message);
+    }
+  }
+
+
 
   @UseGuards(SocketGuard)
   @SubscribeMessage(listner.mute_unmute)

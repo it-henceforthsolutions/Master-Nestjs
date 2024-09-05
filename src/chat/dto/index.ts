@@ -1,7 +1,7 @@
 import {
     create_connection, join_connection, sendMessage, readMessage,
     deleteMessage, addGroupMember, mute_connection_skt, add_pin_items, deliver_message,
-    call_detail, join_stream, leave_stream, get_all_message, editMessage, remove_pin_items,
+    call_detail, join_stream, leave_stream, get_all_message, editMessage, remove_pin_items,remove_member
 } from "./chat"
 import {
     CreateGroupDto, addGroupMemberDto, paginationsort, pagination,
@@ -18,5 +18,5 @@ export{
     start_call,
     join_call, get_pin_items,
     chat_setting, call_detail, deliver_message, create_stream, join_stream, leave_stream, Deliver_message, Mongodb_id,
-    editMessage, remove_pin_items, removeGroupMemberDto
+    editMessage, remove_pin_items, removeGroupMemberDto, remove_member
 }

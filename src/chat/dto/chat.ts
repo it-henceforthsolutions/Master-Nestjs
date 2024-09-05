@@ -11,6 +11,12 @@ export class join_connection {
   connection_id: string;
 }
 
+export class remove_member {
+  connection_id: string;
+  group_id: string;
+  member_id: string;
+}
+
 export class get_all_message {
   connection_id: string;
   pagination: number;
