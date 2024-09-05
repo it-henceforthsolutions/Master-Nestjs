@@ -1,6 +1,7 @@
 import {
     BadRequestException,
     Injectable,
+    NotFoundException,
     UnauthorizedException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -949,7 +950,7 @@ export class ChatService {
           options.sort = { _id: -1 };
         }
         let query = { group_id: new Types.ObjectId(group_id) };
-        let projection = { _id: 0, group_id: 0, created_at: 0 };
+        let projection = { group_id: 0, created_at: 0 };
         let populate = [
           { path: 'user_id', select: 'first_name last_name profile_pic' },
         ];
@@ -1227,20 +1228,25 @@ export class ChatService {
   async remove_member(group_id: string, user_id: string, remove_to:string) {
     try {
       let fetch_group = await this.GroupModel.findOne({ _id: new Types.ObjectId(group_id) }, projection, options)
+      console.log("group", fetch_group)
       let admin_query = {
-        _id: new Types.ObjectId(user_id),
+        user_id: new Types.ObjectId(user_id),
         role: member_role.ADMIN,
         group_id: new Types.ObjectId(group_id)
       }
-      let fetch_connection = await this.connectionModel.findOne({_id: fetch_group.connection_id})
-      let check_admin = await this.MemberModel.findOne(admin_query, projection, options)
+      let fetch_connection = await this.connectionModel.findOne({ group_id: fetch_group._id })
+      console.log('feth_connection', fetch_connection);
+      
+      let check_admin = await this.MemberModel.findOne(admin_query, projection, options).populate({ path: "user_id", select: "_id first_name last_name" })
       if (check_admin) {
-        let deleted:any = await this.MemberModel.findOneAndDelete({ _id: new Types.ObjectId(remove_to), group_id: fetch_group._id });
-        let fetch_member = await this.get_user_data(deleted?.user_id) 
+        let member_query = { _id: new Types.ObjectId(remove_to), group_id: fetch_group._id }
+        let deleted: any = await this.MemberModel.findOneAndDelete(member_query);
+        if (deleted) {
+          let fetch_user = await this.get_user_data(deleted?.user_id) 
         let data_to_save: any = {
           sent_by: user_id,
           type:"CHAT_EVENT",
-          message:`${check_admin.first_name} removed ${fetch_member.first_name}`,
+          message:`${check_admin.user_id?.first_name} removed ${fetch_user?.first_name}`,
           message_type:'TEXT',
           connection_id: fetch_connection._id,
           created_at: +new Date(),
@@ -1250,6 +1256,9 @@ export class ChatService {
           saved_message: saved_message,
           connection_id: fetch_connection._id,
           message: data_to_save.message
+        }
+        } else {
+          throw new NotFoundException()
         }
       } else 
         throw new BadRequestException('You are not the admin of this group')
