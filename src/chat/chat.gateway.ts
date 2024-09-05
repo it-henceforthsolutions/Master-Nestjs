@@ -294,13 +294,15 @@ export class ChatServiceGateway
         payload,
         user_id,
       );
-      let { connection_id, user_data, saved_message, member_added } = data
-      response.connection_id = connection_id;
-      response.message = `${user_data?.first_name} is added ${member_added} new Member`;
-      socket.to(data.connection_id.toString()).emit(listner.group_add_member, response);
-      socket.to(connection_id).emit(emitter.get_message, { data: data.saved_message, connection_id: connection_id } );
-      response.message = `You added ${member_added} new Member`
-      socket.emit(listner.group_add_member, response);
+      if (data) {
+        let { connection_id, user_data, saved_message, member_added } = data
+        response.connection_id = connection_id;
+        response.message = `${user_data?.first_name} is added ${member_added} new Member`;
+        socket.to(data.connection_id.toString()).emit(listner.group_add_member, response);
+        socket.to(connection_id).emit(emitter.get_message, { data: saved_message, connection_id: connection_id } );
+        response.message = `You added ${member_added} new Member`
+        socket.emit(listner.group_add_member, response);
+      }
     } catch (error) {
       socket.emit(emitter.error, error.message);
     }
