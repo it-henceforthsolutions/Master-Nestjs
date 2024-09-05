@@ -103,10 +103,12 @@ export class ChatController {
     async addGroupMember(@Param() param:dto.Mongodb_id, @Body() body:dto.addGroupMemberDto ,@Req() req) {
       let user_id = req.user_data._id;
       let data = await this.chatservice.addGroupMember(param._id, body, user_id)
-      return {
-        member_added: data.member_added,
-        message:`${data.member_added} added successfully`
-      };
+      if (data) {
+        return {
+          member_added: data.member_added,
+          message:`${data.member_added} added successfully`
+        };
+      }
     }
   
     @ApiOperation({summary:"remove group member"})
