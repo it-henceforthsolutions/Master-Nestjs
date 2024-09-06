@@ -333,8 +333,8 @@ export class ChatServiceGateway
     try {
       const user_id = socket.user.id;
       const user_name = socket.user.name;
-      let { group_id, member_id } = payload;
-      let data = await this.chatservice.remove_member(group_id, user_id, member_id)
+      let { group_id, user_id:remove_to  } = payload;
+      let data = await this.chatservice.remove_member(group_id, user_id, remove_to)
       let { connection_id, saved_message, message } = data
       response.message = message
       response.connection_id = connection_id;

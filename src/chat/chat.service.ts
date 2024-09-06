@@ -866,17 +866,20 @@ export class ChatService {
         }
         if (new_members_to_save.length) {
           await this.MemberModel.insertMany(new_members_to_save);
+          console.log("new_members_to_save", JSON.stringify(new_members_to_save))
           let fetch_connections = await this.connectionModel.findOne({ group_id: new Types.ObjectId(group_id) });
-          let fetch_first_user = await this.get_user_data(new_members_to_save[0]?._user_id);
+          let fetch_first_user = await this.get_user_data(new_members_to_save[0].user_id);
+          console.log("fetch_first_user",fetch_first_user)
           let count_members = new_members_to_save.length;
           let message = `${check_admin?.user_id?.first_name} added ${fetch_first_user?.first_name}`
-          if (count_members > 1) {
+          console.log("count_members", new_members_to_save.length)
+          if (new_members_to_save.length > 1 ) {
             message = `${check_admin?.user_id?.first_name} added ${fetch_first_user?.first_name} and ${count_members-1} more also joined!`
           }
           let data_to_save = {
             group_id,
-            type:"NORMAL",
-            message:`${check_admin?.user_id?.first_name} added ${fetch_first_user?.first_name} `,
+            type:"CHAT_EVENT",
+            message: message,
             message_type:'TEXT',
             connection_id: fetch_connections?._id,
             message_id: null,
@@ -950,7 +953,7 @@ export class ChatService {
           options.sort = { _id: -1 };
         }
         let query = { group_id: new Types.ObjectId(group_id) };
-        let projection = { group_id: 0, created_at: 0 };
+        let projection = { _id:0, group_id: 0, created_at: 0 };
         let populate = [
           { path: 'user_id', select: 'first_name last_name profile_pic' },
         ];
@@ -1239,7 +1242,7 @@ export class ChatService {
       
       let check_admin = await this.MemberModel.findOne(admin_query, projection, options).populate({ path: "user_id", select: "_id first_name last_name" })
       if (check_admin) {
-        let member_query = { _id: new Types.ObjectId(remove_to), group_id: fetch_group._id }
+        let member_query = { user_id: new Types.ObjectId(remove_to), group_id: fetch_group._id }
         let deleted: any = await this.MemberModel.findOneAndDelete(member_query);
         if (deleted) {
           let fetch_user = await this.get_user_data(deleted?.user_id) 
