@@ -14,7 +14,7 @@ export class join_connection {
 export class remove_member {
   connection_id: string;
   group_id: string;
-  member_id: string;
+  user_id: string;
 }
 
 export class get_all_message {

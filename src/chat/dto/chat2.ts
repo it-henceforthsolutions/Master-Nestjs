@@ -29,17 +29,17 @@ export class CreateGroupDto {
 }
 
 export class addGroupMemberDto {
-  @ApiProperty()
+  @ApiProperty({description:"input should be the array of users_ids"})
   @IsArray()
   members: Array<string>;
 }
 
 export class removeGroupMemberDto {
-  @ApiProperty({ required: true })
+  @ApiProperty({ required: true, description:"user_id" })
   @IsString()
   @IsMongoId()
   @IsNotEmpty()
-  member_id: string;
+  user_id: string;
 }
 
 export enum sortBy {

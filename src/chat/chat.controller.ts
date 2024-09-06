@@ -117,7 +117,7 @@ export class ChatController {
     @Put('group/:_id/remove')
     async removeGroupMember(@Param() param:dto.Mongodb_id, @Body() body:dto.removeGroupMemberDto, @Req() req) {
       let user_id = req.user_data._id;
-      await this.chatservice.remove_member(param._id, user_id, body.member_id)
+      await this.chatservice.remove_member(param._id, user_id, body.user_id)
       return {
         message:`Removed successfully`
       };
