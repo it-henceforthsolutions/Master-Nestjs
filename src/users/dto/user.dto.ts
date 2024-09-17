@@ -1,5 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsEmail, IsString, IsStrongPassword } from "class-validator";
+import { IsEmail, IsNumber, IsString, IsStrongPassword } from "class-validator";
 import { DeviceType, LoginType } from "../role/user.role";
 
 export class SignUpDto {
@@ -94,10 +94,10 @@ export class DeactivateDto{
 
 
 export class exportData {
-    @ApiProperty()
+    @ApiProperty({description: 'is in millisecond'})
     start_date: number;
 
-    @ApiProperty()
+    @ApiProperty({description: 'is in millisecond'})
     end_date: number;
 }
 

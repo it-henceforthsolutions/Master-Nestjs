@@ -99,10 +99,10 @@ export class AdminService {
             { sort: {_id:-1}, limit:5, lean: true }
         )
         return {
-            recent_user,
             user_count,
             notification_count,
             staff_count,
+            recent_user,
         }
     }
  
