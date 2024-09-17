@@ -3,15 +3,18 @@ import { IsEmail } from 'class-validator';
 import { Role } from '../role/staff.role';
 
 export class UpdateStaffDto {
-    @ApiProperty({required:false})
+    @ApiProperty({required:false, default: null })
     first_name: string
 
-    @ApiProperty({required: false})
+    @ApiProperty({required: false, default: null })
     last_name: string
 
-    @ApiProperty({required:false})
+    @ApiProperty({required:false, default: null })
     email: string
 
-    @ApiProperty({enum:Role,default:Role.readonly,required:false})
-    role: string
+    @ApiProperty({required:false, default: null })
+    profile_pic: string
+
+    @ApiProperty({ required: false })
+    role: string[];
 }
