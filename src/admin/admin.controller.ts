@@ -1,7 +1,7 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request, Req } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request, Req, UseInterceptors, UploadedFile, Put, Query } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { UpdateAdminDto } from './dto/update-admin.dto';
-import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from 'src/auth/auth.guards';
 // import { RolesGuard } from 'src/auth/role.guard';
 import { Permission, Roles } from 'src/auth/role.decorator';
@@ -10,7 +10,10 @@ import { UsersService } from 'src/users/users.service';
 import { Role } from 'src/staff/role/staff.role';
 import { StripeService } from 'src/stripe/stripe.service';
 import { SignInDto } from './dto/create-admin.dto';
+import { exportData, importFileDto, paginationsortsearch } from './dto/admin.dto';
+import { FileInterceptor } from '@nestjs/platform-express';
 
+@Roles(UsersType.admin, UsersType.staff)
 @ApiTags('admin')
 @Controller('admin')
 export class AdminController {
@@ -42,8 +45,74 @@ export class AdminController {
         }
     }
 
+    @ApiOperation({summary: 'get all users'})
+    @UseGuards(AuthGuard)
+    @ApiBearerAuth('authentication')
+    @Get('user')
+    getAll(@Query() query: paginationsortsearch ) {
+        return this.adminService.getAll(query)
+    }
 
-    // @UseGuards(AuthGuard)
+    @Roles(UsersType.admin)
+    @Post('user/import')
+    @ApiConsumes('multipart/form-data')
+    @ApiBody({ type: importFileDto })
+    @UseInterceptors(FileInterceptor('file'))
+    async uploadProduct(@UploadedFile() file: Express.Multer.File) {
+      console.log("request.....",file)
+      let response= await this.adminService.importProduct(file) 
+      return response
+    }
+
+    @Roles(UsersType.admin, UsersType.staff)
+    @Get('user/export')
+    @UseGuards(AuthGuard)
+    @ApiBearerAuth('authentication')
+    async exportProduct(@Query() query:exportData) {
+        console.log("-=-=-=-quey-----",query.start_date);
+        try {
+            let data = await this.adminService.exportUser(query)
+            return data
+        }
+        catch (err) {
+            throw err
+        }
+    }
+
+    @Roles(UsersType.admin, UsersType.staff)
+    @UseGuards(AuthGuard)
+    @ApiBearerAuth('authentication')
+    @Put('user/:id/block')
+    @ApiResponse({ status: 201, description: 'BLOCKED' })
+    @ApiOperation({summary: 'block user by admin'})
+    block(@Param('id') id: string) {
+        return this.adminService.block(id)
+    }
+
+    @Roles(UsersType.admin, UsersType.staff)
+    @UseGuards(AuthGuard)
+    @ApiBearerAuth('authentication')
+    @Put('user/:id/deactivate')
+    @ApiResponse({ status: 201, description: 'DEACTIVE' })
+    @ApiOperation({summary: 'deactivate user by admin'})
+    deactivate(@Param('id') id: string) {
+        return this.adminService.deactivate(id)
+    }
+
+    @UseGuards(AuthGuard)
+    @ApiBearerAuth('authentication')
+    @Get('user/:id')
+    @ApiOperation({summary: 'get a selected user'})
+    getById(@Param('id') id: string) {
+        return this.adminService.getById(id)
+    }
+   
+}
+
+
+
+
+ // @UseGuards(AuthGuard)
     // @ApiBearerAuth('access_token')
     // @Post('plan')
     // async create_plan(@Body() body: dto.plan) {
@@ -87,5 +156,3 @@ export class AdminController {
     //         throw error
     //     }
     // }
-
-}

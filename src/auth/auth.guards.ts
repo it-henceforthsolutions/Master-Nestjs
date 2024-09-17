@@ -74,6 +74,9 @@ export class AuthGuard implements CanActivate {
             let split_api_path = api_path.split('/');
             let { roles } = fetch_user
             let new_path = split_api_path[1].toUpperCase()
+            if (new_path == "ADMIN") {
+              new_path = split_api_path[2].toUpperCase()
+            }
             let second_new_path = new_path.split('?')[0]
             console.log("api_path======>", second_new_path)
             console.log("user_roles===>",roles)
