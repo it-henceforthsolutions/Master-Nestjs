@@ -2,7 +2,7 @@ import { BadRequestException, HttpException, HttpStatus, Injectable } from '@nes
 import { InjectModel } from '@nestjs/mongoose';
 import { Users } from './schema/users.schema';
 import mongoose, { Model, Types } from 'mongoose';
-import { DeactivateDto, ForgetPassDto, NewPassOtpDto, OtpDto, SignInDto, SignUpDto, SocialSignInDto } from './dto/user.dto';
+import { DeactivateDto, exportData, ForgetPassDto, NewPassOtpDto, OtpDto, SignInDto, SignUpDto, SocialSignInDto } from './dto/user.dto';
 import * as moment from 'moment';
 import { InjectStripe } from 'nestjs-stripe';
 import Stripe from 'stripe';
@@ -20,6 +20,7 @@ const positiveIntegerRegex = /^\d+$/;
 import { ConfigService } from '@nestjs/config';
 import { UsersType } from 'src/users/role/user.role';
 import { token_payload } from 'src/auth/interface/interface';
+import * as csvtojson from 'csvtojson';
 @Injectable()
 export class UsersService {
     private user_scope
@@ -585,7 +586,7 @@ export class UsersService {
 
     async getUsersCount() {
         try {
-            return await this.model.UserModel.countDocuments({ is_active: true, user_type: UsersType.user })
+            return await this.model.UserModel.countDocuments({ is_deleted: false, user_type: UsersType.user })
         } catch (error) {
             throw error
         }
@@ -712,4 +713,83 @@ export class UsersService {
             throw error
         }
     }
+
+    async exportUser (body:exportData){   
+        try {
+          let { start_date, end_date }=body;
+          let query = {
+                created_at: {
+                  $gte: start_date,
+                  $lt: end_date
+                },
+                user_type: UsersType.user
+            };
+          let projection = { first_name:1, last_name:1, profile_pic:1, email:1, country_code:1, phone:1, is_blocked:1, created_at:1 }
+          let option ={ lean: true }
+          let data = await this.model.UserModel.find( query, projection, option ) 
+          console.log("userexportdata........",data);
+          let response ={
+            count:data.length,
+            data:data
+          }
+          return response;
+        } catch (error) {
+          throw error
+        }
+    }
+    
+    async importProduct (file:any){
+    try {
+        let {mimetype}=file;
+        let rejected = [];
+        let accepted =[];
+        let split_mime_type = mimetype.split('/')
+        console.log("user.......",split_mime_type[1]);
+        
+        if(split_mime_type[1] =='csv'){   
+            const jsonArray = await csvtojson().fromString(file.buffer.toString());
+            console.log("-=--data.........",jsonArray);
+            for(let object in jsonArray){
+                let currentObj = jsonArray[object]
+               let{ first_name, last_name, profile_pic, email, country_code, phone, is_blocked, created_at } = currentObj 
+                if(!first_name || !email ){
+                   rejected.push({ email });
+                }
+                else {
+                    let check_exist = await this.model.UserModel.findOne({ email })
+                    if (check_exist) {
+                        rejected.push({ email })
+                    } else {
+                        accepted.push({ email  });
+                        let data_to_save: any = {
+                            first_name,
+                            last_name,
+                            profile_pic,
+                            email,
+                            country_code,
+                            phone,
+                            is_blocked,
+                            created_at:parseInt(created_at),
+                        }       
+                     await this.model.UserModel.create(data_to_save)  
+                    }
+                }
+            }
+            return {
+              message1:"rejected",
+              rejected:rejected,
+              rejected_count:rejected.length,
+              message2:"accepted",
+              accepted:accepted,
+              accepted_count:accepted.length
+            }
+        }
+        else{
+           throw new HttpException("provide csv file",HttpStatus.BAD_REQUEST)
+        }
+    } catch (error) {
+     throw error
+    }
+   }
+    
 }

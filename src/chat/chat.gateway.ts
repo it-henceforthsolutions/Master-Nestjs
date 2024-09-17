@@ -287,7 +287,6 @@ export class ChatServiceGateway
   async group_add_member(socket: CustomSocket, payload: dto.addGroupMember) {
     try {
       const user_id = socket.user.id;
-
       let { group_id } = payload;
       let data = await this.chatservice.addGroupMember(
         group_id,
@@ -295,11 +294,10 @@ export class ChatServiceGateway
         user_id,
       );
       if (data) {
-        let { connection_id, user_data, saved_message, member_added } = data
+        let { connection_id, user_data, member_added } = data
         response.connection_id = connection_id;
         response.message = `${user_data?.first_name} is added ${member_added} new Member`;
         socket.to(data.connection_id.toString()).emit(listner.group_add_member, response);
-        socket.to(connection_id).emit(emitter.get_message, { data: saved_message, connection_id: connection_id } );
         response.message = `You added ${member_added} new Member`
         socket.emit(listner.group_add_member, response);
       }
@@ -319,7 +317,6 @@ export class ChatServiceGateway
       response.message = `${user_name} left the chat`;
       response.connection_id = connection_id;
       socket.to(connection_id).emit(emitter.leave_connection, response);
-      socket.to(connection_id).emit(emitter.get_message, { data: data, connection_id: connection_id} );
       response.message = `leave chat successfully`;
       socket.emit(emitter.leave_connection, response);
     } catch (error) {
@@ -328,7 +325,7 @@ export class ChatServiceGateway
   }
 
   @UseGuards(SocketGuard)
-  @SubscribeMessage(listner.leave_connection)
+  @SubscribeMessage(listner.remove_member)
   async handleRemoveMember(socket: CustomSocket, payload: dto.remove_member) {
     try {
       const user_id = socket.user.id;
@@ -338,9 +335,8 @@ export class ChatServiceGateway
       let { connection_id, saved_message, message } = data
       response.message = message
       response.connection_id = connection_id;
-      socket.to(connection_id).emit(emitter.leave_connection, response);
-      socket.to(connection_id).emit(emitter.get_message, { data: saved_message, connection_id } );
-      response.message = `leave chat successfully`;
+      socket.to(connection_id).emit(emitter.remove_member, response);
+      response.message = `removed successfully`;
       socket.emit(emitter.leave_connection, response);
     } catch (error) {
       socket.emit(emitter.error, error.message);

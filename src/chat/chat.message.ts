@@ -7,6 +7,7 @@ const shared_chat_events = {
     deliver_message: "deliver_message",
     read_message: "read_message",
     leave_connection: "leave_connection",
+    remove_member: "remove_member",
     clear_chat: "clear_chat",
     edit_message: "edit_message",
     delete_message: "delete_message",

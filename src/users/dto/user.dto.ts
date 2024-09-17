@@ -91,3 +91,17 @@ export class DeactivateDto{
     @ApiProperty()
     deactivate_reason_summary: string
 }
+
+
+export class exportData {
+    @ApiProperty()
+    start_date: number;
+
+    @ApiProperty()
+    end_date: number;
+}
+
+export class importFileDto {
+    @ApiProperty({ type: 'string', format: 'binary' })
+    file: any;
+}

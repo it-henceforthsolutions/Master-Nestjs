@@ -9,45 +9,42 @@ import { UsersType } from 'src/users/role/user.role';
 import { Permission, Roles } from 'src/auth/role.decorator';
 import { Role } from './role/staff.role';
 
+
+@Roles(UsersType.admin,UsersType.staff)
 @ApiTags('staff')
 @Controller('staff')
 export class StaffController {
   constructor(private readonly staffService: StaffService) { }
 
-
-  @Post()
+ 
   @ApiBearerAuth('authentication')
   @ApiConsumes('application/json', 'application/x-www-form-urlencoded')
   @UseGuards(AuthGuard)
-  @Roles(UsersType.admin,UsersType.staff)
-  @Permission(Role.manage)
   @ApiOperation({ summary: 'Add Staff' })
+  @Post()
   create(@Body() createStaffDto: CreateStaffDto) {
     return this.staffService.create(createStaffDto);
   }
 
+
   @ApiBearerAuth('authentication')
   @UseGuards(AuthGuard)
-  @Roles(UsersType.admin,UsersType.staff)
-  @Permission(Role.readonly)
   @Get()
   findAll(@Query() body: PaginationStaffDto) {
     return this.staffService.findAll(body);
   }
 
+
   @ApiBearerAuth('authentication')
   @UseGuards(AuthGuard)
-  @Roles(UsersType.admin,UsersType.staff)
-  @Permission(Role.readonly)
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.staffService.findOne(id);
   }
 
+
   @ApiBearerAuth('authentication')
   @UseGuards(AuthGuard)
-  @Roles(UsersType.admin,UsersType.staff)
-  @Permission(Role.manage)
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateStaffDto: UpdateStaffDto) {
     return this.staffService.update(id, updateStaffDto);
@@ -55,8 +52,6 @@ export class StaffController {
 
   @ApiBearerAuth('authentication')
   @UseGuards(AuthGuard)
-  @Roles(UsersType.admin,UsersType.staff)
-  @Permission(Role.manage)
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.staffService.remove(id);

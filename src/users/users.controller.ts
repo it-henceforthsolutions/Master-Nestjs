@@ -1,12 +1,13 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req, Put, Request } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req, Put, Request, Query, UseInterceptors, UploadedFile } from '@nestjs/common';
 import { UsersService } from './users.service';
-import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from 'src/auth/auth.guards';
 // import { Role } from 'src/staff/role/staff.role';
 import { Roles } from 'src/auth/role.decorator';
 import { UsersType } from './role/user.role';
-import { DeactivateDto } from './dto/user.dto';
+import { DeactivateDto, exportData, importFileDto } from './dto/user.dto';
 import { UserType } from 'utils';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 
 // @Permission(Role.manage)
@@ -79,5 +80,31 @@ export class UsersController {
     delete(@Param('id') id: string) {
         return this.usersService.delete(id)
     }
+
+    @Roles(UsersType.admin, UsersType.staff)
+    @Get('/export')
+    @UseGuards(AuthGuard)
+    @ApiBearerAuth('authentication')
+    async exportProduct(@Query() query:exportData) {
+        console.log("-=-=-=-quey-----",query.start_date);
+        try {
+            let data = await this.usersService.exportUser(query)
+            return data
+        }
+        catch (err) {
+            throw err
+        }
+    }
+
+   @Roles(UsersType.admin)
+   @Post('/import')
+   @ApiConsumes('multipart/form-data')
+   @ApiBody({ type: importFileDto })
+   @UseInterceptors(FileInterceptor('file'))
+   async uploadProduct(@UploadedFile() file: Express.Multer.File) {
+     console.log("request.....",file)
+     let response= await this.usersService.importProduct(file) 
+     return response
+   }
 
 }
