@@ -40,19 +40,40 @@ export class StaffService {
 
     async findAll(body: PaginationStaffDto) {
         try {
-            let query: any
-            query = {
-                ...(body.search && {
-                    $or: [
-                        { title: { $regex: body.search, $options: 'i' } },
-                        { description: { $regex: body.search, $options: 'i' } }
-                    ]
-                }),
-                is_deleted: false,
-                user_type: UsersType.staff
+            let query: any = { user_type: UsersType.staff, is_deleted: false }
+            let { search, pagination ,limit  } = body;
+            if (search) {
+                let new_search: any = search.split(' ');
+                query.$or = [
+                  { first_name: { $regex: search, $options: 'i' } },
+                  { last_name: { $regex: search, $options: 'i' } },
+                  { email: { $regex: search, $options: 'i' } },
+                  {
+                    $and: [
+                      {
+                        first_name: { $regex: new_search[0].toString(), $options: 'i' },
+                      },
+                      {
+                        last_name: {
+                          $regex: new_search[1] ? new_search[1].toString() : '',
+                          $options: 'i',
+                        },
+                      },
+                    ],
+                  },
+                ];
             }
-            let data = await this.model.UserModel.find(query)
-            return data
+            let options = await this.common.set_options(pagination, limit);
+            let data = await this.model.UserModel.find(
+                query,
+                { first_name: 1, last_name: 1, email: 1, temp_mail: 1, phone: 1, temp_phone: 1, temp_country_code: 1, profile_pic:1, role:1 },
+                { lean: true }
+            )
+            let count = await this.model.UserModel.countDocuments(query)
+            return {
+                data: data,
+                count: count
+            }
         } catch (error) {
             throw error
         }
@@ -61,8 +82,8 @@ export class StaffService {
     async findOne(id: string) {
         try {
             let data= await this.model.UserModel.findOne(
-                {_id: new Types.ObjectId(id),is_deleted: false,is_active:true,is_blocked:false},
-                {first_name:1,last_name:1,email:1,temp_mail:1,phone:1,temp_phone:1,temp_country_code:1}
+                {_id: new Types.ObjectId(id), is_deleted: false, is_active:true, is_blocked:false},
+                {first_name:1,last_name:1,email:1,temp_mail:1,phone:1,temp_phone:1,temp_country_code:1, profile_pic:1, role:1 }
             )
             if(!data){
                 throw new HttpException('Invalid Staff',HttpStatus.BAD_REQUEST)

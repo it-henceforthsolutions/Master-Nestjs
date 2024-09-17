@@ -44,8 +44,8 @@ export class Users {
     @Prop({default:0})
     phone_otp: number
 
-    @Prop({default:null})
-    role:string
+    @Prop({ type: [{ type: String, default: null }] })
+    role: string[];
 
     @Prop({default:null,type:String})
     profile_pic: string

@@ -1,5 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsEmail, IsStrongPassword } from "class-validator";
+import { IsArray, IsEmail, IsStrongPassword } from "class-validator";
 import { Role } from "../role/staff.role";
 
 export class CreateStaffDto {
@@ -24,8 +24,9 @@ export class CreateStaffDto {
     @ApiProperty()
     password: string
 
-    @ApiProperty({enum:Role,default:Role.readonly})
-    role: string
+    @ApiProperty({ description: 'roles', default: ["PROFILE"], })
+    @IsArray()
+    role: Array<string>;
 }
 export class CreateStaffResponseDto {
     @ApiProperty({default: 'xyz'})
@@ -41,7 +42,7 @@ export class CreateStaffResponseDto {
 }
 
 export class PaginationStaffDto {
-    @ApiProperty({ required: false, description: "search with page title" })
+    @ApiProperty({ required: false, description: "search " })
     search: string
 
     @ApiProperty({ required: false, default: 1, description: "pagination number" })
