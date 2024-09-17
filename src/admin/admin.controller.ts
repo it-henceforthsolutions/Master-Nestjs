@@ -45,6 +45,15 @@ export class AdminController {
         }
     }
 
+    @UseGuards(AuthGuard)
+    @ApiBearerAuth('authentication')
+    @Get('profile')
+    @ApiOperation({summary: 'get your profile'})
+    profile(@Request() req) {
+        return this.adminService.profile(req.user_data._id)
+    }
+
+
     @ApiOperation({summary: 'get all users'})
     @UseGuards(AuthGuard)
     @ApiBearerAuth('authentication')

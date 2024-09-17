@@ -51,14 +51,14 @@ export class UsersController {
     }
 
 
-    // @UseGuards(AuthGuard)
-    // @ApiBearerAuth('authentication')
-    // @ApiResponse({ status: 201, description: 'DELETED' })
-    // @Delete(':id')
-    // @ApiOperation({summary: 'delete user'})
-    // delete(@Param('id') id: string) {
-    //     return this.usersService.delete(id)
-    // }
+    @UseGuards(AuthGuard)
+    @ApiBearerAuth('authentication')
+    @ApiResponse({ status: 201, description: 'DELETED' })
+    @Delete(':id')
+    @ApiOperation({summary: 'delete user'})
+    delete(@Param('id') id: string) {
+        return this.usersService.delete(id)
+    }
 
 
 }

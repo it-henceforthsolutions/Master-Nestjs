@@ -110,6 +110,23 @@ export class AdminService {
         }
     }
 
+    async profile(id: string) {
+        try {
+            let data = await this.model.UserModel.findOne(
+                { _id: new Types.ObjectId(id), is_deleted: false, is_active: true, is_blocked: false },
+                { first_name: 1, last_name: 1, country_code: 1, email: 1, is_email_verify: 1, is_phone_verify: 1, profile_pic: 1, phone: 1, login_type: 1, is_active:1, is_blocked:1, is_deleted:1 }
+            ).lean(true)
+            if (!data) {
+                throw new HttpException('You May be deactivated', HttpStatus.BAD_REQUEST)
+            }
+            return data
+        } catch (error) {
+            console.log(error);
+
+            throw error
+        }
+    }
+
     async getAll(query_data:paginationsortsearch) {
         try {
             let { pagination, limit, sort_by, search} = query_data;
