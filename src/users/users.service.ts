@@ -598,9 +598,10 @@ export class UsersService {
                 'first_name last_name email temp_mail country_code phone temp_phone temp_country_code profile_pic is_blocked is_active',
                 options
             )
+            let count = await this.model.UserModel.countDocuments(query)
             return {
                 users: allUsers,
-                count: allUsers.length
+                count: count
             }
         } catch (error) {
             throw error
@@ -747,29 +748,7 @@ export class UsersService {
         }
     }
 
-    async exportUser (body:exportData){   
-        try {
-          let { start_date, end_date }=body;
-          let query = {
-                created_at: {
-                  $gte: start_date,
-                  $lt: end_date
-                },
-                user_type: UsersType.user
-            };
-          let projection = { first_name:1, last_name:1, profile_pic:1, email:1, country_code:1, phone:1, is_blocked:1, created_at:1 }
-          let option ={ lean: true }
-          let data = await this.model.UserModel.find( query, projection, option ) 
-          console.log("userexportdata........",data);
-          let response ={
-            count:data.length,
-            data:data
-          }
-          return response;
-        } catch (error) {
-          throw error
-        }
-    }
+ 
     
     async importProduct (file:any){
     try {

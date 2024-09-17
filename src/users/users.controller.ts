@@ -24,53 +24,6 @@ export class UsersController {
         return this.usersService.profile(req.user_data._id)
     }
 
-    @Roles(UsersType.admin, UsersType.staff)
-    @Get('/export')
-    @UseGuards(AuthGuard)
-    @ApiBearerAuth('authentication')
-    async exportProduct(@Query() query:exportData) {
-        console.log("-=-=-=-quey-----",query.start_date);
-        try {
-            let data = await this.usersService.exportUser(query)
-            return data
-        }
-        catch (err) {
-            throw err
-        }
-    }
-
-    @Roles(UsersType.admin)
-    @Post('/import')
-    @ApiConsumes('multipart/form-data')
-    @ApiBody({ type: importFileDto })
-    @UseInterceptors(FileInterceptor('file'))
-    async uploadProduct(@UploadedFile() file: Express.Multer.File) {
-      console.log("request.....",file)
-      let response= await this.usersService.importProduct(file) 
-      return response
-    }
-
-    @Roles(UsersType.admin, UsersType.staff)
-    @UseGuards(AuthGuard)
-    @ApiBearerAuth('authentication')
-    @Put(':id/block')
-    @ApiResponse({ status: 201, description: 'BLOCKED' })
-    @ApiOperation({summary: 'block user by admin'})
-    block(@Param('id') id: string) {
-        return this.usersService.block(id)
-    }
-
-    @Roles(UsersType.admin, UsersType.staff)
-    @UseGuards(AuthGuard)
-    @ApiBearerAuth('authentication')
-    @Put(':id/deactivate')
-    @ApiResponse({ status: 201, description: 'DEACTIVE' })
-    @ApiOperation({summary: 'deactivate user by admin'})
-    deactivate(@Param('id') id: string) {
-        return this.usersService.deactivate(id)
-    }
-
-    
     @UseGuards(AuthGuard)
     @ApiBearerAuth('authentication')
     @Get(':id')
@@ -106,7 +59,6 @@ export class UsersController {
     delete(@Param('id') id: string) {
         return this.usersService.delete(id)
     }
-
 
 
 }

@@ -63,7 +63,8 @@ export class AuthGuard implements CanActivate {
       let session_data: any = await this.verifyToken(payload);
       if (session_data) {
         let query = { _id: session_data.user_id, user_type: session_data.user_type };
-        let fetch_user: any = await this.Model.UserModel.findOne(query);
+        let fetch_user: any = await this.Model.UserModel.findOne(query,{__v:0},{lean:true});
+        console.log("fetch_user", fetch_user.role)
         if (fetch_user) {
           if (requiredRoles && !requiredRoles.includes(fetch_user.user_type)) {
             console.log("no permisssion")
@@ -72,12 +73,15 @@ export class AuthGuard implements CanActivate {
           else if (requiredRoles && payload.scope == this.staff_scope ) {
             const api_path = request.originalUrl;
             let split_api_path = api_path.split('/');
-            let { roles } = fetch_user
+            let { role } = fetch_user
             let new_path = split_api_path[1].toUpperCase()
+            if (new_path == "ADMIN") {
+              new_path = split_api_path[2].toUpperCase()
+            }
             let second_new_path = new_path.split('?')[0]
             console.log("api_path======>", second_new_path)
-            console.log("user_roles===>",roles)
-            let check_roles = roles.includes(second_new_path);
+            console.log("user_roles===>",role)
+            let check_roles = role.includes(second_new_path);
             if (check_roles != true) {
                 throw new HttpException('You have no permission to access this resource', HttpStatus.FORBIDDEN)
             }
