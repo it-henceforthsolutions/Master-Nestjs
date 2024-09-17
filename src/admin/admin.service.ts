@@ -93,7 +93,13 @@ export class AdminService {
         let user_count = await this.userService.getUsersCount();
         let notification_count = await this.model.NotificationModel.countDocuments({ user_id: admin_id });
         let staff_count = await this.model.UserModel.countDocuments({ user_type: UsersType.staff });
-        return{
+        let recent_user = await this.model.UserModel.find(
+            { user_type: UsersType.user, is_deleted:false },
+            { first_name:1, last_name:1, email:1, temp_mail:1, country_code:1, phone:1, temp_phone:1, temp_country_code:1, profile_pic:1 },
+            { sort: {_id:-1}, limit:5, lean: true }
+        )
+        return {
+            recent_user,
             user_count,
             notification_count,
             staff_count,
