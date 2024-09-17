@@ -558,9 +558,9 @@ export class UsersService {
         }
     }
 
-    async getAll(query:paginationsortsearch) {
+    async getAll(query_data:paginationsortsearch) {
         try {
-            let { pagination, limit, sort_by} = query;
+            let { pagination, limit, sort_by, search} = query_data;
             let options = await this.common.set_options(pagination, limit)
             if (sort_by) {
                 if (sort_by == sortBy.Newest) {
@@ -571,8 +571,30 @@ export class UsersService {
                     options.sort = { first_name: -1 }
                 }
             }
+            let query:any =  { is_deleted: false, user_type: 'user' }
+            if (search) {
+                let new_search: any = search.split(' ');
+                query.$or = [
+                  { first_name: { $regex: search, $options: 'i' } },
+                  { last_name: { $regex: search, $options: 'i' } },
+                  { email: { $regex: search, $options: 'i' } },
+                  {
+                    $and: [
+                      {
+                        first_name: { $regex: new_search[0].toString(), $options: 'i' },
+                      },
+                      {
+                        last_name: {
+                          $regex: new_search[1] ? new_search[1].toString() : '',
+                          $options: 'i',
+                        },
+                      },
+                    ],
+                  },
+                ];
+             }
             let allUsers = await this.model.UserModel.find(
-                { is_deleted: false, user_type: 'user' },
+                query,
                 'first_name last_name email temp_mail country_code phone temp_phone temp_country_code profile_pic is_blocked is_active',
                 options
             )
