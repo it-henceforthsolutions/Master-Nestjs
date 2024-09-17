@@ -5,7 +5,7 @@ import { AuthGuard } from 'src/auth/auth.guards';
 // import { Role } from 'src/staff/role/staff.role';
 import { Roles } from 'src/auth/role.decorator';
 import { UsersType } from './role/user.role';
-import { DeactivateDto, exportData, importFileDto } from './dto/user.dto';
+import { DeactivateDto, exportData, importFileDto, paginationsortsearch } from './dto/user.dto';
 import { UserType } from 'utils';
 import { FileInterceptor } from '@nestjs/platform-express';
 
@@ -83,8 +83,8 @@ export class UsersController {
     @UseGuards(AuthGuard)
     @ApiBearerAuth('authentication')
     @Get()
-    getAll() {
-        return this.usersService.getAll()
+    getAll(@Query() query: paginationsortsearch ) {
+        return this.usersService.getAll(query)
     }
     
    

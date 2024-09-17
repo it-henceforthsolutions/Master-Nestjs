@@ -2,7 +2,7 @@ import { BadRequestException, HttpException, HttpStatus, Injectable } from '@nes
 import { InjectModel } from '@nestjs/mongoose';
 import { Users } from './schema/users.schema';
 import mongoose, { Model, Types } from 'mongoose';
-import { DeactivateDto, exportData, ForgetPassDto, NewPassOtpDto, OtpDto, SignInDto, SignUpDto, SocialSignInDto } from './dto/user.dto';
+import { DeactivateDto, exportData, ForgetPassDto, NewPassOtpDto, OtpDto, paginationsortsearch, SignInDto, SignUpDto, SocialSignInDto, sortBy } from './dto/user.dto';
 import * as moment from 'moment';
 import { InjectStripe } from 'nestjs-stripe';
 import Stripe from 'stripe';
@@ -558,12 +558,23 @@ export class UsersService {
         }
     }
 
-    async getAll() {
+    async getAll(query:paginationsortsearch) {
         try {
+            let { pagination, limit, sort_by} = query;
+            let options = await this.common.set_options(pagination, limit)
+            if (sort_by) {
+                if (sort_by == sortBy.Newest) {
+                   options.sort = { _id: -1 }
+                } else if (sort_by == sortBy.Oldest) {
+                    options.sort = { _id: 1 }
+                } else if (sort_by == sortBy.Name){
+                    options.sort = { first_name: -1 }
+                }
+            }
             let allUsers = await this.model.UserModel.find(
                 { is_deleted: false, user_type: 'user' },
-                'first_name last_name email temp_mail country_code phone temp_phone temp_country_code profile_pic ',
-                { lean: true }
+                'first_name last_name email temp_mail country_code phone temp_phone temp_country_code profile_pic is_blocked is_active',
+                options
             )
             return {
                 users: allUsers,
@@ -577,7 +588,7 @@ export class UsersService {
     async getById(id: string) {
         try {
             return await this.model.UserModel.findById({ _id: new Types.ObjectId(id) },
-                'first_name last_name profile_pic email temp_mail country_code phone temp_phone temp_country_code last_seen chat_active',
+                'first_name last_name profile_pic email temp_mail country_code phone temp_phone temp_country_code is_blocked is_active last_seen chat_active',
                 { lean: true })
         } catch (error) {
             throw error
@@ -660,7 +671,7 @@ export class UsersService {
         try {
             let data = await this.model.UserModel.findOne(
                 { _id: new Types.ObjectId(id), is_deleted: false, is_active: true, is_blocked: false },
-                { first_name: 1, last_name: 1, country_code: 1, email: 1, is_email_verify: 1, is_phone_verify: 1, profile_pic: 1, phone: 1, login_type: 1 }
+                { first_name: 1, last_name: 1, country_code: 1, email: 1, is_email_verify: 1, is_phone_verify: 1, profile_pic: 1, phone: 1, login_type: 1, is_active:1, is_blocked:1, is_deleted:1 }
             ).lean(true)
             if (!data) {
                 throw new HttpException('You May be deactivated', HttpStatus.BAD_REQUEST)
