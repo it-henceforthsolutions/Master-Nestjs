@@ -30,6 +30,7 @@ import { Call } from './schema/call.schemas';
 import { AgoraService } from 'src/agora/agora.service';
 import { ChatSetting } from './schema/chatsetting.schemas';
 import { LiveStreaming } from './schema/liveStream.schemas';
+import { chat_emitter } from './chat.message';
 
 let options = { lean: true };
 let option_new = { new: true };
@@ -887,10 +888,14 @@ export class ChatService {
             media_url: null,
             created_at: +new Date(),
           };
-          let saved_message: any = await this.saveMessage(user_id, data_to_save, fetch_connections )
+          let saved_message: any = await this.saveMessage(user_id, data_to_save, fetch_connections);
+          this.socketEmit(fetch_connections._id, chat_emitter.get_message, {
+              connection_id: fetch_connections._id,
+              data: saved_message
+            });
+        
           return {
             connection_id: fetch_connections._id,
-            saved_message,
             user_data: check_admin,
             member_added: new_members_to_save.length
           };
@@ -1222,6 +1227,12 @@ export class ChatService {
           }
           saved_message = await this.saveMessage(fetch_user._id.toString(), data_to_save, connection)
         }
+        if (saved_message) {
+          this.socketEmit(connection._id, chat_emitter.get_message, {
+            connection_id: connection._id,
+            data: saved_message
+          });
+        }
         return true;
       } catch (error) {
         throw error;
@@ -1255,6 +1266,10 @@ export class ChatService {
           created_at: +new Date(),
         };
         let saved_message = await this.saveMessage(user_id, data_to_save, fetch_connection);
+        this.socketEmit(fetch_connection._id, chat_emitter.get_message, {
+          connection_id: fetch_connection._id,
+          data: saved_message
+        });
         return {
           saved_message: saved_message,
           connection_id: fetch_connection._id,
