@@ -8,6 +8,9 @@ export class CreatePageDto {
     @ApiProperty({ required: true })
     description: string;
 
+    @ApiProperty({ required: false })
+    image: string;
+
     @ApiProperty({ required: true })
     slug: string
 }
