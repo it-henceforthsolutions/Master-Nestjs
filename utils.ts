@@ -34,17 +34,11 @@ export enum StaffRoles {
     DASHBOARD = "DASHBOARD",
     USERS = "USERS",
     SETTINGS = "SETTINGS",
-    CONTENT = "CONTENT",
+    PAGES = "PAGES",
     FAQ = "FAQ",
     CONTACT = "CONTACT",
     NOTIFICATION = "NOTIFICATION",
     DBBACKUP = "DBBACKUP",
-    POST = 'POST',
-    COMMISSION = 'COMMISSION',
-    REPORT = 'REPORT',
-    PAYOUT = 'PAYOUT',
-    TICKET = 'TICKET',
-    TRANSACTIONS = 'TRANSACTIONS'
 }
 
 export enum chat_type {

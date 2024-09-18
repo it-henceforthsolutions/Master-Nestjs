@@ -5,8 +5,7 @@ import { UpdateNotificationDto } from './dto/update-notification.dto';
 import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from 'src/auth/auth.guards';
 import { UsersType } from 'src/users/role/user.role';
-import { Permission, Roles } from 'src/auth/role.decorator';
-import { Role } from 'src/staff/role/staff.role';
+import { Roles } from 'src/auth/role.decorator';
 // import { RolesGuard } from 'src/auth/role.guard';
 
 
@@ -20,7 +19,6 @@ export class NotificationController {
   @ApiConsumes('application/json', 'application/x-www-form-urlencoded')
   @UseGuards(AuthGuard)
   @Roles(UsersType.admin, UsersType.staff)
-  @Permission(Role.manage)
   @ApiOperation({ summary: 'send notification', description: '1 ->all users , 2 ->selected users' })
   @ApiResponse({ status: 201, description: 'OK' })
   async send_notification(@Body() payload: CreateNotificationDto, @Request() req) {
@@ -32,7 +30,6 @@ export class NotificationController {
   @ApiConsumes('application/json', 'application/x-www-form-urlencoded')
   @UseGuards(AuthGuard)
   @Roles(UsersType.admin, UsersType.staff)
-  @Permission(Role.readonly)
   @ApiOperation({ summary: 'listing emails' })
   async list_emails() {
     return await this.notificationService.list_emails();
