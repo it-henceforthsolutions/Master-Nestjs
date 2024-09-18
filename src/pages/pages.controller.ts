@@ -34,10 +34,10 @@ export class PagesController {
     }
 
     @ApiOperation({ summary: 'Find Page By Slug' })
-    @Get(':slug')
+    @Get(':id')
     @ApiConsumes('application/json', 'application/x-www-form-urlencoded')
-    findOne(@Param('slug') slug: string) {
-        return this.pagesService.findOne(slug);
+    findOne(@Param('id') id: string) {
+        return this.pagesService.findOne(id);
     }
 
     @ApiOperation({ summary: 'update page' })

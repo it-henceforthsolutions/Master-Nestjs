@@ -56,9 +56,9 @@ export class PagesService {
         }
     }
 
-    async findOne(slug: string) {
+    async findOne(id: string) {
         try {
-            return await this.model.PagesModel.findOne({ slug, is_deleted: false });
+            return await this.model.PagesModel.findOne({ _id: new Types.ObjectId(id), is_deleted: false });
         }
         catch (error) {
             throw new NotFoundException('Page Record Not Found')
