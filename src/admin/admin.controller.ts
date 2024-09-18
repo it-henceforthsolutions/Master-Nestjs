@@ -10,7 +10,7 @@ import { UsersService } from 'src/users/users.service';
 import { Role } from 'src/staff/role/staff.role';
 import { StripeService } from 'src/stripe/stripe.service';
 import { SignInDto } from './dto/create-admin.dto';
-import { exportData, importFileDto, paginationsortsearch } from './dto/admin.dto';
+import { exportData, importFileDto, paginationsortsearch, userlistDto } from './dto/admin.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 
 @Roles(UsersType.admin, UsersType.staff)
@@ -58,7 +58,7 @@ export class AdminController {
     @UseGuards(AuthGuard)
     @ApiBearerAuth('authentication')
     @Get('user')
-    getAll(@Query() query: paginationsortsearch ) {
+    getAll(@Query() query: userlistDto ) {
         return this.adminService.getAll(query)
     }
 
