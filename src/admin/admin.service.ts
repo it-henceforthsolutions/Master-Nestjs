@@ -9,7 +9,7 @@ import { ModelService } from 'src/model/model.service';
 import { ConfigService } from '@nestjs/config';
 import { token_payload } from 'src/auth/interface/interface';
 import * as moment from 'moment'
-import { exportData, paginationsortsearch, sortBy } from './dto/admin.dto';
+import { exportData, paginationsortsearch, sortBy, user_filter, userlistDto } from './dto/admin.dto';
 import * as csvtojson from 'csvtojson';
 import { Types } from 'mongoose';
 import { DeactivateDto } from 'src/users/dto/user.dto';
@@ -127,9 +127,9 @@ export class AdminService {
         }
     }
 
-    async getAll(query_data:paginationsortsearch) {
+    async getAll(query_data:userlistDto) {
         try {
-            let { pagination, limit, sort_by, search} = query_data;
+            let { pagination, limit, sort_by, search, filter } = query_data;
             let options = await this.common.set_options(pagination, limit)
             if (sort_by) {
                 if (sort_by == sortBy.Newest) {
@@ -140,7 +140,14 @@ export class AdminService {
                     options.sort = { first_name: -1 }
                 }
             }
-            let query:any =  { is_deleted: false, user_type: 'user' }
+            let query: any = { is_deleted: false, user_type: 'user' }
+            if(filter === user_filter.ACTIVE){
+                query.is_active = true
+            }else if( filter === user_filter.BLOCKED){
+                query.is_blocked = true
+            } else if (filter === user_filter.DEACTIVE) {
+                query.is_active = false
+            }
             if (search) {
                 let new_search: any = search.split(' ');
                 query.$or = [

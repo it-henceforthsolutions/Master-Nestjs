@@ -8,4 +8,10 @@ export class UpdatePageDto {
 
     @ApiProperty({ required: false })
     description: string;
+
+    @ApiProperty({ required: false })
+    image: string;
+
+    @ApiProperty({ required: false })
+    slug: string
 }

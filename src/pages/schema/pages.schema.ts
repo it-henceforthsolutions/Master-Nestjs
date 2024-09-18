@@ -12,6 +12,9 @@ export class Pages {
     @Prop()
     description: string;
 
+    @Prop({type:String, default: null })
+    image: string;
+
     @Prop({ unique: true })
     slug: string;
 

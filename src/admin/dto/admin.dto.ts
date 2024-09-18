@@ -1,5 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsEmail, IsNumber, IsOptional, IsString, IsStrongPassword } from "class-validator";
+import { IsEmail, IsEnum, IsNumber, IsOptional, IsString, IsStrongPassword } from "class-validator";
 
 export class exportData {
     @ApiProperty({description: 'is in millisecond'})
@@ -21,6 +21,8 @@ export enum sortBy {
   
 
 export class paginationsortsearch {
+   
+
     @ApiProperty({ description: 'sort_by', enum: sortBy, required: false })
     @IsOptional()
     sort_by: sortBy;
@@ -36,4 +38,18 @@ export class paginationsortsearch {
     @ApiProperty({ required: false })
     @IsOptional()
     limit: number;
-  }
+}
+
+export enum user_filter {
+  ALL ="ALL",
+  DEACTIVE = "DEACTIVE",
+  BLOCKED ="BLOCKED",
+  ACTIVE = "ACTIVE"
+} 
+  
+export class userlistDto extends paginationsortsearch {
+  @ApiProperty({ enum:user_filter, required:false })
+  @IsOptional()
+  @IsEnum(user_filter)
+  filter: user_filter
+}
