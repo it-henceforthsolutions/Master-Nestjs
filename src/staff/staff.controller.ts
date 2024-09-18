@@ -54,7 +54,7 @@ export class StaffController {
   @UseGuards(AuthGuard)
   @Put(':id/block')
   async block_unblock(@Param('id') id: string) {
-   let data = await this.staffService.block
+   return await this.staffService.block(id)
   }
 
   @ApiBearerAuth('authentication')

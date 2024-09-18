@@ -134,7 +134,7 @@ export class StaffService {
                     {new:true}
                 )
                 return {
-                    message:"Unblocked"
+                    message:"Unblocked successfully"
                 }
             } else {
                 await this.model.UserModel.findByIdAndUpdate(
@@ -144,7 +144,7 @@ export class StaffService {
                 )
                 await this.model.SessionModel.deleteMany({ user_id: new Types.ObjectId(id) })
                 return {
-                    message:"Blocked"
+                    message:"Blocked successfully"
                 }
             }
         } catch (error) {
