@@ -44,7 +44,7 @@ export class StaffService {
     async findAll(body: staffList ) {
         try {
             let query: any = { user_type: UsersType.staff, is_deleted: false}
-            let { search, pagination ,limit , filter } = body;
+            let { search, pagination, limit, filter } = body;
             if (search) {
                 let new_search: any = search.split(' ');
                 query.$or = [
@@ -66,9 +66,10 @@ export class StaffService {
                   },
                 ];
             }
-            if (filter) {
+            if (!!filter && filter != 'null' ) {
                 query.role = { $in: [filter] };
             }
+            console.log("query--->", query)
             let options = await this.common.set_options(pagination, limit);
             let data = await this.model.UserModel.find(
                 query,

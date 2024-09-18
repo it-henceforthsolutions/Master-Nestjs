@@ -1,5 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsArray, IsEmail, IsEnum, IsStrongPassword } from "class-validator";
+import { IsArray, IsEmail, IsEnum, IsOptional, IsStrongPassword } from "class-validator";
 
 import { StaffRoles } from "utils";
 
@@ -63,7 +63,8 @@ export class PaginationStaffDto {
 }
 
 export class staffList extends PaginationStaffDto {
-    @ApiProperty({ enum: StaffRoles })
+    @ApiProperty({ enum: StaffRoles, required:false })
     @IsEnum(StaffRoles)
-    filter :string
+    @IsOptional()
+    filter ?:string
 }
