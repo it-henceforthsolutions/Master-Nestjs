@@ -14,6 +14,15 @@ export class CreateStaffDto {
     @ApiProperty()
     email: string
 
+    @ApiProperty({required:false})
+    country_code?: string
+
+    @ApiProperty({ required: false })
+    phone?: string
+
+    @ApiProperty({ required:false })
+    profile_pic ?: string
+
     @IsStrongPassword({
         minLength: 6,
         minLowercase: 1,
