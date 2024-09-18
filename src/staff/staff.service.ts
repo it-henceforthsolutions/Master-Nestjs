@@ -1,5 +1,5 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
-import { CreateStaffDto, PaginationStaffDto } from './dto/staff.dto';
+import { BadRequestException, HttpException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
+import { CreateStaffDto, PaginationStaffDto, staffList } from './dto/staff.dto';
 import { UpdateStaffDto } from './dto/update-staff.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { Users } from 'src/users/schema/users.schema';
@@ -41,10 +41,10 @@ export class StaffService {
         }
     }
 
-    async findAll(body: PaginationStaffDto) {
+    async findAll(body: staffList ) {
         try {
-            let query: any = { user_type: UsersType.staff, is_deleted: false }
-            let { search, pagination ,limit  } = body;
+            let query: any = { user_type: UsersType.staff, is_deleted: false}
+            let { search, pagination, limit, filter } = body;
             if (search) {
                 let new_search: any = search.split(' ');
                 query.$or = [
@@ -66,10 +66,14 @@ export class StaffService {
                   },
                 ];
             }
+            if (!!filter && filter != 'null' ) {
+                query.role = { $in: [filter] };
+            }
+            console.log("query--->", query)
             let options = await this.common.set_options(pagination, limit);
             let data = await this.model.UserModel.find(
                 query,
-                { first_name: 1, last_name: 1, email: 1, temp_mail: 1, phone: 1, temp_phone: 1, temp_country_code: 1, profile_pic:1, role:1 },
+                { first_name: 1, last_name: 1, email: 1, temp_mail: 1, phone: 1, country_code:1, temp_phone: 1, temp_country_code: 1, profile_pic:1, role:1 },
                 { lean: true }
             )
             let count = await this.model.UserModel.countDocuments(query)
@@ -86,7 +90,7 @@ export class StaffService {
         try {
             let data= await this.model.UserModel.findOne(
                 {_id: new Types.ObjectId(id), is_deleted: false, is_active:true, is_blocked:false},
-                {first_name:1,last_name:1,email:1,temp_mail:1,phone:1,temp_phone:1,temp_country_code:1, profile_pic:1, role:1 }
+                {first_name:1,last_name:1,email:1,temp_mail:1,phone:1,country_code:1,temp_phone:1,temp_country_code:1, profile_pic:1, role:1 }
             )
             if(!data){
                 throw new HttpException('Invalid Staff',HttpStatus.BAD_REQUEST)
@@ -116,6 +120,35 @@ export class StaffService {
             throw new HttpException('Deleted!!',HttpStatus.OK)
         } catch (error) {
             throw error
+        }
+    }
+
+    async block(id: string) {
+        try {
+            let user = await this.model.UserModel.findById({ _id: new Types.ObjectId(id), user_type: UsersType.staff })
+            if(!user)throw new NotFoundException()
+            if (user?.is_blocked == true) {
+                await this.model.UserModel.findByIdAndUpdate(
+                    { _id: new Types.ObjectId(id) },
+                    { is_blocked: false, updated_at: moment().utc().valueOf() },
+                    {new:true}
+                )
+                return {
+                    message:"Unblocked successfully"
+                }
+            } else {
+                await this.model.UserModel.findByIdAndUpdate(
+                    { _id: new Types.ObjectId(id) },
+                    { is_blocked: true, updated_at: moment().utc().valueOf() },
+                    { new: true }
+                )
+                await this.model.SessionModel.deleteMany({ user_id: new Types.ObjectId(id) })
+                return {
+                    message:"Blocked successfully"
+                }
+            }
+        } catch (error) {
+           throw error
         }
     }
 }

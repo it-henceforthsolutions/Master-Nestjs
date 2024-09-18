@@ -1,13 +1,13 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Query, Put } from '@nestjs/common';
 import { StaffService } from './staff.service';
-import { CreateStaffDto, CreateStaffResponseDto, PaginationStaffDto } from './dto/staff.dto';
+import { CreateStaffDto, CreateStaffResponseDto, PaginationStaffDto, staffList } from './dto/staff.dto';
 import { UpdateStaffDto } from './dto/update-staff.dto';
 import { ApiBearerAuth, ApiConsumes, ApiCreatedResponse, ApiOkResponse, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from 'src/auth/auth.guards';
 // import { RolesGuard } from 'src/auth/role.guard';
 import { UsersType } from 'src/users/role/user.role';
-import { Permission, Roles } from 'src/auth/role.decorator';
-import { Role } from './role/staff.role';
+import {  Roles } from 'src/auth/role.decorator';
+
 
 
 @Roles(UsersType.admin,UsersType.staff)
@@ -30,7 +30,7 @@ export class StaffController {
   @ApiBearerAuth('authentication')
   @UseGuards(AuthGuard)
   @Get()
-  findAll(@Query() body: PaginationStaffDto) {
+  findAll(@Query() body:staffList ) {
     return this.staffService.findAll(body);
   }
 
@@ -48,6 +48,13 @@ export class StaffController {
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateStaffDto: UpdateStaffDto) {
     return this.staffService.update(id, updateStaffDto);
+  }
+
+  @ApiBearerAuth('authentication')
+  @UseGuards(AuthGuard)
+  @Put(':id/block')
+  async block_unblock(@Param('id') id: string) {
+   return await this.staffService.block(id)
   }
 
   @ApiBearerAuth('authentication')

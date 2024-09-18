@@ -1,6 +1,7 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsArray, IsEmail, IsStrongPassword } from "class-validator";
-import { Role } from "../role/staff.role";
+import { IsArray, IsEmail, IsEnum, IsOptional, IsStrongPassword } from "class-validator";
+
+import { StaffRoles } from "utils";
 
 export class CreateStaffDto {
 
@@ -59,4 +60,11 @@ export class PaginationStaffDto {
 
     @ApiProperty({ required: false, default: 10, description: "select the limit how much user want to see in first and another page" })
     limit: number
+}
+
+export class staffList extends PaginationStaffDto {
+    @ApiProperty({ enum: StaffRoles, required:false })
+    @IsEnum(StaffRoles)
+    @IsOptional()
+    filter ?:string
 }

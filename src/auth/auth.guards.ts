@@ -20,7 +20,6 @@ import { UsersType } from 'src/users/role/user.role';
 import { PERMISSION_KEY, ROLES_KEY } from './role.decorator';
 import { ConfigService } from '@nestjs/config';
 import { ModelService } from 'src/model/model.service';
-import { Role } from 'src/staff/role/staff.role';
 import { token_payload } from './interface/interface';
 
 @Injectable()

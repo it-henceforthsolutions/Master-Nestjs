@@ -4,16 +4,16 @@ import { UpdateAdminDto } from './dto/update-admin.dto';
 import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from 'src/auth/auth.guards';
 // import { RolesGuard } from 'src/auth/role.guard';
-import { Permission, Roles } from 'src/auth/role.decorator';
+import {  Roles } from 'src/auth/role.decorator';
 import { UsersType } from 'src/users/role/user.role';
 import { UsersService } from 'src/users/users.service';
-import { Role } from 'src/staff/role/staff.role';
+// import { Role } from 'src/staff/role/staff.role';
 import { StripeService } from 'src/stripe/stripe.service';
 import { SignInDto } from './dto/create-admin.dto';
 import { exportData, importFileDto, paginationsortsearch, userlistDto } from './dto/admin.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 
-@Roles(UsersType.admin, UsersType.staff)
+
 @ApiTags('admin')
 @Controller('admin')
 export class AdminController {
@@ -53,7 +53,7 @@ export class AdminController {
         return this.adminService.profile(req.user_data._id)
     }
 
-
+    @Roles(UsersType.admin, UsersType.staff)
     @ApiOperation({summary: 'get all users'})
     @UseGuards(AuthGuard)
     @ApiBearerAuth('authentication')
@@ -62,7 +62,7 @@ export class AdminController {
         return this.adminService.getAll(query)
     }
 
-    @Roles(UsersType.admin)
+    @Roles(UsersType.admin, UsersType.staff)
     @Post('user/import')
     @ApiConsumes('multipart/form-data')
     @ApiBody({ type: importFileDto })
