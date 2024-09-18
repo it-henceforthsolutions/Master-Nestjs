@@ -28,6 +28,9 @@ export class StaffService {
                 temp_mail: body.email,
                 email: body.email,
                 password: hash,
+                country_code: body?.country_code,
+                phone: body?.phone,
+                profile_pic: body?.profile_pic,
                 role: body.role,
                 user_type: UsersType.staff,
                 created_at: moment().utc().valueOf()

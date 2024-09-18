@@ -9,8 +9,14 @@ export class UpdateStaffDto {
     @ApiProperty({required: false, default: null })
     last_name: string
 
+    @ApiProperty({ required: false, default: null })
+    email: string;
+
     @ApiProperty({required:false, default: null })
-    email: string
+    country_code?: string
+
+    @ApiProperty({ required: false, default: null  })
+    phone?: string
 
     @ApiProperty({required:false, default: null })
     profile_pic: string
